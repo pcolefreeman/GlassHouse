@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"name": "TestTest",
+			"path": "../../OneDrive/Documents/PlatformIO/Projects/TestTest"
+		},
+		{
+			"name": "TestProj",
+			"path": "../../../../TestProj"
+		},
+		{
+			"name": "fwfwe",
+			"path": "../../OneDrive/Documents/PlatformIO/Projects/fwfwe"
+		},
+		{
+			"name": "TEST",
+			"path": "../../OneDrive/Documents/PlatformIO/Projects/TEST"
+		},
+		{
+			"name": "wokwiTest",
+			"path": "../../OneDrive/Documents/PlatformIO/Projects/wokwiTest"
+		},
+		{
+			"path": "../../OneDrive/Documents/Machine Learning"
+		},
+		{
+			"name": "Brain_Proto_1",
+			"path": "../Brain_Proto_1"
+		},
+		{
+			"name": "Nodes_Proto_1",
+			"path": "."
+		}
+	]
+}
