@@ -3,7 +3,7 @@
 #include "esp_wifi.h"
 
 #define WIFI_CHANNEL 1
-const uint8_t TARGET_MAC[] = {0x68, 0xFE, 0x71, 0x90, 0x60, 0xA0};
+//const uint8_t TARGET_MAC[] = {0x68, 0xFE, 0x71, 0x90, 0x60, 0xA0};
 
 // The callback stays the same
 void handle_csi_data(void *ctx, wifi_csi_info_t *data) {
@@ -12,35 +12,23 @@ void handle_csi_data(void *ctx, wifi_csi_info_t *data) {
             return;
     }
 
-    if (memcmp(data->mac, TARGET_MAC, 6) != 0) { //comment out to recieve all data, not just from the specific Node
-        return; // This packet is not from our specific Node, ignore it.
-    } 
+    // if (memcmp(data->mac, TARGET_MAC, 6) != 0) { //comment out to recieve all data, not just from the specific Node
+    //     return; // This packet is not from our specific Node, ignore it.
+    // } 
 
     Serial.print("BRAIN_DATA,");
     
-    // for (int i = 0; i < 6; i++) { // Print MAC address
-    //     Serial.printf("%02x%s", data->mac[i], (i < 5) ? ":" : "");
-    // }
-    
-    //Serial.printf(",%d,", data->rx_ctrl.rssi);
-
-    // Print RSSI for signal strength tracking
-    Serial.printf("RSSI:%d,CSI_LEN:%d,DATA:", data->rx_ctrl.rssi, data->len);
-
-    /*
-    Serial.print("BRAIN_DATA,");
-    
-    char macStr[18];
+    char macStr[18]; // Finds and prints MAC address
     snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
              data->mac[0], data->mac[1], data->mac[2], 
              data->mac[3], data->mac[4], data->mac[5]);
     Serial.print(macStr);
     
     Serial.print(",");
-    Serial.print(data->rx_ctrl.rssi);
+    Serial.print(data->rx_ctrl.rssi); // Prints RSSI Strength
     Serial.print(",");
-    */
 
+    // Loop to print CSI data
     int8_t *my_buf = (int8_t *)data->buf;
     for (int i = 0; i < data->len; i++) {
         Serial.print(my_buf[i]);
