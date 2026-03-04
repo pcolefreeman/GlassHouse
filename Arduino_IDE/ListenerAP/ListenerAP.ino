@@ -6,7 +6,7 @@ extern "C" {
 }
 
 // -------------------- CONFIG --------------------
-#define BAUD_RATE      912600
+#define BAUD_RATE      460800
 
 #define WIFI_CHANNEL   6
 #define AP_SSID        "CSI_PRIVATE_AP"
