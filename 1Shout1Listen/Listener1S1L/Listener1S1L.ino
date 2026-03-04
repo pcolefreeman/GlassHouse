@@ -6,8 +6,7 @@ extern "C" {
 }
 
 // -------------------- CONFIG --------------------
-#define BAUD_RATE      460800
-
+#define BAUD_RATE      921600
 #define WIFI_CHANNEL   6
 #define AP_SSID        "CSI_PRIVATE_AP"
 #define AP_PASS        "12345678"   // >= 8 chars
@@ -26,7 +25,8 @@ static inline bool mac_eq(const uint8_t *a, const uint8_t *b) {
   return true;
 }
 
-// CRC16-CCITT (0x1021) initial 0xFFFF
+// CRC16-CCITT (0x1021) initial 0xFFFF 
+// delete?
 static uint16_t crc16_ccitt(const uint8_t *data, size_t len) {
   uint16_t crc = 0xFFFF;
   for (size_t i = 0; i < len; i++) {
@@ -79,6 +79,7 @@ static void emit_csi_frame(const wifi_csi_info_t *info) {
   header[idx++] = (uint8_t)((csi_len >> 8) & 0xFF);
 
   // Compute CRC over: header + CSI bytes
+  // delete??
   uint16_t crc = crc16_ccitt(header, sizeof(header));
   crc = crc16_ccitt((const uint8_t*)info->buf, csi_len) ^ crc;
 
