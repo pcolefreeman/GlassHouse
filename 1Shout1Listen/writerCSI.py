@@ -36,7 +36,7 @@ else:
 # -------------------------------------------------------------
 
 PORT = "COM3" # *** change to your port
-BAUD = 460800
+BAUD = 921600
 OUTPUT_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # *** replace to work on new computer
 INTERVAL_SECONDS = 15
 

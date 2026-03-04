@@ -11,7 +11,7 @@ extern "C" {
 }
 
 // -------------------- CONFIG --------------------
-#define BAUD_RATE        460800
+#define BAUD_RATE        921600
 #define WIFI_CHANNEL     6                 // should match AP channel (usually auto when connecting)
 #define AP_SSID          "CSI_PRIVATE_AP"
 #define AP_PASS          "12345678"
