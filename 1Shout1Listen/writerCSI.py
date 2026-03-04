@@ -5,7 +5,7 @@ from datetime import datetime
 import glob
 import subprocess
 
-binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # replace to work on new computer
+binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # *** replace to work on new computer
 
 # *** Linux lines -> uncomment to work with linux OS
 # ----- removes old .bin files on startup of writer code ------
