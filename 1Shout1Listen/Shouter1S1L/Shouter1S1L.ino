@@ -18,7 +18,7 @@ extern "C" {
 #define SEND_INTERVAL_MS 500
 
 #define SHOUTER_ID       1   // *** change to 2, 3, 4 on each respective shouter
-#define NUM_SHOUTER      2   // *** change based on number of shouters currently in the system
+#define NUM_SHOUTERS      3   // *** change based on number of shouters currently in the system
 
 // -------------------- UDP --------------------
 WiFiUDP Udp;
