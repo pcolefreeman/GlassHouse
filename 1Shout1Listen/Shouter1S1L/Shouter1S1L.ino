@@ -18,6 +18,7 @@ extern "C" {
 #define SEND_INTERVAL_MS 500
 
 #define SHOUTER_ID       1   // *** change to 2, 3, 4 on each respective shouter
+#define NUM_SHOUTER      2   // *** change based on number of shouters currently in the system
 
 // -------------------- UDP --------------------
 WiFiUDP Udp;
@@ -85,6 +86,11 @@ void setup() {
   Serial.print(listenerIP);
   Serial.print(":");
   Serial.println(UDP_PORT);
+
+  // Stagger transmission start by node ID to avoid collisions
+  uint32_t offset_ms = (SHOUTER_ID - 1) * (SEND_INTERVAL_MS / NUM_SHOUTERS);  
+  Serial.printf("TX_OFFSET=%ums\n", offset_ms);
+  delay(offset_ms);
 
   Serial.println("SHOUTER_READY");
 }

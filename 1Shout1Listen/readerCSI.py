@@ -8,11 +8,11 @@ WATCH_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CS
 PROCESSED = set()
 
 # -------------------- KNOWN SHOUTER MACs --------------------
-SHOUTER_MACS = {
-    "68:FE:71:90:60:A0",   # shouter 1
-    # "XX:XX:XX:XX:XX:XX", # shouter 2
-    # "XX:XX:XX:XX:XX:XX", # shouter 3
-    # "XX:XX:XX:XX:XX:XX", # shouter 4
+SHOUTER_MACS = { # MAC address/ Node ID
+    "68:FE:71:90:60:A0": 1,   
+    "68:FE:71:90:68:14": 2,
+    # "68:FE:71:90:6B:90": 3,
+    # "XX:XX:XX:XX:XX:XX": 4,
 }
 
 # -------------------- FRAME FORMAT --------------------
@@ -105,7 +105,7 @@ def parse_bin_file(filepath):
                 'timestamp_ms': timestamp,
                 'rssi_dbm':     rssi,
                 'noise_floor':  noise_floor,
-                'mac':          mac,
+                'node #':       SHOUTER_MACS[mac],  # store node ID directly
                 'sc_indices':   sc_indices,   # original subcarrier index for reference
                 'csi_complex':  sc_complex,
                 'amplitudes':   amplitudes,
@@ -140,7 +140,7 @@ def process_file(filepath):
         print(f"  Frame {idx:4d} | [{frame['timestamp_ms']}ms] "
               f"RSSI={frame['rssi_dbm']}dBm | "
               f"NF={frame['noise_floor']}dBm | "
-              f"MAC={frame['mac']} | "
+              f"Node={frame['node #']} | "
               f"Subcarriers={len(frame['amplitudes'])}")
 
         for sc_idx, (orig_idx, amp, phase) in enumerate(zip(frame['sc_indices'], frame['amplitudes'], phases)):

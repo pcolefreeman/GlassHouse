@@ -14,16 +14,17 @@ GRID_COLS      = 3
 GRID_ROWS      = 3
 
 # -------------------- CAPTURE CONFIG --------------------
-WATCH_DIR        = "/home/pi/csi_data"   # *** change to your path
-OUTPUT_CSV       = "/home/pi/csi_data/training_data.csv"
+WATCH_DIR        = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data"   # *** change to your path
+OUTPUT_CSV       = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data\training_data.csv" # use path from above line add "\training_data.csv"
 BUCKET_MS        = 50
 MIN_FRAMES       = 2
 
 # -------------------- SHOUTER MACs --------------------
+# dictionary with MAC / shouter ID
 SHOUTER_MACS = {
-    "68:FE:71:90:60:A0": 1,   # shouter 1
-    # "XX:XX:XX:XX:XX:XX": 2,
-    # "XX:XX:XX:XX:XX:XX": 3,
+    "68:FE:71:90:60:A0": 1,
+    # "68:FE:71:90:68:14": 2,
+    # "68:FE:71:90:6B:90": 3,
     # "XX:XX:XX:XX:XX:XX": 4,
 }
 
@@ -32,7 +33,7 @@ SUBCARRIERS  = 128  # 256 byte CSI / 2 bytes per complex sample
 
 # -------------------- FRAME FORMAT --------------------
 # Header after 0xAA 0x55 magic (16 bytes):
-#   ver(1) flags(1) ms(4) rssi(1) noise_floor(1) mac(6) csi_len(2)
+# ver(1) flags(1) ms(4) rssi(1) noise_floor(1) mac(6) csi_len(2)
 HEADER_SIZE = 16
 MAGIC       = (0xAA, 0x55)
 
