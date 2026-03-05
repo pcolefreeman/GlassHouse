@@ -1,7 +1,4 @@
 // ShouterAP_UDP.ino
-// ESP32 connects to the Listener's PRIVATE SoftAP and repeatedly sends UDP packets.
-// Baud stays 912600.
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
@@ -12,13 +9,15 @@ extern "C" {
 
 // -------------------- CONFIG --------------------
 #define BAUD_RATE        921600
-#define WIFI_CHANNEL     6                 // should match AP channel (usually auto when connecting)
+#define WIFI_CHANNEL     6
 #define AP_SSID          "CSI_PRIVATE_AP"
 #define AP_PASS          "12345678"
 
-#define LISTENER_IP      "192.168.4.1"     // default SoftAP IP
+#define LISTENER_IP      "192.168.4.1"
 #define UDP_PORT         3333
-#define SEND_INTERVAL_MS 5                 // start 10–20ms if serial/logging is heavy
+#define SEND_INTERVAL_MS 500
+
+#define SHOUTER_ID       1   // *** change to 2, 3, 4 on each respective shouter
 
 // -------------------- UDP --------------------
 WiFiUDP Udp;
@@ -27,7 +26,8 @@ IPAddress listenerIP;
 typedef struct __attribute__((packed)) {
   uint32_t seq;
   uint32_t ms;
-  uint8_t  pad[8];
+  uint8_t  shouter_id;
+  uint8_t  pad[99];   // large payload forces longer HT frame → better CSI
 } shout_pkt_t;
 
 static uint32_t seqno = 0;
@@ -37,8 +37,17 @@ void setup() {
   Serial.begin(BAUD_RATE);
   delay(200);
 
+  // Must set protocol BEFORE WiFi.mode() — not just before WiFi.begin()
+  esp_err_t err = esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
+  if (err != ESP_OK) {
+    Serial.printf("set_protocol failed: %d\n", err);
+  }
+
   WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false); // reduce latency/jitter
+  WiFi.setSleep(false);
+
+  // Explicitly set 802.11n HT20 before connecting
+  esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT20);
 
   Serial.print("Connecting to AP ");
   Serial.println(AP_SSID);
@@ -58,16 +67,18 @@ void setup() {
 
   Serial.print("STA_MAC=");
   Serial.println(WiFi.macAddress());
-
   Serial.print("STA_IP=");
   Serial.println(WiFi.localIP());
 
-  // Optional: force channel (usually not needed; association sets it)
-  ESP_ERROR_CHECK(esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE));
+  // Force MCS0 LGI — most conservative HT rate, most likely to stick
+  err = esp_wifi_config_80211_tx_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
+  if (err != ESP_OK) {
+    Serial.printf("set_tx_rate failed: %d\n", err);
+  } else {
+    Serial.println("TX_RATE=MCS0_LGI set");
+  }
 
   listenerIP.fromString(LISTENER_IP);
-
-  // Bind UDP (optional, but fine)
   Udp.begin(0);
 
   Serial.print("UDP_TARGET=");
@@ -80,16 +91,23 @@ void setup() {
 
 // -------------------- LOOP --------------------
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WIFI_LOST — reconnecting...");
+    WiFi.reconnect();
+    delay(1000);
+    return;
+  }
+
   shout_pkt_t pkt;
-  pkt.seq = seqno++;
-  pkt.ms  = millis();
+  pkt.seq        = seqno++;
+  pkt.ms         = millis();
+  pkt.shouter_id = SHOUTER_ID;
   memset(pkt.pad, 0xA5, sizeof(pkt.pad));
 
   Udp.beginPacket(listenerIP, UDP_PORT);
   Udp.write((uint8_t*)&pkt, sizeof(pkt));
   bool ok = Udp.endPacket();
 
-  // Light heartbeat
   if ((pkt.seq % 200) == 0) {
     Serial.print("UDP_TX,seq=");
     Serial.print(pkt.seq);

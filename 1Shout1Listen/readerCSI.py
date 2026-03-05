@@ -2,18 +2,47 @@ import struct
 import os
 import time
 import glob
+import math
 
 WATCH_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # *** replace to work on new computer
 PROCESSED = set()
 
 # -------------------- KNOWN SHOUTER MACs --------------------
-# Only frames from these MACs will be parsed and displayed
 SHOUTER_MACS = {
     "68:FE:71:90:60:A0",   # shouter 1
     # "XX:XX:XX:XX:XX:XX", # shouter 2
     # "XX:XX:XX:XX:XX:XX", # shouter 3
     # "XX:XX:XX:XX:XX:XX", # shouter 4
 }
+
+# -------------------- FRAME FORMAT --------------------
+# Header after 0xAA 0x55 magic (16 bytes):
+#   ver(1) flags(1) ms(4) rssi(1) noise_floor(1) mac(6) csi_len(2)
+HEADER_SIZE = 16
+
+# -------------------- SUBCARRIER FILTERING --------------------
+# Null and pilot subcarrier indices derived from actual captured data.
+# These are zero-amplitude or anomalous subcarriers that carry no useful info.
+NULL_SUBCARRIERS = set([
+    0,                                              # DC leakage / anomalous high amplitude
+    1,                                              # suspicious outlier (~11 vs neighbors ~22)
+    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,   # zero block 1
+    64,                                             # DC null
+    93, 94, 95, 96, 97, 98, 99,                    # zero block 2
+])
+
+# Subsample every Nth subcarrier from the remaining valid ones
+SUBSAMPLE_N = 3
+
+def filter_subcarriers(csi_complex):
+    """
+    1. Remove null/pilot subcarriers.
+    2. Subsample every Nth remaining subcarrier.
+    Returns filtered list of (original_index, complex_value) tuples.
+    """
+    valid = [(i, c) for i, c in enumerate(csi_complex) if i not in NULL_SUBCARRIERS]
+    subsampled = valid[::SUBSAMPLE_N]
+    return subsampled
 
 def parse_csi(csi_bytes):
     csi = []
@@ -29,79 +58,101 @@ def parse_bin_file(filepath):
 
     frames       = []
     skipped_macs = set()
-    i = 0
+    i            = 0
 
     while i < len(raw) - 2:
+        # Skip debug lines starting with '#'
+        if raw[i] == ord('#'):
+            while i < len(raw) and raw[i] != ord('\n'):
+                i += 1
+            i += 1
+            continue
+
         if raw[i] == 0xAA and raw[i+1] == 0x55:
             offset = i + 2
-            if offset + 15 > len(raw):
+            if offset + HEADER_SIZE > len(raw):
                 break
 
-            timestamp  = struct.unpack_from('<I', raw, offset+2)[0]
-            rssi       = struct.unpack_from('<b', raw, offset+6)[0]
-            mac        = ':'.join(f'{b:02X}' for b in raw[offset+7:offset+13])
-            csi_len    = struct.unpack_from('<H', raw, offset+13)[0]
-            header_end = offset + 15
+            # Parse 16-byte header
+            # ver(1) flags(1) ms(4) rssi(1) noise_floor(1) mac(6) csi_len(2)
+            timestamp   = struct.unpack_from('<I', raw, offset + 2)[0]
+            rssi        = struct.unpack_from('<b', raw, offset + 6)[0]
+            noise_floor = struct.unpack_from('<b', raw, offset + 7)[0]
+            mac         = ':'.join(f'{b:02X}' for b in raw[offset+8:offset+14])
+            csi_len     = struct.unpack_from('<H', raw, offset + 14)[0]
+            header_end  = offset + HEADER_SIZE
 
-            if header_end + csi_len + 2 > len(raw):
+            if header_end + csi_len > len(raw):
                 i += 1
                 continue
 
             # ---- MAC FILTER ----
             if mac not in SHOUTER_MACS:
                 skipped_macs.add(mac)
-                i = header_end + csi_len + 2
+                i = header_end + csi_len
                 continue
 
             csi_bytes   = raw[header_end:header_end + csi_len]
             csi_complex = parse_csi(csi_bytes)
-            amplitudes  = [abs(c) for c in csi_complex]
+
+            # Apply null removal + subsampling
+            filtered    = filter_subcarriers(csi_complex)
+            sc_indices  = [idx for idx, _ in filtered]
+            sc_complex  = [c   for _, c   in filtered]
+            amplitudes  = [abs(c) for c in sc_complex]
 
             frames.append({
                 'timestamp_ms': timestamp,
                 'rssi_dbm':     rssi,
+                'noise_floor':  noise_floor,
                 'mac':          mac,
-                'csi_complex':  csi_complex,
+                'sc_indices':   sc_indices,   # original subcarrier index for reference
+                'csi_complex':  sc_complex,
                 'amplitudes':   amplitudes,
             })
-            i = header_end + csi_len + 2
+            i = header_end + csi_len
         else:
             i += 1
 
     return frames, skipped_macs
 
 def is_file_stable(filepath, wait=1.5):
-    """Returns True if file size hasn't changed in `wait` seconds."""
     size_before = os.path.getsize(filepath)
     time.sleep(wait)
-    size_after  = os.path.getsize(filepath)
-    return size_before == size_after
+    return size_before == os.path.getsize(filepath)
 
 def process_file(filepath):
     print(f"\n{'='*50}")
     print(f"Processing: {os.path.basename(filepath)}")
 
     frames, skipped_macs = parse_bin_file(filepath)
-    print(f"Frames parsed : {len(frames)} (from known shouters)")
+    print(f"Frames parsed  : {len(frames)} (from known shouters)")
+    if frames:
+        print(f"Subcarriers    : {len(frames[0]['amplitudes'])} "
+              f"(after null removal + every {SUBSAMPLE_N}rd subsampled from 128)")
 
     if skipped_macs:
-        print(f"Skipped MACs  : {', '.join(skipped_macs)}")
+        print(f"Skipped MACs   : {', '.join(skipped_macs)}")
 
     for idx, frame in enumerate(frames):
-        avg_amp = sum(frame['amplitudes']) / len(frame['amplitudes']) if frame['amplitudes'] else 0
+        phases = [math.atan2(c.imag, c.real) for c in frame['csi_complex']]
+
         print(f"  Frame {idx:4d} | [{frame['timestamp_ms']}ms] "
               f"RSSI={frame['rssi_dbm']}dBm | "
+              f"NF={frame['noise_floor']}dBm | "
               f"MAC={frame['mac']} | "
-              f"Avg amplitude={avg_amp:.2f}")
+              f"Subcarriers={len(frame['amplitudes'])}")
+
+        for sc_idx, (orig_idx, amp, phase) in enumerate(zip(frame['sc_indices'], frame['amplitudes'], phases)):
+            print(f"    SC {sc_idx:3d} (orig={orig_idx:3d}) | Amp={amp:7.4f} | Phase={phase:8.4f} rad")
 
 # ---- Watch loop ----
 print(f"Watching {WATCH_DIR} for new .bin files...")
-print(f"Filtering to MACs: {', '.join(SHOUTER_MACS)}\n")
+print(f"Filtering to MACs: {', '.join(SHOUTER_MACS)}")
+print(f"Null subcarriers removed: {len(NULL_SUBCARRIERS)} | Subsample: every {SUBSAMPLE_N}rd\n")
 
 while True:
-    bin_files = sorted(glob.glob(os.path.join(WATCH_DIR, "*.bin")))
-
-    # Skip the most recent file — it may still be being written to by the writer
+    bin_files        = sorted(glob.glob(os.path.join(WATCH_DIR, "*.bin")))
     files_to_process = bin_files[:-1]
 
     for filepath in files_to_process:
