@@ -1,0 +1,760 @@
+"""
+glasshouse.py  —  Project Glass House  |  Combined CSI Writer + Processor
+==========================================================================
+Thread 1  (SerialWriter)  : Reads ESP32 serial stream, buffers complete
+                            frames, writes them to timestamped .bin files
+                            in BIN_DIR.  Frames are NEVER split across files.
+
+Thread 2  (BinProcessor)  : Watches BIN_DIR for stable .bin files, parses
+                            frames, buckets them, and appends rows to the
+                            run's data.csv.  Writes metadata.json on first
+                            file processed for a run.
+
+Usage
+-----
+  python glasshouse.py
+
+Zone prompt:
+  -1  → exit cleanly
+   0  → Empty room baseline (TC-001)
+  1-9 → Grid cell number
+
+Paths (edit the CONFIG block below if needed)
+-----
+  BIN_DIR         :  C:\\GlassHouse\\CSI_data          (incoming .bin files)
+  BASE_OUTPUT_DIR :  C:\\GlassHouse\\training_data     (run folders / CSV / JSON)
+"""
+
+import csv
+import glob
+import json
+import math
+import os
+import serial
+import struct
+import sys
+import threading
+import time
+from datetime import datetime
+
+import numpy as np
+
+# ============================================================
+#  CONFIG  — edit these if paths or serial port change
+# ============================================================
+BIN_DIR         = r"C:\GlassHouse\CSI_data"
+BASE_OUTPUT_DIR = r"C:\GlassHouse\training_data"
+
+PORT             = "COM3"       # Windows: "COM3"  |  Linux: "/dev/ttyUSB0"
+BAUD             = 921600
+INTERVAL_SECONDS = 5            # seconds of data per .bin file
+
+BUCKET_MS    = 50
+MIN_FRAMES   = 2
+NUM_SHOUTERS = 4
+SUBCARRIERS  = 128              # 256 byte CSI / 2 bytes per complex sample
+
+# ============================================================
+#  SHOUTER MACs  — add / uncomment as hardware is brought up
+# ============================================================
+SHOUTER_MACS = {
+    "68:FE:71:90:60:A0": 1,
+    # "68:FE:71:90:68:14": 2,
+    # "68:FE:71:90:6B:90": 3,
+    # "XX:XX:XX:XX:XX:XX": 4,
+}
+
+# ============================================================
+#  FRAME FORMAT  (must match Listener1S1L.ino exactly)
+#  magic(2)  ver(1)  flags(1)  ms(4)  rssi(1)  nf(1)  mac(6)  csi_len(2)
+#  HEADER_SIZE = 16 bytes  (after the 2-byte magic)
+# ============================================================
+HEADER_SIZE = 16
+MAGIC_0     = 0xAA
+MAGIC_1     = 0x55
+
+# Grid state descriptors (Section 3.1 of test process doc)
+GRID_STATES = ["Occupied", "Standing", "Seated", "Moving"]
+
+# ============================================================
+#  GLOBAL CAPTURE STATE  — shared between threads
+# ============================================================
+_capture_lock       = threading.Lock()
+_current_folder     = None      # absolute path of the active run folder
+_current_zone_info  = None      # dict from zones map
+_current_zone_id    = None      # int
+_csv_header         = None      # built once at startup
+_meta_written       = False     # True once metadata.json is written for this run
+_processed_files    = set()     # .bin files already handled by processor thread
+_stop_event         = threading.Event()
+
+
+# ============================================================
+#  SESSION METADATA
+# ============================================================
+class SessionMeta:
+    def __init__(self):
+        self.operator    = "Unknown"
+        self.subject_id  = "Subject_A"
+        self.room_width  = 24.0
+        self.room_height = 24.0
+        self.date        = datetime.now().strftime("%Y-%m-%d")
+
+    def prompt(self):
+        print("\n=== Session Setup ===")
+        op = input("Operator name        : ").strip()
+        if op:
+            self.operator = op
+        sid = input("Subject ID           : ").strip()
+        if sid:
+            self.subject_id = sid
+        w = input(f"Room width  (ft) [{self.room_width:.0f}] : ").strip()
+        h = input(f"Room height (ft) [{self.room_height:.0f}] : ").strip()
+        if w:
+            self.room_width  = float(w)
+        if h:
+            self.room_height = float(h)
+        print(f"\nSession ready  —  Operator: {self.operator}  "
+              f"Subject: {self.subject_id}  "
+              f"Room: {self.room_width:.0f}x{self.room_height:.0f}ft  "
+              f"Date: {self.date}\n")
+
+
+# ============================================================
+#  ZONE / FOLDER HELPERS
+# ============================================================
+def build_zone_map(cols, rows, width_ft, height_ft):
+    zone_w = width_ft  / cols
+    zone_h = height_ft / rows
+    zones  = {}
+    for r in range(rows):
+        for c in range(cols):
+            zid = r * cols + c + 1
+            zones[zid] = {
+                "label":   f"zone_{zid}",
+                "row":     r + 1,
+                "col":     c + 1,
+                "x_start": round(c * zone_w,       2),
+                "x_end":   round((c + 1) * zone_w, 2),
+                "y_start": round(r * zone_h,        2),
+                "y_end":   round((r + 1) * zone_h,  2),
+            }
+    return zones
+
+def print_grid(zones, cols, rows, width_ft, height_ft):
+    print("\n--- Zone Map ---")
+    print(f"Room: {width_ft:.0f}ft x {height_ft:.0f}ft  |  Grid: {cols}x{rows}\n")
+    for r in range(1, rows + 1):
+        row_str = ""
+        for c in range(1, cols + 1):
+            zid = (r - 1) * cols + c
+            z   = zones[zid]
+            row_str += (f"[Zone {zid:2d} "
+                        f"({z['x_start']:.0f}-{z['x_end']:.0f}ft, "
+                        f"{z['y_start']:.0f}-{z['y_end']:.0f}ft)]  ")
+        print(row_str)
+    print()
+
+def build_grid_state_token(zone_input, state_key):
+    """Empty → 'Empty',  zone 5 Occupied → 'Grid5Occupied'"""
+    if zone_input == 0:
+        return "Empty"
+    return f"Grid{zone_input}{state_key}"
+
+def build_folder_name(session, grid_state_token, duration_s, run_index):
+    room  = f"{session.room_width:.0f}x{session.room_height:.0f}Room"
+    run   = f"Run{run_index:02d}"
+    return f"{room}_{grid_state_token}_{duration_s}Seconds_{run}"
+
+def create_run_folder(session, grid_state_token, duration_s, run_index):
+    name = build_folder_name(session, grid_state_token, duration_s, run_index)
+    path = os.path.join(BASE_OUTPUT_DIR, name)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+def write_metadata_json(folder_path, session, grid_state_token,
+                        duration_s, run_index, posture, zone_id):
+    meta = {
+        "room_width_ft":    session.room_width,
+        "room_height_ft":   session.room_height,
+        "grid_state":       grid_state_token,
+        "duration_seconds": duration_s,
+        "run_index":        run_index,
+        "date":             session.date,
+        "operator":         session.operator,
+        "subject_id":       session.subject_id,
+        "posture":          posture,
+        "zone_id":          zone_id,
+        "shouters":         [f"ESP32_S{s}" for s in range(1, NUM_SHOUTERS + 1)],
+        "notes":            "",
+    }
+    with open(os.path.join(folder_path, "metadata.json"), "w") as f:
+        json.dump(meta, f, indent=2)
+
+
+# ============================================================
+#  CAPTURE PROMPTS
+# ============================================================
+def prompt_capture_params(zones):
+    """
+    Returns (zone_input, state_key, posture, duration_s, run_index)
+    or None if -1 entered (exit).
+    """
+    print("\n--- New Capture ---")
+    print("Zone:  0=Empty  1-9=Grid cell  -1=Exit")
+
+    # Zone
+    while True:
+        try:
+            zone_input = int(input("Enter zone number: ").strip())
+        except ValueError:
+            print("  Please enter an integer.")
+            continue
+        if zone_input == -1:
+            return None
+        if zone_input == 0:
+            break
+        if zone_input in zones:
+            break
+        print(f"  Invalid. Choose -1, 0, or one of {list(zones.keys())}")
+
+    # Grid state + posture (only when a person is present)
+    state_key = "Occupied"
+    posture   = "center"
+    if zone_input != 0:
+        print("\nGrid states:")
+        for i, s in enumerate(GRID_STATES, 1):
+            print(f"  {i}. {s}")
+        while True:
+            try:
+                choice    = int(input("Select state (default 1): ").strip() or "1")
+                state_key = GRID_STATES[choice - 1]
+                break
+            except (ValueError, IndexError):
+                print(f"  Choose 1-{len(GRID_STATES)}")
+        posture_map = {"Occupied": "center", "Standing": "standing",
+                       "Seated": "seated",   "Moving":   "moving"}
+        posture = posture_map.get(state_key, "center")
+
+    # Duration
+    while True:
+        try:
+            duration_s = int(input("Capture duration seconds [10]: ").strip() or "10")
+            if duration_s > 0:
+                break
+            print("  Must be > 0.")
+        except ValueError:
+            print("  Enter an integer.")
+
+    # Run index
+    while True:
+        try:
+            run_index = int(input("Run index [1]: ").strip() or "1")
+            if run_index > 0:
+                break
+            print("  Must be >= 1.")
+        except ValueError:
+            print("  Enter a positive integer.")
+
+    return zone_input, state_key, posture, duration_s, run_index
+
+
+# ============================================================
+#  FRAME PARSER  (robust — tolerates partial frames at EOF)
+# ============================================================
+def parse_bin_file(filepath):
+    """
+    Parse a .bin file into a list of frame dicts.
+    - Skips '#' debug lines safely regardless of byte position.
+    - Drops incomplete frames at end of file cleanly (no corruption).
+    """
+    with open(filepath, "rb") as f:
+        raw = f.read()
+
+    frames = []
+    i      = 0
+    n      = len(raw)
+
+    while i < n - 1:
+
+        # --- Skip firmware debug lines (start with '#') ---
+        if raw[i] == ord('#'):
+            while i < n and raw[i] != ord('\n'):
+                i += 1
+            i += 1
+            continue
+
+        # --- Look for magic bytes ---
+        if not (raw[i] == MAGIC_0 and raw[i + 1] == MAGIC_1):
+            i += 1
+            continue
+
+        offset = i + 2  # byte after magic
+
+        # Need full header
+        if offset + HEADER_SIZE > n:
+            break   # incomplete header at EOF — drop cleanly
+
+        # Parse 16-byte header
+        # ver(1) flags(1) ms(4) rssi(1) nf(1) mac(6) csi_len(2)
+        timestamp   = struct.unpack_from('<I', raw, offset + 2)[0]
+        rssi        = struct.unpack_from('<b', raw, offset + 6)[0]
+        noise_floor = struct.unpack_from('<b', raw, offset + 7)[0]
+        mac         = ':'.join(f'{b:02X}' for b in raw[offset + 8: offset + 14])
+        csi_len     = struct.unpack_from('<H', raw, offset + 14)[0]
+        payload_start = offset + HEADER_SIZE
+
+        # Need full CSI payload
+        if payload_start + csi_len > n:
+            break   # incomplete payload at EOF — drop cleanly
+
+        # Advance past this frame regardless of whether we keep it
+        i = payload_start + csi_len
+
+        # Filter unknown MACs
+        if mac not in SHOUTER_MACS:
+            continue
+
+        csi_bytes   = raw[payload_start: payload_start + csi_len]
+        csi_complex = _parse_csi_bytes(csi_bytes)
+        features    = _extract_features(csi_complex, rssi, noise_floor)
+
+        frames.append({
+            "timestamp_ms":   timestamp,
+            "mac":            mac,
+            "shouter_id":     SHOUTER_MACS[mac],
+            **features,
+        })
+
+    return frames
+
+
+# ============================================================
+#  CSI FEATURE EXTRACTION
+# ============================================================
+def _parse_csi_bytes(csi_bytes):
+    """ESP32 stores pairs as [imag, real] per subcarrier."""
+    csi = []
+    for j in range(0, len(csi_bytes) - 1, 2):
+        imag = struct.unpack('b', bytes([csi_bytes[j]]))[0]
+        real = struct.unpack('b', bytes([csi_bytes[j + 1]]))[0]
+        csi.append(complex(real, imag))
+    return csi
+
+def _compute_snr(amplitudes, noise_floor_dbm):
+    noise = float(noise_floor_dbm)
+    return [round(20.0 * math.log10(max(a, 1e-6)) - noise, 4) for a in amplitudes]
+
+def _normalize_amplitude(amplitudes):
+    arr = np.array(amplitudes, dtype=float)
+    rng = arr.max() - arr.min()
+    if rng < 1e-9:
+        return list(np.zeros_like(arr))
+    return list((arr - arr.min()) / rng)
+
+def _extract_features(csi_complex, rssi, noise_floor):
+    amplitudes = [abs(c)                     for c in csi_complex]
+    phases     = [math.atan2(c.imag, c.real) for c in csi_complex]
+    unwrapped  = list(np.unwrap(phases))
+    return {
+        "amplitudes":     amplitudes,
+        "phases":         unwrapped,
+        "phase_diff":     list(np.diff(unwrapped)),       # CFO-removed, N-1 values
+        "amp_normalized": _normalize_amplitude(amplitudes),
+        "snr":            _compute_snr(amplitudes, noise_floor),
+        "rssi":           rssi,
+        "noise_floor":    noise_floor,
+    }
+
+
+# ============================================================
+#  BUCKETING
+# ============================================================
+def bucket_frames(frames):
+    if not frames:
+        return []
+
+    frames  = sorted(frames, key=lambda f: f["timestamp_ms"])
+    t_start = frames[0]["timestamp_ms"]
+    buckets = {}
+
+    for frame in frames:
+        bid = (frame["timestamp_ms"] - t_start) // BUCKET_MS
+        buckets.setdefault(bid, {s: [] for s in range(1, NUM_SHOUTERS + 1)})
+        buckets[bid][frame["shouter_id"]].append(frame)
+
+    samples = []
+    for bid in sorted(buckets):
+        bucket   = buckets[bid]
+        t_bucket = t_start + bid * BUCKET_MS
+        active   = sum(1 for s in bucket if bucket[s])
+
+        if active < MIN_FRAMES:
+            continue
+
+        sample = {"timestamp_ms": t_bucket}
+
+        for sid in range(1, NUM_SHOUTERS + 1):
+            px        = f"s{sid}"
+            frames_in = bucket[sid]
+
+            if frames_in:
+                avg_amp        = np.mean([f["amplitudes"]     for f in frames_in], axis=0)
+                avg_phase      = np.mean([f["phases"]         for f in frames_in], axis=0)
+                avg_phase_diff = np.mean([f["phase_diff"]     for f in frames_in], axis=0)
+                avg_amp_norm   = np.mean([f["amp_normalized"] for f in frames_in], axis=0)
+                avg_snr        = np.mean([f["snr"]            for f in frames_in], axis=0)
+                avg_rssi       = np.mean([f["rssi"]           for f in frames_in])
+                avg_nf         = np.mean([f["noise_floor"]    for f in frames_in])
+
+                for sc in range(len(avg_amp)):
+                    sample[f"{px}_amp_{sc}"]      = round(float(avg_amp[sc]),      4)
+                    sample[f"{px}_amp_norm_{sc}"] = round(float(avg_amp_norm[sc]), 4)
+                    sample[f"{px}_phase_{sc}"]    = round(float(avg_phase[sc]),    4)
+                    sample[f"{px}_snr_{sc}"]      = round(float(avg_snr[sc]),      4)
+                for sc in range(len(avg_phase_diff)):
+                    sample[f"{px}_pdiff_{sc}"]    = round(float(avg_phase_diff[sc]), 4)
+                sample[f"{px}_rssi"]        = round(float(avg_rssi), 2)
+                sample[f"{px}_noise_floor"] = round(float(avg_nf),   2)
+
+            else:
+                # Shouter not heard this bucket — fill NaN to keep columns consistent
+                for sc in range(SUBCARRIERS):
+                    sample[f"{px}_amp_{sc}"]      = float("nan")
+                    sample[f"{px}_amp_norm_{sc}"] = float("nan")
+                    sample[f"{px}_phase_{sc}"]    = float("nan")
+                    sample[f"{px}_snr_{sc}"]      = float("nan")
+                for sc in range(SUBCARRIERS - 1):
+                    sample[f"{px}_pdiff_{sc}"]    = float("nan")
+                sample[f"{px}_rssi"]        = float("nan")
+                sample[f"{px}_noise_floor"] = float("nan")
+
+        samples.append(sample)
+
+    return samples
+
+
+# ============================================================
+#  CSV
+# ============================================================
+def build_csv_header():
+    header = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
+    for s in range(1, NUM_SHOUTERS + 1):
+        px = f"s{s}"
+        for sc in range(SUBCARRIERS):
+            header.append(f"{px}_amp_{sc}")
+        for sc in range(SUBCARRIERS):
+            header.append(f"{px}_amp_norm_{sc}")
+        for sc in range(SUBCARRIERS):
+            header.append(f"{px}_phase_{sc}")
+        for sc in range(SUBCARRIERS - 1):
+            header.append(f"{px}_pdiff_{sc}")
+        for sc in range(SUBCARRIERS):
+            header.append(f"{px}_snr_{sc}")
+        header.append(f"{px}_rssi")
+        header.append(f"{px}_noise_floor")
+    return header
+
+def append_samples_to_csv(samples, zone_info, zone_id, folder_path, header):
+    csv_path   = os.path.join(folder_path, "data.csv")
+    file_exists = os.path.exists(csv_path)
+    with open(csv_path, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        if not file_exists:
+            writer.writeheader()
+        for sample in samples:
+            row             = {k: sample.get(k, float("nan")) for k in header}
+            row["label"]    = zone_info["label"]
+            row["zone_id"]  = zone_id
+            row["grid_row"] = zone_info["row"]
+            row["grid_col"] = zone_info["col"]
+            writer.writerow(row)
+
+
+# ============================================================
+#  THREAD 1 — SERIAL WRITER
+#  Reads ESP32 serial stream, assembles complete frames in memory,
+#  and flushes them to a new .bin file every INTERVAL_SECONDS.
+#  Frames are NEVER split across files.
+# ============================================================
+class SerialWriter(threading.Thread):
+    def __init__(self):
+        super().__init__(name="SerialWriter", daemon=True)
+        self._ser     = None
+        self._buf     = bytearray()  # raw bytes from serial
+        self._frames  = bytearray()  # complete frames ready to write
+
+    def _open_serial(self):
+        ser          = serial.Serial()
+        ser.port     = PORT
+        ser.baudrate = BAUD
+        ser.timeout  = 1
+        ser.dtr      = False   # prevent ESP32 reset on connect
+        ser.rts      = False
+        ser.open()
+        time.sleep(0.5)
+        ser.reset_input_buffer()
+        return ser
+
+    def _wait_for_ready(self, ser):
+        print("  [Writer] Waiting for ESP32 LISTENER_AP_READY signal...")
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            line = ser.readline()
+            if b"LISTENER_AP_READY" in line:
+                print("  [Writer] ESP32 ready.")
+                return
+        print("  [Writer] No ready signal — ESP32 likely already running. Continuing.")
+
+    def _extract_complete_frames(self, raw_chunk):
+        """
+        Append raw_chunk to internal buffer, then extract every complete frame.
+        Complete frames are moved to _frames; remainder stays in _buf.
+        Debug '#' lines are forwarded as-is (harmless in .bin).
+        """
+        self._buf.extend(raw_chunk)
+        i = 0
+        n = len(self._buf)
+
+        while i < n - 1:
+
+            # Pass through '#' debug lines verbatim
+            if self._buf[i] == ord('#'):
+                j = i
+                while j < n and self._buf[j] != ord('\n'):
+                    j += 1
+                if j >= n:
+                    break           # incomplete debug line — wait for more bytes
+                j += 1             # include the newline
+                self._frames.extend(self._buf[i:j])
+                i = j
+                continue
+
+            # Look for magic
+            if not (self._buf[i] == MAGIC_0 and self._buf[i + 1] == MAGIC_1):
+                i += 1
+                continue
+
+            offset = i + 2
+            # Wait until we have the full header
+            if offset + HEADER_SIZE > n:
+                break
+
+            csi_len       = struct.unpack_from('<H', self._buf, offset + 14)[0]
+            payload_start = offset + HEADER_SIZE
+            frame_end     = payload_start + csi_len
+
+            # Wait until we have the full payload
+            if frame_end > n:
+                break
+
+            # Complete frame — move to output buffer
+            self._frames.extend(self._buf[i:frame_end])
+            i = frame_end
+
+        # Keep only the unconsumed remainder
+        self._buf = self._buf[i:]
+
+    def run(self):
+        global _stop_event
+
+        try:
+            self._ser = self._open_serial()
+        except serial.SerialException as e:
+            print(f"  [Writer] ERROR opening serial port {PORT}: {e}")
+            _stop_event.set()
+            return
+
+        self._wait_for_ready(self._ser)
+
+        print(f"  [Writer] Recording in {INTERVAL_SECONDS}s intervals → {BIN_DIR}\n")
+
+        try:
+            while not _stop_event.is_set():
+                self._frames  = bytearray()
+                interval_end  = time.time() + INTERVAL_SECONDS
+
+                while time.time() < interval_end and not _stop_event.is_set():
+                    try:
+                        chunk = self._ser.read(512)
+                        if chunk:
+                            self._extract_complete_frames(chunk)
+                    except serial.SerialException as e:
+                        print(f"  [Writer] Serial error: {e}")
+                        _stop_event.set()
+                        break
+
+                # Write the accumulated complete frames to a new .bin file
+                if self._frames:
+                    ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filepath = os.path.join(BIN_DIR, f"csi_{ts}.bin")
+                    with open(filepath, "wb") as f:
+                        f.write(self._frames)
+                    print(f"  [Writer] Saved {filepath}  ({len(self._frames)} bytes)")
+
+        finally:
+            self._ser.dtr = False
+            self._ser.rts = False
+            self._ser.close()
+            print("  [Writer] Serial port closed.")
+
+
+# ============================================================
+#  THREAD 2 — BIN PROCESSOR
+#  Watches BIN_DIR, parses complete .bin files, appends to CSV.
+# ============================================================
+class BinProcessor(threading.Thread):
+    def __init__(self):
+        super().__init__(name="BinProcessor", daemon=True)
+
+    def _is_stable(self, filepath, wait=1.5):
+        """File is stable when its size hasn't changed after wait seconds."""
+        size_before = os.path.getsize(filepath)
+        time.sleep(wait)
+        return size_before == os.path.getsize(filepath)
+
+    def _process_file(self, filepath):
+        global _current_folder, _current_zone_info, _current_zone_id
+        global _csv_header, _meta_written
+
+        if os.path.getsize(filepath) < 20:
+            print(f"  [Processor] Skipping {os.path.basename(filepath)} — too small.")
+            return 0
+
+        frames  = parse_bin_file(filepath)
+        samples = bucket_frames(frames)
+
+        if not samples:
+            # Report frame count to help diagnose MAC / header issues
+            print(f"  [Processor] No valid samples in {os.path.basename(filepath)}"
+                  f"  (raw frames found: {len(frames)})")
+            return 0
+
+        with _capture_lock:
+            folder    = _current_folder
+            zone_info = _current_zone_info
+            zone_id   = _current_zone_id
+            header    = _csv_header
+            written   = _meta_written
+
+        if folder is None:
+            # No active capture session — skip
+            return 0
+
+        # Write metadata.json once per run folder
+        if not written:
+            with _capture_lock:
+                _meta_written = True
+            # metadata was already written by prompt handler — nothing to do here
+
+        append_samples_to_csv(samples, zone_info, zone_id, folder, header)
+        print(f"  [Processor] {os.path.basename(filepath)}"
+              f"  →  {len(samples)} samples  (frames={len(frames)})"
+              f"  →  {os.path.basename(folder)}")
+        return len(samples)
+
+    def run(self):
+        global _processed_files, _stop_event
+
+        print(f"  [Processor] Watching {BIN_DIR} for .bin files...\n")
+
+        while not _stop_event.is_set():
+            bin_files = sorted(glob.glob(os.path.join(BIN_DIR, "*.bin")))
+
+            # Skip the newest file — writer may still be writing to it
+            files_to_process = bin_files[:-1] if len(bin_files) > 1 else []
+
+            for filepath in files_to_process:
+                if filepath not in _processed_files:
+                    if self._is_stable(filepath):
+                        self._process_file(filepath)
+                        _processed_files.add(filepath)
+
+            time.sleep(2)
+
+
+# ============================================================
+#  MAIN
+# ============================================================
+if __name__ == "__main__":
+
+    # Ensure directories exist
+    os.makedirs(BIN_DIR,         exist_ok=True)
+    os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
+
+    # One-time session metadata
+    session = SessionMeta()
+    session.prompt()
+
+    zones = build_zone_map(3, 3, session.room_width, session.room_height)
+    _csv_header = build_csv_header()
+
+    print_grid(zones, 3, 3, session.room_width, session.room_height)
+
+    print("=== Glass House — CSI Data Collector ===")
+    print(f"  Serial port     : {PORT}  @  {BAUD} baud")
+    print(f"  Bin interval    : {INTERVAL_SECONDS}s per file  →  {BIN_DIR}")
+    print(f"  Training output : {BASE_OUTPUT_DIR}")
+    print(f"  Bucket size     : {BUCKET_MS}ms")
+    print(f"  Subcarriers     : {SUBCARRIERS} per shouter")
+    print(f"  Shouters active : {len(SHOUTER_MACS)} of {NUM_SHOUTERS}\n")
+
+    # Start background threads
+    writer    = SerialWriter()
+    processor = BinProcessor()
+    writer.start()
+    processor.start()
+
+    # ---- Main capture loop (UI thread) ----
+    while True:
+        params = prompt_capture_params(zones)
+
+        # -1 entered — stop threads and exit
+        if params is None:
+            print("\nStopping threads...")
+            _stop_event.set()
+            writer.join(timeout=INTERVAL_SECONDS + 2)
+            processor.join(timeout=4)
+            print("Session complete. Goodbye.")
+            sys.exit(0)
+
+        zone_input, state_key, posture, duration_s, run_index = params
+        grid_state_token = build_grid_state_token(zone_input, state_key)
+
+        if zone_input == 0:
+            zone_info = {"label": "empty", "row": 0, "col": 0}
+        else:
+            zone_info = zones[zone_input]
+
+        # Build run folder + metadata.json
+        folder_path = create_run_folder(session, grid_state_token, duration_s, run_index)
+        write_metadata_json(folder_path, session, grid_state_token,
+                            duration_s, run_index, posture, zone_input)
+
+        # Update shared capture state for the processor thread
+        with _capture_lock:
+            _current_folder    = folder_path
+            _current_zone_info = zone_info
+            _current_zone_id   = zone_input
+            _meta_written      = True
+            _processed_files   = set()   # reset so old .bin files are not reprocessed
+
+        folder_name = os.path.basename(folder_path)
+        print(f"\n  Run folder  : {folder_path}")
+        print(f"  Grid state  : {grid_state_token}  |  Posture: {posture}"
+              f"  |  Duration: {duration_s}s  |  Run: {run_index:02d}")
+        print(f"  Capturing   — press Ctrl+C to stop this run and start a new one.\n")
+
+        # Hold until Ctrl+C — writer and processor run in background
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print(f"\n  Run stopped  →  {folder_name}")
+            print("  Select next capture or enter -1 to exit.\n")
+
+            # Clear active folder so processor ignores files between runs
+            with _capture_lock:
+                _current_folder    = None
+                _current_zone_info = None
+                _current_zone_id   = None
