@@ -50,30 +50,38 @@ Shouters are placed at the four corners of the physical room. Each zone covers r
 ## Repository Structure
 
 ```
-glass_house/
+GlassHouse/
 │
-├── firmware/                  # ESP32 firmware (C/C++, Arduino framework)
-│   ├── shouter/               # Broadcast logic for the 4 shouter nodes
-│   └── listener/              # RSSI/CSI capture + serial transmission
+├── firmware/                      # ESP32 firmware (C/C++, PlatformIO) — in progress
+│   ├── shouter/                   # Broadcast logic for the 4 shouter nodes
+│   └── listener/                  # RSSI/CSI capture + serial transmission
 │
-├── ml/                        # Raspberry Pi ML pipeline (Python)
-│   ├── config.py              # All paths, ports, and parameters — edit here first
-│   ├── ingest.py              # Raw CSV loader and zone label parser
-│   ├── features.py            # Sliding-window RSSI/CSI feature engineering
-│   ├── preprocess.py          # Orchestrates ingest → features → features.csv
-│   ├── train.py               # Model training, cross-validation, evaluation
-│   └── inference.py           # Live serial inference and prediction logging
+├── ml/                            # Raspberry Pi ML pipeline (Python) — active
+│   ├── config.py                  # All paths, ports, and parameters — edit here first
+│   ├── ingest.py                  # Raw CSV loader and zone label parser
+│   ├── features.py                # Sliding-window RSSI/CSI feature engineering
+│   ├── preprocess.py              # Orchestrates ingest → features → features.csv
+│   ├── train.py                   # Model training, cross-validation, evaluation
+│   └── inference.py               # Live serial inference and prediction logging
+│
+├── unused_prototypes/             # Archived prototype code — see Prototype History below
+│   ├── 1Shout1Listen/             # Proto 1: single-shouter CSI proof of concept
+│   ├── Arduino_IDE/               # Proto 2: Arduino IDE multi-role firmware sketches
+│   ├── Brain_Proto_1/             # Proto 3: PlatformIO listener + brain firmware
+│   ├── CSIBin3_3/                 # Proto 4: raw CSI binary capture samples
+│   ├── Nodes_Proto_1/             # Proto 5: PlatformIO node firmware skeleton
+│   └── Py_Processing_Proto_1/     # Proto 6: Python CSI/RSSI processing scripts
 │
 ├── data/
-│   ├── raw/                   # Collected run folders (gitignored — large)
-│   └── processed/             # features.csv output (gitignored)
+│   ├── raw/                       # Collected run folders (gitignored — large)
+│   └── processed/                 # features.csv output (gitignored)
 │
-├── models/                    # Saved .joblib model files (gitignored)
-├── logs/                      # Inference prediction logs (gitignored)
+├── models/                        # Saved .joblib model files (gitignored)
+├── logs/                          # Inference prediction logs (gitignored)
 │
 └── docs/
-    ├── ML_Architecture.docx   # ML pipeline architecture reference
-    └── TestProcess.docx       # Data collection test process document
+    ├── ML_Architecture.docx       # ML pipeline architecture reference
+    └── TestProcess.docx           # Data collection test process document
 ```
 
 ---
@@ -176,7 +184,9 @@ CV_FOLDS     = 5                # Stratified k-fold cross-validation
 
 ### Firmware
 
-ESP32 firmware is written in C/C++ using the Arduino framework. See `firmware/shouter/` and `firmware/listener/` for build instructions.
+ESP32 firmware is written in C/C++ using the Arduino framework, built with PlatformIO. Active firmware lives in `firmware/` — the project structure follows the template established in `unused_prototypes/Nodes_Proto_1/`.
+
+> **CSI extraction** requires a custom ESP32 patch or library (e.g., ESP32-CSI-Tool). See `firmware/listener/` for setup details once added.
 
 > **CSI extraction** requires a custom ESP32 patch or library (e.g., ESP32-CSI-Tool). See `firmware/listener/README.md` for setup details.
 
@@ -213,7 +223,7 @@ Avoid collecting data during high Wi-Fi traffic periods. Test subjects must not 
 |---|---|
 | Signal Lead | ESP32 firmware, CSI extraction, serial output format, data collection |
 | ML Lead | Feature engineering, model training, inference pipeline, Raspberry Pi deployment |
-| *(+ 2 members)* | Architecture, documentation, integration, testing |
+| Hardware Leads | Testing and Physical Device Prototyping |
 
 ---
 
@@ -234,11 +244,115 @@ pip install scikit-learn pandas numpy pyserial joblib
 ```
 
 ### ESP32 Firmware
-- Arduino framework (via PlatformIO or Arduino IDE)
+- Arduino framework (via Arduino IDE)
 - ESP32-CSI-Tool (or equivalent CSI patch) — see `firmware/listener/`
 
 ---
 
-## License
+## Prototype History
+
+All prototype code is preserved in `unused_prototypes/` for reference and documentation purposes. These folders represent the iterative development path taken before the current architecture was finalized. They are **not part of the active pipeline** and should not be used for data collection or inference.
+
+---
+
+### `1Shout1Listen/` — CSI Proof of Concept
+
+**Purpose:** First end-to-end test of the CSI capture pipeline with a single shouter and single listener.
+
+| File | Description |
+|---|---|
+| `Listener1S1L/` | Arduino firmware for the listener ESP32 in the 1-shouter configuration |
+| `Shouter1S1L/` | Arduino firmware for the single shouter ESP32 |
+| `csiDataCollector.py` | Python script to collect CSI data from the listener over serial |
+| `readerCSI.py` | Reads and parses raw CSI output from the serial stream |
+| `writerCSI.py` | Writes CSI data to file for offline inspection |
+
+**What we learned:** Validated that CSI data could be captured and written to disk from an ESP32. Identified serial throughput limits and the need for MAC address filtering when multiple shouters are present.
+
+---
+
+### `Arduino_IDE/` — Multi-Role Firmware Sketches
+
+**Purpose:** Early firmware exploration using the Arduino IDE directly, covering all ESP32 roles in a single folder before the project was restructured around PlatformIO.
+
+| File | Description |
+|---|---|
+| `ListenerAP/` | Listener firmware subfolder (Access Point mode) |
+| `ShouterAP/` | Shouter firmware subfolder (Access Point mode) |
+| `Brain.ino` | Early Raspberry Pi-side logic sketch (later moved to Python) |
+| `ListenerESP.ino` | Listener ESP32 sketch — RSSI + CSI capture |
+| `MasterESP.ino` | Master/coordinator role sketch |
+| `Node.ino` | Generic node role sketch |
+| `ShouterESP.ino` | Shouter broadcast sketch |
+| `SlaveESP.ino` | Slave/subordinate role sketch |
+
+**What we learned:** Confirmed the basic shouter/listener broadcast model. The MAC address filter was added here after discovering the listener was processing packets from non-shouter devices. Role naming (Master/Slave) was later revised to Shouter/Listener.
+
+---
+
+### `Brain_Proto_1/` — PlatformIO Listener + Brain Firmware
+
+**Purpose:** First structured PlatformIO project for the "Brain" (Raspberry Pi processing logic) and listener firmware, with proper `src/`, `include/`, `lib/`, and `test/` layout.
+
+| File/Folder | Description |
+|---|---|
+| `src/` | Main source files for the brain/listener logic |
+| `include/` | Header files |
+| `lib/` | Local libraries |
+| `test/` | Unit test stubs |
+| `platformio.ini` | PlatformIO build configuration |
+
+**What we learned:** Established the PlatformIO project structure that `Nodes_Proto_1` is based on. Commit history shows redundant brain scanning logic was removed and the firmware was updated to scan for all devices in range — a key step toward the 4-shouter architecture.
+
+---
+
+### `CSIBin3_3/` — Raw CSI Binary Capture Samples
+
+**Purpose:** A collection of raw `.bin` files captured directly from the listener ESP32 during early CSI experiments. Files are timestamped at collection time (e.g. `csi_20260305_000048.bin`).
+
+**Contents:** Raw binary CSI capture files — no source code. These are the earliest real signal captures from the hardware and were used to validate that CSI data was being recorded correctly before any parsing pipeline existed.
+
+**What we learned:** Confirmed the binary CSI output format from the ESP32. These files informed the design of the parsing logic in `Py_Processing_Proto_1` and will inform the final `features.py` CSI implementation once the format is locked.
+
+---
+
+### `Nodes_Proto_1/` — PlatformIO Node Firmware Skeleton
+
+**Purpose:** A clean PlatformIO project scaffold for the ESP32 node (shouter/listener) firmware, set up using VS Code + PlatformIO IDE.
+
+| File/Folder | Description |
+|---|---|
+| `src/` | Node firmware source |
+| `include/` | Header files |
+| `lib/` | Local libraries |
+| `test/` | Test stubs |
+| `platformio.ini` | PlatformIO build and environment configuration |
+| `Py_Code.code-workspace` | VS Code workspace file |
+
+**What we learned:** Established the canonical PlatformIO project structure for ESP32 firmware development. This is the template the active firmware will be built on.
+
+---
+
+### `Py_Processing_Proto_1/` — Python CSI/RSSI Processing Scripts
+
+**Purpose:** The most active prototype folder — a collection of Python scripts developed iteratively to read, parse, filter, and write CSI and RSSI data from the listener ESP32. This is the direct predecessor to the `ml/` pipeline.
+
+| File | Description |
+|---|---|
+| `Read_CSI_RSSI_Frombin.py` | Reads CSI and RSSI values out of raw `.bin` files (e.g. from `CSIBin3_3/`) |
+| `createCSV.py` | Converts parsed CSI/RSSI data into a structured CSV file |
+| `read_debugger.py` | Debug reader — prints raw serial output from the listener for inspection |
+| `readerCSI.py` | Reads CSI frames from the serial stream |
+| `readerMACFiltered.py` | MAC address filtered reader — only processes packets from known shouter MACs |
+| `removingBinFilesTest.py` | Test script for cleaning up raw `.bin` files after processing |
+| `write_CSI_RSSI_ToFile.py` | Writes combined CSI + RSSI data to file at 460800 baud |
+| `writerA.py` | Alternate writer variant |
+| `writerCSI.py` | CSI-specific serial writer |
+
+**What we learned:** The baud rate needed to be increased to 912600 to reliably capture CSI data without dropping frames. MAC filtering is essential — without it the listener processes packets from every Wi-Fi device in the environment. The `createCSV.py` approach directly informed the data pipeline design in `ml/ingest.py`.
+
+---
+
+
 
 Academic project — Computer Engineering Senior Design. See individual source files for attribution.
