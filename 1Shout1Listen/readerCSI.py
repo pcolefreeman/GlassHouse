@@ -11,7 +11,7 @@ PROCESSED = set()
 SHOUTER_MACS = { # MAC address/ Node ID
     "68:FE:71:90:60:A0": 1,   
     "68:FE:71:90:68:14": 2,
-    # "68:FE:71:90:6B:90": 3,
+    "68:FE:71:90:6B:90": 3,
     # "XX:XX:XX:XX:XX:XX": 4,
 }
 

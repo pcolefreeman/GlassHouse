@@ -12,28 +12,28 @@ from datetime import datetime
 # ================================================================================
 # BASE OUTPUT DIRECTORY — all session folders created here automatically
 # ================================================================================
-BASE_OUTPUT_DIR = r"C:\GlassHouse\training_data"
+BASE_OUTPUT_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\training_data" # ***  change for your computer
 
 # -------------------- CAPTURE CONFIG --------------------
-WATCH_DIR   = r"C:\GlassHouse\CSI_data"   # directory to watch for incoming .bin files
+WATCH_DIR   = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data"   #  *** directory to watch for incoming .bin files
 BUCKET_MS   = 50
 MIN_FRAMES  = 2
 
 # -------------------- ROOM CONFIG (defaults, overridden by session prompt) ------
 ROOM_WIDTH_FT  = 24.0
-ROOM_HEIGHT_FT = 24.0
+ROOM_LENGTH_FT = 24.0
 GRID_COLS      = 3
 GRID_ROWS      = 3
 
 # -------------------- SHOUTER MACs --------------------
 SHOUTER_MACS = {
     "68:FE:71:90:60:A0": 1,
-    # "68:FE:71:90:68:14": 2,
-    # "68:FE:71:90:6B:90": 3,
+    "68:FE:71:90:68:14": 2,
+    "68:FE:71:90:6B:90": 3,
     # "XX:XX:XX:XX:XX:XX": 4,
 }
 
-NUM_SHOUTERS = 4
+NUM_SHOUTERS = 4 # *** change for system 
 SUBCARRIERS  = 128  # 256 byte CSI / 2 bytes per complex sample
 
 # -------------------- FRAME FORMAT --------------------
@@ -62,7 +62,7 @@ class SessionMeta:
         self.operator    = ""
         self.subject_id  = ""
         self.room_width  = ROOM_WIDTH_FT
-        self.room_height = ROOM_HEIGHT_FT
+        self.room_length = ROOM_LENGTH_FT
         self.date        = datetime.now().strftime("%Y-%m-%d")
 
     def prompt(self):
@@ -70,13 +70,13 @@ class SessionMeta:
         self.operator    = input("Operator name       : ").strip() or "Unknown"
         self.subject_id  = input("Subject ID          : ").strip() or "Subject_A"
         w = input(f"Room width  (ft) [{self.room_width:.0f}] : ").strip()
-        h = input(f"Room height (ft) [{self.room_height:.0f}] : ").strip()
+        h = input(f"Room length (ft) [{self.room_length:.0f}] : ").strip()
         if w:
             self.room_width  = float(w)
         if h:
-            self.room_height = float(h)
+            self.room_length = float(h)
         print(f"\nSession started  —  Operator: {self.operator}  |  Subject: {self.subject_id}"
-              f"  |  Room: {self.room_width:.0f}x{self.room_height:.0f}ft"
+              f"  |  Room: {self.room_width:.0f}x{self.room_length:.0f}ft"
               f"  |  Date: {self.date}\n")
 
 # ================================================================================
@@ -98,7 +98,7 @@ def build_folder_name(session: SessionMeta, grid_state_token: str,
     Produces:  <WxH>Room_<GridState>_<Duration>Seconds_Run<NN>
     e.g.       24x24Room_Grid5Occupied_10Seconds_Run03
     """
-    room_token = f"{session.room_width:.0f}x{session.room_height:.0f}Room"
+    room_token = f"{session.room_width:.0f}x{session.room_length:.0f}Room"
     run_token  = f"Run{run_index:02d}"
     return f"{room_token}_{grid_state_token}_{duration_s}Seconds_{run_token}"
 
@@ -116,7 +116,7 @@ def write_metadata_json(folder_path: str, session: SessionMeta,
     """Write metadata.json per the schema in Section 6.3 of the test process doc."""
     meta = {
         "room_width_ft":    session.room_width,
-        "room_height_ft":   session.room_height,
+        "room_length_ft":   session.room_length,
         "grid_state":       grid_state_token,
         "duration_seconds": duration_s,
         "run_index":        run_index,
@@ -135,9 +135,9 @@ def write_metadata_json(folder_path: str, session: SessionMeta,
 # ================================================================================
 # GRID HELPERS
 # ================================================================================
-def build_zone_map(cols, rows, width_ft, height_ft):
+def build_zone_map(cols, rows, width_ft, length_ft):
     zone_w = width_ft  / cols
-    zone_h = height_ft / rows
+    zone_h = length_ft / rows
     zones  = {}
     for r in range(rows):
         for c in range(cols):
@@ -153,9 +153,9 @@ def build_zone_map(cols, rows, width_ft, height_ft):
             }
     return zones
 
-def print_grid(zones, cols, rows, width_ft, height_ft):
+def print_grid(zones, cols, rows, width_ft, length_ft):
     print("\n--- Zone Map ---")
-    print(f"Room: {width_ft:.0f}ft x {height_ft:.0f}ft  |  Grid: {cols}x{rows}\n")
+    print(f"Room: {width_ft:.0f}ft x {length_ft:.0f}ft  |  Grid: {cols}x{rows}\n")
     for r in range(1, rows + 1):
         row_str = ""
         for c in range(1, cols + 1):
@@ -514,10 +514,10 @@ if __name__ == "__main__":
     session.prompt()
 
     # Rebuild zone map using room dimensions entered at startup
-    zones  = build_zone_map(GRID_COLS, GRID_ROWS, session.room_width, session.room_height)
+    zones  = build_zone_map(GRID_COLS, GRID_ROWS, session.room_width, session.room_length)
     header = build_csv_header()
 
-    print_grid(zones, GRID_COLS, GRID_ROWS, session.room_width, session.room_height)
+    print_grid(zones, GRID_COLS, GRID_ROWS, session.room_width, session.room_length)
 
     print("=== CSI Training Data Collector ===")
     print(f"Base output dir : {BASE_OUTPUT_DIR}")

@@ -5,7 +5,7 @@ from datetime import datetime
 import glob
 import subprocess
 
-binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # *** replace to work on new computer
+binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data" # *** replace to work on new computer
 
 # *** Linux lines -> uncomment to work with linux OS
 # ----- removes old .bin files on startup of writer code ------
@@ -21,22 +21,11 @@ binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CS
 #     print(f"Error: {result.stderr}")
 # -------------------------------------------------------------
 
-# *** Windows OS lines -> comment out if linux
-# ----- removes old .bin files on startup of writer code ------
-bin_files = glob.glob(os.path.join(binFolder, "*.bin"))
 
-if not bin_files:
-    print("No .bin files found.")
-else:
-    for file in bin_files:
-        os.remove(file)
-        print(f"Deleted: {file}")
-    print(f"\nDone! {len(bin_files)} file(s) deleted.")
-# -------------------------------------------------------------
 
 PORT             = "COM3"   # *** change to your port (Linux: "/dev/ttyUSB0")
 BAUD             = 921600
-OUTPUT_DIR       = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # *** replace to work on new computer
+OUTPUT_DIR       = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data" # *** replace to work on new computer
 INTERVAL_SECONDS = 5
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -99,6 +88,17 @@ except KeyboardInterrupt:
     print("\nCapture stopped by user.")
 
 finally:
+    # ----- removes all .bin files on exit of writer code ------
+    bin_files = glob.glob(os.path.join(binFolder, "*.bin"))
+
+    if not bin_files:
+        print("No .bin files found.")
+    else:
+        for file in bin_files:
+            os.remove(file)
+            print(f"Deleted: {file}")
+        print(f"\nDone! {len(bin_files)} file(s) deleted.")
+    # -------------------------------------------------------------
     ser.dtr = False
     ser.rts = False
     ser.close()
