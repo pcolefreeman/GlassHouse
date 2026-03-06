@@ -4,11 +4,12 @@ glasshouse.py  —  Project Glass House  |  Combined CSI Writer + Processor
 Thread 1  (SerialWriter)  : Reads ESP32 serial stream, buffers complete
                             frames, writes them to timestamped .bin files
                             in BIN_DIR.  Frames are NEVER split across files.
+                            Files are ALWAYS written regardless of capture state.
 
 Thread 2  (BinProcessor)  : Watches BIN_DIR for stable .bin files, parses
                             frames, buckets them, and appends rows to the
-                            run's data.csv.  Writes metadata.json on first
-                            file processed for a run.
+                            run's data.csv.  Only processes files created
+                            AFTER a capture session starts (by timestamp).
 
 Usage
 -----
@@ -16,7 +17,7 @@ Usage
 
 Zone prompt:
   -1  → exit cleanly
-   0  → Empty room baseline (TC-001)
+   0  → Empty room baseline
   1-9 → Grid cell number
 
 Paths (edit the CONFIG block below if needed)
@@ -63,19 +64,16 @@ SHOUTER_MACS = {
     # "XX:XX:XX:XX:XX:XX": 4,
 }
 
-# MIN_FRAMES: require at least this many shouters heard per bucket.
-# Auto-set to the number of active MACs so 1-shouter testing always works.
-MIN_FRAMES = max(1, len(SHOUTER_MACS))
+# MIN_FRAMES: minimum number of shouters that must be heard in a bucket
+# for it to be written to CSV. Set to 1 so partial data is never dropped —
+# missing shouters are filled with NaN and can be filtered in EDA.
+MIN_FRAMES = 1
 
 # ============================================================
 #  THREAD-SAFE PRINTING
-#  Background threads queue messages instead of printing directly.
-#  The UI thread flushes the queue only between input() calls so
-#  thread output never interleaves with prompts.
 # ============================================================
 import queue as _queue
-_print_queue   = _queue.Queue()
-_prompting     = threading.Event()   # set while main thread is inside input()
+_print_queue = _queue.Queue()
 
 def tprint(msg):
     """Called by background threads instead of print()."""
@@ -90,7 +88,7 @@ def flush_print_queue():
             break
 
 # ============================================================
-#  FRAME FORMAT  (must match Listener1S1L.ino exactly)
+#  FRAME FORMAT  (must match ListenerAP.ino exactly)
 #  magic(2)  ver(1)  flags(1)  ms(4)  rssi(1)  nf(1)  mac(6)  csi_len(2)
 #  HEADER_SIZE = 16 bytes  (after the 2-byte magic)
 # ============================================================
@@ -98,20 +96,20 @@ HEADER_SIZE = 16
 MAGIC_0     = 0xAA
 MAGIC_1     = 0x55
 
-# Grid state descriptors (Section 3.1 of test process doc)
+# Grid state descriptors
 GRID_STATES = ["Occupied", "Standing", "Seated", "Moving"]
 
 # ============================================================
 #  GLOBAL CAPTURE STATE  — shared between threads
 # ============================================================
-_capture_lock       = threading.Lock()
-_current_folder     = None      # absolute path of the active run folder
-_current_zone_info  = None      # dict from zones map
-_current_zone_id    = None      # int
-_csv_header         = None      # built once at startup
-_meta_written       = False     # True once metadata.json is written for this run
-_processed_files    = set()     # .bin files already handled by processor thread
-_stop_event         = threading.Event()
+_capture_lock      = threading.Lock()
+_current_folder    = None      # absolute path of the active run folder
+_current_zone_info = None      # dict from zones map
+_current_zone_id   = None      # int
+_capture_start_ts  = None      # time.time() when capture session started
+_csv_header        = None      # built once at startup
+_processed_files   = set()     # .bin files already handled by processor thread
+_stop_event        = threading.Event()
 
 
 # ============================================================
@@ -169,6 +167,7 @@ def build_zone_map(cols, rows, width_ft, length_ft):
 def print_grid(zones, cols, rows, width_ft, length_ft):
     print("\n--- Zone Map ---")
     print(f"Room: {width_ft:.0f}ft x {length_ft:.0f}ft  |  Grid: {cols}x{rows}\n")
+    print("   0: [  Empty room — no person present  ]\n")
     for r in range(1, rows + 1):
         row_str = ""
         for c in range(1, cols + 1):
@@ -181,14 +180,13 @@ def print_grid(zones, cols, rows, width_ft, length_ft):
     print()
 
 def build_grid_state_token(zone_input, state_key):
-    """Empty → 'Empty',  zone 5 Occupied → 'Grid5Occupied'"""
     if zone_input == 0:
         return "Empty"
     return f"Grid{zone_input}{state_key}"
 
 def build_folder_name(session, grid_state_token, duration_s, run_index):
-    room  = f"{session.room_width:.0f}x{session.room_length:.0f}Room"
-    run   = f"Run{run_index:02d}"
+    room = f"{session.room_width:.0f}x{session.room_length:.0f}Room"
+    run  = f"Run{run_index:02d}"
     return f"{room}_{grid_state_token}_{duration_s}Seconds_{run}"
 
 def create_run_folder(session, grid_state_token, duration_s, run_index):
@@ -228,7 +226,6 @@ def prompt_capture_params(zones):
     print("\n--- New Capture ---")
     print("Zone:  0=Empty  1-9=Grid cell  -1=Exit")
 
-    # Zone
     while True:
         try:
             zone_input = int(input("Enter zone number: ").strip())
@@ -243,7 +240,6 @@ def prompt_capture_params(zones):
             break
         print(f"  Invalid. Choose -1, 0, or one of {list(zones.keys())}")
 
-    # Grid state + posture (only when a person is present)
     state_key = "Occupied"
     posture   = "center"
     if zone_input != 0:
@@ -258,10 +254,9 @@ def prompt_capture_params(zones):
             except (ValueError, IndexError):
                 print(f"  Choose 1-{len(GRID_STATES)}")
         posture_map = {"Occupied": "center", "Standing": "standing",
-                       "Seated": "seated",   "Moving":   "moving"}
+                       "Seated":   "seated",  "Moving":   "moving"}
         posture = posture_map.get(state_key, "center")
 
-    # Duration
     while True:
         try:
             duration_s = int(input("Capture duration seconds [10]: ").strip() or "10")
@@ -271,7 +266,6 @@ def prompt_capture_params(zones):
         except ValueError:
             print("  Enter an integer.")
 
-    # Run index
     while True:
         try:
             run_index = int(input("Run index [1]: ").strip() or "1")
@@ -285,14 +279,9 @@ def prompt_capture_params(zones):
 
 
 # ============================================================
-#  FRAME PARSER  (robust — tolerates partial frames at EOF)
+#  FRAME PARSER
 # ============================================================
 def parse_bin_file(filepath):
-    """
-    Parse a .bin file into a list of frame dicts.
-    - Skips '#' debug lines safely regardless of byte position.
-    - Drops incomplete frames at end of file cleanly (no corruption).
-    """
     with open(filepath, "rb") as f:
         raw = f.read()
 
@@ -302,41 +291,33 @@ def parse_bin_file(filepath):
 
     while i < n - 1:
 
-        # --- Skip firmware debug lines (start with '#') ---
         if raw[i] == ord('#'):
             while i < n and raw[i] != ord('\n'):
                 i += 1
             i += 1
             continue
 
-        # --- Look for magic bytes ---
         if not (raw[i] == MAGIC_0 and raw[i + 1] == MAGIC_1):
             i += 1
             continue
 
-        offset = i + 2  # byte after magic
+        offset = i + 2
 
-        # Need full header
         if offset + HEADER_SIZE > n:
-            break   # incomplete header at EOF — drop cleanly
+            break
 
-        # Parse 16-byte header
-        # ver(1) flags(1) ms(4) rssi(1) nf(1) mac(6) csi_len(2)
-        timestamp   = struct.unpack_from('<I', raw, offset + 2)[0]
-        rssi        = struct.unpack_from('<b', raw, offset + 6)[0]
-        noise_floor = struct.unpack_from('<b', raw, offset + 7)[0]
-        mac         = ':'.join(f'{b:02X}' for b in raw[offset + 8: offset + 14])
-        csi_len     = struct.unpack_from('<H', raw, offset + 14)[0]
+        timestamp     = struct.unpack_from('<I', raw, offset + 2)[0]
+        rssi          = struct.unpack_from('<b', raw, offset + 6)[0]
+        noise_floor   = struct.unpack_from('<b', raw, offset + 7)[0]
+        mac           = ':'.join(f'{b:02X}' for b in raw[offset + 8: offset + 14])
+        csi_len       = struct.unpack_from('<H', raw, offset + 14)[0]
         payload_start = offset + HEADER_SIZE
 
-        # Need full CSI payload
         if payload_start + csi_len > n:
-            break   # incomplete payload at EOF — drop cleanly
+            break
 
-        # Advance past this frame regardless of whether we keep it
         i = payload_start + csi_len
 
-        # Filter unknown MACs
         if mac not in SHOUTER_MACS:
             continue
 
@@ -345,9 +326,9 @@ def parse_bin_file(filepath):
         features    = _extract_features(csi_complex, rssi, noise_floor)
 
         frames.append({
-            "timestamp_ms":   timestamp,
-            "mac":            mac,
-            "shouter_id":     SHOUTER_MACS[mac],
+            "timestamp_ms": timestamp,
+            "mac":          mac,
+            "shouter_id":   SHOUTER_MACS[mac],
             **features,
         })
 
@@ -358,7 +339,6 @@ def parse_bin_file(filepath):
 #  CSI FEATURE EXTRACTION
 # ============================================================
 def _parse_csi_bytes(csi_bytes):
-    """ESP32 stores pairs as [imag, real] per subcarrier."""
     csi = []
     for j in range(0, len(csi_bytes) - 1, 2):
         imag = struct.unpack('b', bytes([csi_bytes[j]]))[0]
@@ -384,7 +364,7 @@ def _extract_features(csi_complex, rssi, noise_floor):
     return {
         "amplitudes":     amplitudes,
         "phases":         unwrapped,
-        "phase_diff":     list(np.diff(unwrapped)),       # CFO-removed, N-1 values
+        "phase_diff":     list(np.diff(unwrapped)),
         "amp_normalized": _normalize_amplitude(amplitudes),
         "snr":            _compute_snr(amplitudes, noise_floor),
         "rssi":           rssi,
@@ -438,19 +418,18 @@ def bucket_frames(frames):
                     sample[f"{px}_phase_{sc}"]    = round(float(avg_phase[sc]),    4)
                     sample[f"{px}_snr_{sc}"]      = round(float(avg_snr[sc]),      4)
                 for sc in range(len(avg_phase_diff)):
-                    sample[f"{px}_pdiff_{sc}"]    = round(float(avg_phase_diff[sc]), 4)
+                    sample[f"{px}_pdiff_{sc}"] = round(float(avg_phase_diff[sc]), 4)
                 sample[f"{px}_rssi"]        = round(float(avg_rssi), 2)
                 sample[f"{px}_noise_floor"] = round(float(avg_nf),   2)
 
             else:
-                # Shouter not heard this bucket — fill NaN to keep columns consistent
                 for sc in range(SUBCARRIERS):
                     sample[f"{px}_amp_{sc}"]      = float("nan")
                     sample[f"{px}_amp_norm_{sc}"] = float("nan")
                     sample[f"{px}_phase_{sc}"]    = float("nan")
                     sample[f"{px}_snr_{sc}"]      = float("nan")
                 for sc in range(SUBCARRIERS - 1):
-                    sample[f"{px}_pdiff_{sc}"]    = float("nan")
+                    sample[f"{px}_pdiff_{sc}"] = float("nan")
                 sample[f"{px}_rssi"]        = float("nan")
                 sample[f"{px}_noise_floor"] = float("nan")
 
@@ -481,7 +460,7 @@ def build_csv_header():
     return header
 
 def append_samples_to_csv(samples, zone_info, zone_id, folder_path, header):
-    csv_path   = os.path.join(folder_path, "data.csv")
+    csv_path    = os.path.join(folder_path, "data.csv")
     file_exists = os.path.exists(csv_path)
     with open(csv_path, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=header)
@@ -498,23 +477,22 @@ def append_samples_to_csv(samples, zone_info, zone_id, folder_path, header):
 
 # ============================================================
 #  THREAD 1 — SERIAL WRITER
-#  Reads ESP32 serial stream, assembles complete frames in memory,
-#  and flushes them to a new .bin file every INTERVAL_SECONDS.
-#  Frames are NEVER split across files.
+#  Always writes .bin files regardless of capture state.
+#  The processor thread decides whether to use each file.
 # ============================================================
 class SerialWriter(threading.Thread):
     def __init__(self):
         super().__init__(name="SerialWriter", daemon=True)
-        self._ser     = None
-        self._buf     = bytearray()  # raw bytes from serial
-        self._frames  = bytearray()  # complete frames ready to write
+        self._ser    = None
+        self._buf    = bytearray()
+        self._frames = bytearray()
 
     def _open_serial(self):
         ser          = serial.Serial()
         ser.port     = PORT
         ser.baudrate = BAUD
         ser.timeout  = 1
-        ser.dtr      = False   # prevent ESP32 reset on connect
+        ser.dtr      = False
         ser.rts      = False
         ser.open()
         time.sleep(0.5)
@@ -533,9 +511,8 @@ class SerialWriter(threading.Thread):
 
     def _extract_complete_frames(self, raw_chunk):
         """
-        Append raw_chunk to internal buffer, then extract every complete frame.
-        Complete frames are moved to _frames; remainder stays in _buf.
-        Debug '#' lines are forwarded as-is (harmless in .bin).
+        Append chunk to buffer, extract every complete frame into self._frames.
+        Incomplete frames stay in self._buf until more bytes arrive.
         """
         self._buf.extend(raw_chunk)
         i = 0
@@ -543,25 +520,23 @@ class SerialWriter(threading.Thread):
 
         while i < n - 1:
 
-            # Pass through '#' debug lines verbatim
+            # Pass '#' debug lines through verbatim
             if self._buf[i] == ord('#'):
                 j = i
                 while j < n and self._buf[j] != ord('\n'):
                     j += 1
                 if j >= n:
-                    break           # incomplete debug line — wait for more bytes
-                j += 1             # include the newline
+                    break
+                j += 1
                 self._frames.extend(self._buf[i:j])
                 i = j
                 continue
 
-            # Look for magic
             if not (self._buf[i] == MAGIC_0 and self._buf[i + 1] == MAGIC_1):
                 i += 1
                 continue
 
             offset = i + 2
-            # Wait until we have the full header
             if offset + HEADER_SIZE > n:
                 break
 
@@ -569,35 +544,41 @@ class SerialWriter(threading.Thread):
             payload_start = offset + HEADER_SIZE
             frame_end     = payload_start + csi_len
 
-            # Wait until we have the full payload
             if frame_end > n:
                 break
 
-            # Complete frame — move to output buffer
             self._frames.extend(self._buf[i:frame_end])
             i = frame_end
 
-        # Keep only the unconsumed remainder
         self._buf = self._buf[i:]
 
-    def run(self):
-        global _stop_event
+    def _flush_to_file(self):
+        """Write accumulated frames to a timestamped .bin file in BIN_DIR."""
+        if not self._frames:
+            return
+        ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filepath = os.path.join(BIN_DIR, f"csi_{ts}.bin")
+        with open(filepath, "wb") as f:
+            f.write(self._frames)
+        tprint(f"  [Writer] Saved {os.path.basename(filepath)}  "
+               f"({len(self._frames):,} bytes)")
+        self._frames = bytearray()
 
+    def run(self):
         try:
             self._ser = self._open_serial()
         except serial.SerialException as e:
-            tprint(f"  [Writer] ERROR opening serial port {PORT}: {e}")
+            tprint(f"  [Writer] ERROR opening {PORT}: {e}")
             _stop_event.set()
             return
 
         self._wait_for_ready(self._ser)
-
-        tprint(f"  [Writer] Recording in {INTERVAL_SECONDS}s intervals → {BIN_DIR}\n")
+        tprint(f"  [Writer] Recording {INTERVAL_SECONDS}s intervals → {BIN_DIR}\n")
 
         try:
             while not _stop_event.is_set():
-                self._frames  = bytearray()
-                interval_end  = time.time() + INTERVAL_SECONDS
+                self._frames = bytearray()
+                interval_end = time.time() + INTERVAL_SECONDS
 
                 while time.time() < interval_end and not _stop_event.is_set():
                     try:
@@ -609,15 +590,11 @@ class SerialWriter(threading.Thread):
                         _stop_event.set()
                         break
 
-                # Write the accumulated complete frames to a new .bin file
-                if self._frames:
-                    ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filepath = os.path.join(BIN_DIR, f"csi_{ts}.bin")
-                    with open(filepath, "wb") as f:
-                        f.write(self._frames)
-                    tprint(f"  [Writer] Saved {os.path.basename(filepath)}  ({len(self._frames)} bytes)")
+                self._flush_to_file()
 
         finally:
+            # Flush any remaining frames before closing
+            self._flush_to_file()
             self._ser.dtr = False
             self._ser.rts = False
             self._ser.close()
@@ -626,22 +603,19 @@ class SerialWriter(threading.Thread):
 
 # ============================================================
 #  THREAD 2 — BIN PROCESSOR
-#  Watches BIN_DIR, parses complete .bin files, appends to CSV.
+#  Only processes .bin files created after the current capture
+#  session started (checked via file mtime vs _capture_start_ts).
 # ============================================================
 class BinProcessor(threading.Thread):
     def __init__(self):
         super().__init__(name="BinProcessor", daemon=True)
 
     def _is_stable(self, filepath, wait=1.5):
-        """File is stable when its size hasn't changed after wait seconds."""
         size_before = os.path.getsize(filepath)
         time.sleep(wait)
         return size_before == os.path.getsize(filepath)
 
     def _process_file(self, filepath):
-        global _current_folder, _current_zone_info, _current_zone_id
-        global _csv_header, _meta_written
-
         if os.path.getsize(filepath) < 20:
             tprint(f"  [Processor] Skipping {os.path.basename(filepath)} — too small.")
             return 0
@@ -651,7 +625,7 @@ class BinProcessor(threading.Thread):
 
         if not samples:
             tprint(f"  [Processor] No valid samples in {os.path.basename(filepath)}"
-                   f"  (raw frames={len(frames)}, active shouters needed={MIN_FRAMES})")
+                   f"  (raw frames={len(frames)}, shouters needed={MIN_FRAMES})")
             return 0
 
         with _capture_lock:
@@ -659,17 +633,10 @@ class BinProcessor(threading.Thread):
             zone_info = _current_zone_info
             zone_id   = _current_zone_id
             header    = _csv_header
-            written   = _meta_written
 
         if folder is None:
-            # No active capture session — skip
+            tprint(f"  [Processor] No active session — skipping {os.path.basename(filepath)}")
             return 0
-
-        # Write metadata.json once per run folder
-        if not written:
-            with _capture_lock:
-                _meta_written = True
-            # metadata was already written by prompt handler — nothing to do here
 
         append_samples_to_csv(samples, zone_info, zone_id, folder, header)
         tprint(f"  [Processor] {os.path.basename(filepath)}"
@@ -678,23 +645,53 @@ class BinProcessor(threading.Thread):
         return len(samples)
 
     def run(self):
-        global _processed_files, _stop_event
-
         tprint(f"  [Processor] Watching {BIN_DIR} for .bin files...")
 
         while not _stop_event.is_set():
+            with _capture_lock:
+                start_ts = _capture_start_ts
+                processed = set(_processed_files)
+
             bin_files = sorted(glob.glob(os.path.join(BIN_DIR, "*.bin")))
 
             # Skip the newest file — writer may still be writing to it
-            files_to_process = bin_files[:-1] if len(bin_files) > 1 else []
+            files_to_check = bin_files[:-1] if len(bin_files) > 1 else []
 
-            for filepath in files_to_process:
-                if filepath not in _processed_files:
-                    if self._is_stable(filepath):
-                        self._process_file(filepath)
+            for filepath in files_to_check:
+                if filepath in processed:
+                    continue
+
+                # Only process files created after this capture session started
+                if start_ts is None:
+                    continue
+                if os.path.getmtime(filepath) < start_ts:
+                    # Mark as processed so we never revisit old files
+                    with _capture_lock:
+                        _processed_files.add(filepath)
+                    continue
+
+                if self._is_stable(filepath):
+                    self._process_file(filepath)
+                    with _capture_lock:
                         _processed_files.add(filepath)
 
             time.sleep(2)
+
+
+# ============================================================
+#  CLEANUP
+# ============================================================
+def _wipe_bin_dir():
+    """Delete all .bin files from BIN_DIR on exit."""
+    bin_files = glob.glob(os.path.join(BIN_DIR, "*.bin"))
+    deleted   = 0
+    for f in bin_files:
+        try:
+            os.remove(f)
+            deleted += 1
+        except OSError as e:
+            print(f"  [Cleanup] Could not delete {os.path.basename(f)}: {e}")
+    print(f"  [Cleanup] Deleted {deleted} .bin file(s) from {BIN_DIR}")
 
 
 # ============================================================
@@ -702,15 +699,13 @@ class BinProcessor(threading.Thread):
 # ============================================================
 if __name__ == "__main__":
 
-    # Ensure directories exist
     os.makedirs(BIN_DIR,         exist_ok=True)
     os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
 
-    # One-time session metadata
-    session = SessionMeta()
+    session     = SessionMeta()
     session.prompt()
 
-    zones = build_zone_map(3, 3, session.room_width, session.room_length)
+    zones       = build_zone_map(3, 3, session.room_width, session.room_length)
     _csv_header = build_csv_header()
 
     print_grid(zones, 3, 3, session.room_width, session.room_length)
@@ -720,32 +715,30 @@ if __name__ == "__main__":
     print(f"  Bin interval    : {INTERVAL_SECONDS}s per file  →  {BIN_DIR}")
     print(f"  Training output : {BASE_OUTPUT_DIR}")
     print(f"  Bucket size     : {BUCKET_MS}ms")
-    print(f"  Subcarriers     : {SUBCARRIERS} per shouter")
-    print(f"  Shouters active : {len(SHOUTER_MACS)} of {NUM_SHOUTERS}\n")
+    print(f"  Subcarriers     : {SUBCARRIERS} per shouter (raw)")
+    print(f"  Shouters active : {len(SHOUTER_MACS)} of {NUM_SHOUTERS}")
+    print(f"  Min shouters/bucket : {MIN_FRAMES}\n")
 
-    # Start background threads
     writer    = SerialWriter()
     processor = BinProcessor()
     writer.start()
     processor.start()
 
-    # Give threads a moment to start up, then flush their initial messages
     time.sleep(0.3)
     flush_print_queue()
 
-    # ---- Main capture loop (UI thread) ----
     while True:
         flush_print_queue()
         params = prompt_capture_params(zones)
         flush_print_queue()
 
-        # -1 entered — stop threads and exit
         if params is None:
             print("\nStopping threads...")
             _stop_event.set()
             writer.join(timeout=INTERVAL_SECONDS + 2)
             processor.join(timeout=4)
             flush_print_queue()
+            _wipe_bin_dir()
             print("Session complete. Goodbye.")
             sys.exit(0)
 
@@ -757,26 +750,24 @@ if __name__ == "__main__":
         else:
             zone_info = zones[zone_input]
 
-        # Build run folder + metadata.json
         folder_path = create_run_folder(session, grid_state_token, duration_s, run_index)
         write_metadata_json(folder_path, session, grid_state_token,
                             duration_s, run_index, posture, zone_input)
 
-        # Update shared capture state for the processor thread
+        # Atomically update capture state and record start time
         with _capture_lock:
             _current_folder    = folder_path
             _current_zone_info = zone_info
             _current_zone_id   = zone_input
-            _meta_written      = True
-            _processed_files   = set()   # reset so old .bin files are not reprocessed
+            _capture_start_ts  = time.time()
+            _processed_files   = set()
 
         folder_name = os.path.basename(folder_path)
         print(f"\n  Run folder  : {folder_path}")
         print(f"  Grid state  : {grid_state_token}  |  Posture: {posture}"
               f"  |  Duration: {duration_s}s  |  Run: {run_index:02d}")
-        print(f"  Capturing   — press Ctrl+C to stop this run and start a new one.\n")
+        print(f"  Capturing   — press Ctrl+C to stop this run.\n")
 
-        # Hold until Ctrl+C — flush thread messages every second while waiting
         try:
             while True:
                 time.sleep(1)
@@ -786,8 +777,8 @@ if __name__ == "__main__":
             print(f"\n  Run stopped  →  {folder_name}")
             print("  Select next capture or enter -1 to exit.\n")
 
-            # Clear active folder so processor ignores files between runs
             with _capture_lock:
                 _current_folder    = None
                 _current_zone_info = None
                 _current_zone_id   = None
+                _capture_start_ts  = None
