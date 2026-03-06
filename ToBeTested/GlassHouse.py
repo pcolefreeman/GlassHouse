@@ -42,8 +42,8 @@ import numpy as np
 # ============================================================
 #  CONFIG  — edit these if paths or serial port change
 # ============================================================
-BIN_DIR         = r"C:\GlassHouse\CSI_data"
-BASE_OUTPUT_DIR = r"C:\GlassHouse\training_data"
+BIN_DIR         = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data"
+BASE_OUTPUT_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\training_data"
 
 PORT             = "COM3"       # Windows: "COM3"  |  Linux: "/dev/ttyUSB0"
 BAUD             = 921600
@@ -97,7 +97,7 @@ class SessionMeta:
         self.operator    = "Unknown"
         self.subject_id  = "Subject_A"
         self.room_width  = 24.0
-        self.room_height = 24.0
+        self.room_length = 24.0
         self.date        = datetime.now().strftime("%Y-%m-%d")
 
     def prompt(self):
@@ -109,23 +109,23 @@ class SessionMeta:
         if sid:
             self.subject_id = sid
         w = input(f"Room width  (ft) [{self.room_width:.0f}] : ").strip()
-        h = input(f"Room height (ft) [{self.room_height:.0f}] : ").strip()
+        h = input(f"Room length (ft) [{self.room_length:.0f}] : ").strip()
         if w:
             self.room_width  = float(w)
         if h:
-            self.room_height = float(h)
+            self.room_length = float(h)
         print(f"\nSession ready  —  Operator: {self.operator}  "
               f"Subject: {self.subject_id}  "
-              f"Room: {self.room_width:.0f}x{self.room_height:.0f}ft  "
+              f"Room: {self.room_width:.0f}x{self.room_length:.0f}ft  "
               f"Date: {self.date}\n")
 
 
 # ============================================================
 #  ZONE / FOLDER HELPERS
 # ============================================================
-def build_zone_map(cols, rows, width_ft, height_ft):
+def build_zone_map(cols, rows, width_ft, length_ft):
     zone_w = width_ft  / cols
-    zone_h = height_ft / rows
+    zone_h = length_ft / rows
     zones  = {}
     for r in range(rows):
         for c in range(cols):
@@ -141,9 +141,9 @@ def build_zone_map(cols, rows, width_ft, height_ft):
             }
     return zones
 
-def print_grid(zones, cols, rows, width_ft, height_ft):
+def print_grid(zones, cols, rows, width_ft, length_ft):
     print("\n--- Zone Map ---")
-    print(f"Room: {width_ft:.0f}ft x {height_ft:.0f}ft  |  Grid: {cols}x{rows}\n")
+    print(f"Room: {width_ft:.0f}ft x {length_ft:.0f}ft  |  Grid: {cols}x{rows}\n")
     for r in range(1, rows + 1):
         row_str = ""
         for c in range(1, cols + 1):
@@ -162,7 +162,7 @@ def build_grid_state_token(zone_input, state_key):
     return f"Grid{zone_input}{state_key}"
 
 def build_folder_name(session, grid_state_token, duration_s, run_index):
-    room  = f"{session.room_width:.0f}x{session.room_height:.0f}Room"
+    room  = f"{session.room_width:.0f}x{session.room_length:.0f}Room"
     run   = f"Run{run_index:02d}"
     return f"{room}_{grid_state_token}_{duration_s}Seconds_{run}"
 
@@ -176,7 +176,7 @@ def write_metadata_json(folder_path, session, grid_state_token,
                         duration_s, run_index, posture, zone_id):
     meta = {
         "room_width_ft":    session.room_width,
-        "room_height_ft":   session.room_height,
+        "room_length_ft":   session.room_length,
         "grid_state":       grid_state_token,
         "duration_seconds": duration_s,
         "run_index":        run_index,
@@ -686,10 +686,10 @@ if __name__ == "__main__":
     session = SessionMeta()
     session.prompt()
 
-    zones = build_zone_map(3, 3, session.room_width, session.room_height)
+    zones = build_zone_map(3, 3, session.room_width, session.room_length)
     _csv_header = build_csv_header()
 
-    print_grid(zones, 3, 3, session.room_width, session.room_height)
+    print_grid(zones, 3, 3, session.room_width, session.room_length)
 
     print("=== Glass House — CSI Data Collector ===")
     print(f"  Serial port     : {PORT}  @  {BAUD} baud")
