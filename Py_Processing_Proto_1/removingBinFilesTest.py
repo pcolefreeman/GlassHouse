@@ -2,7 +2,7 @@ import subprocess
 import os
 import glob
 
-binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSIBin3_3" # replace to work on your computer
+binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data" # replace to work on your computer
 
 # uncomment to work with linux OS
 # result = subprocess.run(
