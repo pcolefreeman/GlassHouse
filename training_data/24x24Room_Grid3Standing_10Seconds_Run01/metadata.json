@@ -5,15 +5,14 @@
   "duration_seconds": 10,
   "run_index": 1,
   "date": "2026-03-05",
-  "operator": "Cole",
+  "operator": "Jack",
   "subject_id": "1",
   "posture": "standing",
   "zone_id": 3,
   "shouters": [
     "ESP32_S1",
     "ESP32_S2",
-    "ESP32_S3",
-    "ESP32_S4"
+    "ESP32_S3"
   ],
   "notes": ""
 }

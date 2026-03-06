@@ -20,6 +20,9 @@ Zone prompt:
    0  → Empty room baseline
   1-9 → Grid cell number
 
+Capture automatically stops after the specified duration and returns
+to the zone prompt — no Ctrl+C required.
+
 Paths (edit the CONFIG block below if needed)
 -----
   BIN_DIR         :  C:\\GlassHouse\\CSI_data          (incoming .bin files)
@@ -107,6 +110,7 @@ _current_folder    = None      # absolute path of the active run folder
 _current_zone_info = None      # dict from zones map
 _current_zone_id   = None      # int
 _capture_start_ts  = None      # time.time() when capture session started
+_capture_end_ts    = None      # time.time() when capture session should end
 _csv_header        = None      # built once at startup
 _processed_files   = set()     # .bin files already handled by processor thread
 _stop_event        = threading.Event()
@@ -510,17 +514,12 @@ class SerialWriter(threading.Thread):
         tprint("  [Writer] No ready signal — ESP32 likely already running. Continuing.")
 
     def _extract_complete_frames(self, raw_chunk):
-        """
-        Append chunk to buffer, extract every complete frame into self._frames.
-        Incomplete frames stay in self._buf until more bytes arrive.
-        """
         self._buf.extend(raw_chunk)
         i = 0
         n = len(self._buf)
 
         while i < n - 1:
 
-            # Pass '#' debug lines through verbatim
             if self._buf[i] == ord('#'):
                 j = i
                 while j < n and self._buf[j] != ord('\n'):
@@ -553,7 +552,6 @@ class SerialWriter(threading.Thread):
         self._buf = self._buf[i:]
 
     def _flush_to_file(self):
-        """Write accumulated frames to a timestamped .bin file in BIN_DIR."""
         if not self._frames:
             return
         ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -593,7 +591,6 @@ class SerialWriter(threading.Thread):
                 self._flush_to_file()
 
         finally:
-            # Flush any remaining frames before closing
             self._flush_to_file()
             self._ser.dtr = False
             self._ser.rts = False
@@ -605,6 +602,7 @@ class SerialWriter(threading.Thread):
 #  THREAD 2 — BIN PROCESSOR
 #  Only processes .bin files created after the current capture
 #  session started (checked via file mtime vs _capture_start_ts).
+#  Stops writing to CSV once _capture_end_ts has passed.
 # ============================================================
 class BinProcessor(threading.Thread):
     def __init__(self):
@@ -649,23 +647,31 @@ class BinProcessor(threading.Thread):
 
         while not _stop_event.is_set():
             with _capture_lock:
-                start_ts = _capture_start_ts
+                start_ts  = _capture_start_ts
+                end_ts    = _capture_end_ts
                 processed = set(_processed_files)
 
-            bin_files = sorted(glob.glob(os.path.join(BIN_DIR, "*.bin")))
-
-            # Skip the newest file — writer may still be writing to it
+            bin_files      = sorted(glob.glob(os.path.join(BIN_DIR, "*.bin")))
             files_to_check = bin_files[:-1] if len(bin_files) > 1 else []
 
             for filepath in files_to_check:
                 if filepath in processed:
                     continue
 
-                # Only process files created after this capture session started
+                # No active session — skip
                 if start_ts is None:
                     continue
-                if os.path.getmtime(filepath) < start_ts:
-                    # Mark as processed so we never revisit old files
+
+                file_mtime = os.path.getmtime(filepath)
+
+                # File predates this session — mark and skip
+                if file_mtime < start_ts:
+                    with _capture_lock:
+                        _processed_files.add(filepath)
+                    continue
+
+                # File was created after capture ended — skip and mark
+                if end_ts is not None and file_mtime > end_ts:
                     with _capture_lock:
                         _processed_files.add(filepath)
                     continue
@@ -732,6 +738,7 @@ if __name__ == "__main__":
         params = prompt_capture_params(zones)
         flush_print_queue()
 
+        # -1 entered — stop threads and exit
         if params is None:
             print("\nStopping threads...")
             _stop_event.set()
@@ -754,31 +761,44 @@ if __name__ == "__main__":
         write_metadata_json(folder_path, session, grid_state_token,
                             duration_s, run_index, posture, zone_input)
 
-        # Atomically update capture state and record start time
+        now = time.time()
+
+        # Atomically update capture state
         with _capture_lock:
             _current_folder    = folder_path
             _current_zone_info = zone_info
             _current_zone_id   = zone_input
-            _capture_start_ts  = time.time()
+            _capture_start_ts  = now
+            _capture_end_ts    = now + duration_s
             _processed_files   = set()
 
         folder_name = os.path.basename(folder_path)
         print(f"\n  Run folder  : {folder_path}")
         print(f"  Grid state  : {grid_state_token}  |  Posture: {posture}"
               f"  |  Duration: {duration_s}s  |  Run: {run_index:02d}")
-        print(f"  Capturing   — press Ctrl+C to stop this run.\n")
+        print(f"  Capturing   — auto-stops in {duration_s}s ...\n")
 
+        # Count down, flushing thread messages every second
+        # Ctrl+C still works as an early stop
         try:
-            while True:
-                time.sleep(1)
+            for remaining in range(duration_s, 0, -1):
                 flush_print_queue()
+                print(f"  \r  {remaining:3d}s remaining ...", end="", flush=True)
+                time.sleep(1)
         except KeyboardInterrupt:
-            flush_print_queue()
-            print(f"\n  Run stopped  →  {folder_name}")
-            print("  Select next capture or enter -1 to exit.\n")
+            pass
 
-            with _capture_lock:
-                _current_folder    = None
-                _current_zone_info = None
-                _current_zone_id   = None
-                _capture_start_ts  = None
+        print()  # newline after countdown
+
+        # Close the capture window — processor will ignore any later files
+        with _capture_lock:
+            _capture_end_ts    = time.time()
+            _current_folder    = None
+            _current_zone_info = None
+            _current_zone_id   = None
+            _capture_start_ts  = None
+            _capture_end_ts    = None
+
+        flush_print_queue()
+        print(f"  Capture complete  →  {folder_name}")
+        print("  Select next capture or enter -1 to exit.\n")

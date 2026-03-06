@@ -7,22 +7,6 @@ import subprocess
 
 binFolder = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data" # *** replace to work on new computer
 
-# *** Linux lines -> uncomment to work with linux OS
-# ----- removes old .bin files on startup of writer code ------
-# result = subprocess.run(
-#     f'find "{binFolder}" -name "*.bin" -type f -delete',
-#     shell=True,
-#     capture_output=True,
-#     text=True
-# )
-# if result.returncode == 0:
-#     print("All .bin files deleted successfully.")
-# else:
-#     print(f"Error: {result.stderr}")
-# -------------------------------------------------------------
-
-
-
 PORT             = "COM3"   # *** change to your port (Linux: "/dev/ttyUSB0")
 BAUD             = 921600
 OUTPUT_DIR       = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\CSI_data" # *** replace to work on new computer

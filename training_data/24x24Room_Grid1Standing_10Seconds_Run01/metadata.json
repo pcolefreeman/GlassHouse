@@ -4,9 +4,9 @@
   "grid_state": "Grid1Standing",
   "duration_seconds": 10,
   "run_index": 1,
-  "date": "2026-03-05",
-  "operator": "Ooga",
-  "subject_id": "Booga",
+  "date": "2026-03-06",
+  "operator": "tia",
+  "subject_id": "6987",
   "posture": "standing",
   "zone_id": 1,
   "shouters": [
