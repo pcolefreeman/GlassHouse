@@ -50,7 +50,6 @@ BAUD             = 921600
 INTERVAL_SECONDS = 5            # seconds of data per .bin file
 
 BUCKET_MS    = 50
-MIN_FRAMES   = 2
 NUM_SHOUTERS = 4
 SUBCARRIERS  = 128              # 256 byte CSI / 2 bytes per complex sample
 
@@ -59,10 +58,36 @@ SUBCARRIERS  = 128              # 256 byte CSI / 2 bytes per complex sample
 # ============================================================
 SHOUTER_MACS = {
     "68:FE:71:90:60:A0": 1,
-    # "68:FE:71:90:68:14": 2,
-    # "68:FE:71:90:6B:90": 3,
+    "68:FE:71:90:68:14": 2,
+    "68:FE:71:90:6B:90": 3,
     # "XX:XX:XX:XX:XX:XX": 4,
 }
+
+# MIN_FRAMES: require at least this many shouters heard per bucket.
+# Auto-set to the number of active MACs so 1-shouter testing always works.
+MIN_FRAMES = max(1, len(SHOUTER_MACS))
+
+# ============================================================
+#  THREAD-SAFE PRINTING
+#  Background threads queue messages instead of printing directly.
+#  The UI thread flushes the queue only between input() calls so
+#  thread output never interleaves with prompts.
+# ============================================================
+import queue as _queue
+_print_queue   = _queue.Queue()
+_prompting     = threading.Event()   # set while main thread is inside input()
+
+def tprint(msg):
+    """Called by background threads instead of print()."""
+    _print_queue.put(msg)
+
+def flush_print_queue():
+    """Called by main thread between prompts to drain queued messages."""
+    while not _print_queue.empty():
+        try:
+            print(_print_queue.get_nowait())
+        except _queue.Empty:
+            break
 
 # ============================================================
 #  FRAME FORMAT  (must match Listener1S1L.ino exactly)
@@ -497,14 +522,14 @@ class SerialWriter(threading.Thread):
         return ser
 
     def _wait_for_ready(self, ser):
-        print("  [Writer] Waiting for ESP32 LISTENER_AP_READY signal...")
+        tprint("  [Writer] Waiting for ESP32 LISTENER_AP_READY signal...")
         deadline = time.time() + 5.0
         while time.time() < deadline:
             line = ser.readline()
             if b"LISTENER_AP_READY" in line:
-                print("  [Writer] ESP32 ready.")
+                tprint("  [Writer] ESP32 ready.")
                 return
-        print("  [Writer] No ready signal — ESP32 likely already running. Continuing.")
+        tprint("  [Writer] No ready signal — ESP32 likely already running. Continuing.")
 
     def _extract_complete_frames(self, raw_chunk):
         """
@@ -561,13 +586,13 @@ class SerialWriter(threading.Thread):
         try:
             self._ser = self._open_serial()
         except serial.SerialException as e:
-            print(f"  [Writer] ERROR opening serial port {PORT}: {e}")
+            tprint(f"  [Writer] ERROR opening serial port {PORT}: {e}")
             _stop_event.set()
             return
 
         self._wait_for_ready(self._ser)
 
-        print(f"  [Writer] Recording in {INTERVAL_SECONDS}s intervals → {BIN_DIR}\n")
+        tprint(f"  [Writer] Recording in {INTERVAL_SECONDS}s intervals → {BIN_DIR}\n")
 
         try:
             while not _stop_event.is_set():
@@ -580,7 +605,7 @@ class SerialWriter(threading.Thread):
                         if chunk:
                             self._extract_complete_frames(chunk)
                     except serial.SerialException as e:
-                        print(f"  [Writer] Serial error: {e}")
+                        tprint(f"  [Writer] Serial error: {e}")
                         _stop_event.set()
                         break
 
@@ -590,13 +615,13 @@ class SerialWriter(threading.Thread):
                     filepath = os.path.join(BIN_DIR, f"csi_{ts}.bin")
                     with open(filepath, "wb") as f:
                         f.write(self._frames)
-                    print(f"  [Writer] Saved {filepath}  ({len(self._frames)} bytes)")
+                    tprint(f"  [Writer] Saved {os.path.basename(filepath)}  ({len(self._frames)} bytes)")
 
         finally:
             self._ser.dtr = False
             self._ser.rts = False
             self._ser.close()
-            print("  [Writer] Serial port closed.")
+            tprint("  [Writer] Serial port closed.")
 
 
 # ============================================================
@@ -618,16 +643,15 @@ class BinProcessor(threading.Thread):
         global _csv_header, _meta_written
 
         if os.path.getsize(filepath) < 20:
-            print(f"  [Processor] Skipping {os.path.basename(filepath)} — too small.")
+            tprint(f"  [Processor] Skipping {os.path.basename(filepath)} — too small.")
             return 0
 
         frames  = parse_bin_file(filepath)
         samples = bucket_frames(frames)
 
         if not samples:
-            # Report frame count to help diagnose MAC / header issues
-            print(f"  [Processor] No valid samples in {os.path.basename(filepath)}"
-                  f"  (raw frames found: {len(frames)})")
+            tprint(f"  [Processor] No valid samples in {os.path.basename(filepath)}"
+                   f"  (raw frames={len(frames)}, active shouters needed={MIN_FRAMES})")
             return 0
 
         with _capture_lock:
@@ -648,15 +672,15 @@ class BinProcessor(threading.Thread):
             # metadata was already written by prompt handler — nothing to do here
 
         append_samples_to_csv(samples, zone_info, zone_id, folder, header)
-        print(f"  [Processor] {os.path.basename(filepath)}"
-              f"  →  {len(samples)} samples  (frames={len(frames)})"
-              f"  →  {os.path.basename(folder)}")
+        tprint(f"  [Processor] {os.path.basename(filepath)}"
+               f"  →  {len(samples)} samples  (frames={len(frames)})"
+               f"  →  {os.path.basename(folder)}")
         return len(samples)
 
     def run(self):
         global _processed_files, _stop_event
 
-        print(f"  [Processor] Watching {BIN_DIR} for .bin files...\n")
+        tprint(f"  [Processor] Watching {BIN_DIR} for .bin files...")
 
         while not _stop_event.is_set():
             bin_files = sorted(glob.glob(os.path.join(BIN_DIR, "*.bin")))
@@ -705,9 +729,15 @@ if __name__ == "__main__":
     writer.start()
     processor.start()
 
+    # Give threads a moment to start up, then flush their initial messages
+    time.sleep(0.3)
+    flush_print_queue()
+
     # ---- Main capture loop (UI thread) ----
     while True:
+        flush_print_queue()
         params = prompt_capture_params(zones)
+        flush_print_queue()
 
         # -1 entered — stop threads and exit
         if params is None:
@@ -715,6 +745,7 @@ if __name__ == "__main__":
             _stop_event.set()
             writer.join(timeout=INTERVAL_SECONDS + 2)
             processor.join(timeout=4)
+            flush_print_queue()
             print("Session complete. Goodbye.")
             sys.exit(0)
 
@@ -745,11 +776,13 @@ if __name__ == "__main__":
               f"  |  Duration: {duration_s}s  |  Run: {run_index:02d}")
         print(f"  Capturing   — press Ctrl+C to stop this run and start a new one.\n")
 
-        # Hold until Ctrl+C — writer and processor run in background
+        # Hold until Ctrl+C — flush thread messages every second while waiting
         try:
             while True:
                 time.sleep(1)
+                flush_print_queue()
         except KeyboardInterrupt:
+            flush_print_queue()
             print(f"\n  Run stopped  →  {folder_name}")
             print("  Select next capture or enter -1 to exit.\n")
 
