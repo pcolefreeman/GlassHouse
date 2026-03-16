@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# PyInstaller
+build/
+dist/
+
+# Data files (keep .gitkeep to preserve folder structure)
+data/processed/*.csv
+data/raw/*.csv
+
+# AI tool artifacts
+.superpowers/
+docs/superpowers/
