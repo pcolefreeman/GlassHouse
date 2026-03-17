@@ -9,6 +9,7 @@ dist/
 
 # Claude Code local settings
 .claude/
+CLAUDE.md
 
 # Superpowers plans/specs (internal dev docs)
 docs/
