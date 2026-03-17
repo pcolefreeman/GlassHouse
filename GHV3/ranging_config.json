@@ -1,0 +1,6 @@
+{
+  "n": 2.16,
+  "rssi_ref_dbm": -26.2,
+  "d0_m": 1.0,
+  "_comment": "Two-point calibration 2026-03-17. Perfect 25ft square (7.62m side, 10.78m diagonal). Side avg RSSI=-45.25 dBm, diagonal avg RSSI=-48.5 dBm. Solved: n=2.16, rssi_ref=-26.2. Note: 9 dBm spread across same-distance pairs (2-3 outlier at -51); expect ±2-3m per-pair error."
+}
