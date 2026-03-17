@@ -14,7 +14,7 @@ from collections import deque
 import customtkinter as ctk
 
 from ghv3_1 import csi_parser
-from ghv3_1.config import BAUD_RATE, PAIR_KEYS, MAX_LOG_LINES
+from ghv3_1.config import BAUD_RATE, PAIR_KEYS, MAX_LOG_LINES, CSI_SNAP_HDR_SIZE
 from ghv3_1.ui.widgets import LogPanel, PortDropdown, StatusLabel
 from ghv3_1.ui.spacing_tab import SpacingCards
 
@@ -64,6 +64,7 @@ class ListenerDebugThread(threading.Thread):
       {'type': 'listener_frame', 'frame': dict, 'ts': float}
       {'type': 'shouter_frame',  'frame': dict, 'ts': float}
       {'type': 'ranging_frame',  'payload': bytes, 'ts': float}
+      {'type': 'snap_frame',     'snap': dict, 'ts': float}
       {'type': 'ranging_start'}
     """
 
@@ -123,6 +124,20 @@ class ListenerDebugThread(threading.Thread):
                 'ts':      time.time(),
             })
         # must be before the >= 0x20 branch — 0xCC (204) satisfies >= 0x20
+
+        elif b0 == 0xEE:                          # must be BEFORE >= 0x20
+            b1 = ser.read(1)
+            if not b1 or b1[0] != 0xFF:
+                return
+            # Read the 6-byte header (after magic): ver(1) reporter(1) peer(1) seq(1) csi_len(2)
+            hdr = ser.read(CSI_SNAP_HDR_SIZE)
+            if len(hdr) < CSI_SNAP_HDR_SIZE:
+                return
+            csi_len = struct.unpack_from('<H', hdr, 4)[0]
+            csi = ser.read(csi_len)
+            snap = csi_parser.parse_csi_snap_frame(hdr + csi)
+            if snap:
+                self._queue.put({'type': 'snap_frame', 'snap': snap, 'ts': time.time()})
 
         elif b0 == 0xBB:
             b1 = ser.read(1)
@@ -244,6 +259,11 @@ class ListenerDebugTab(ctk.CTkFrame):
         self._sht_frame_times: deque = deque(maxlen=100)
         self._lst_total = 0
         self._sht_total = 0
+        self._snap_total = 0
+
+        # MUSIC estimator (created immediately so snap frames can be collected)
+        from ghv3_1.spacing_estimator import CSIMUSICEstimator
+        self._music_estimator = CSIMUSICEstimator()
 
         # Spacing estimator (lazy init on first ranging frame)
         self._debug_spacing_est = None
@@ -505,17 +525,33 @@ class ListenerDebugTab(ctk.CTkFrame):
                             else:             # MISS
                                 s['misses'] += 1
 
+                elif t == 'snap_frame':
+                    snap = item['snap']
+                    self._snap_total += 1
+                    self._music_estimator.collect(
+                        snap['reporter_id'], snap['peer_id'], snap['csi']
+                    )
+                    if self._snap_total % 10 == 1:
+                        self._append_lst_log(
+                            f"[MUSIC] snap #{self._snap_total}: "
+                            f"reporter={snap['reporter_id']} peer={snap['peer_id']}"
+                        )
+
                 elif t == 'ranging_frame':
                     if self._debug_spacing_est is None:
                         import tempfile
                         from ghv3_1.spacing_estimator import SpacingEstimator
                         _tmp = os.path.join(tempfile.gettempdir(), "ghv3_spacing_live.json")
-                        self._debug_spacing_est = SpacingEstimator(spacing_path=_tmp)
+                        self._debug_spacing_est = SpacingEstimator(
+                            spacing_path=_tmp,
+                            music_estimator=self._music_estimator,
+                        )
                         self._debug_spacing_est.start()
                     self._debug_spacing_est.feed(item)
 
                 elif t == 'ranging_start':
                     self._append_lst_log("[DIAG] Ranging phase restarted — resetting MUSIC buffers")
+                    self._music_estimator.reset_all()
                     if self._reset_music_cb is not None:
                         self._reset_music_cb()
 
@@ -577,31 +613,29 @@ class ListenerDebugTab(ctk.CTkFrame):
         self._lst_fps_label.configure(text=f"Listener CSI: {lst_recent/3:.1f} fps")
         self._sht_fps_label.configure(text=f"Shouter poll: {sht_recent/3:.1f} fps")
         self._lst_total_label.configure(text=f"LST frames: {self._lst_total}")
-        self._sht_total_label.configure(text=f"SHT frames: {self._sht_total}")
+        self._sht_total_label.configure(text=f"SHT frames: {self._sht_total}  MUSIC snaps: {self._snap_total}")
 
         self.after(500, self._update_debug_table)
 
     # ── Distance display ─────────────────────────────────────────────────────
 
     def _update_distances(self) -> None:
-        est = self._debug_spacing_est
-        dists = est.get_distances() if est is not None else {}
-        rssis = est.get_rssi_values() if est is not None else {}
+        # Show MUSIC distances only — RSSI estimates suppressed
+        dists = self._music_estimator.get_distances()
 
         for key, lbl in self._dist_labels.items():
             d = dists.get(key)
             if d is None:
                 lbl.configure(text="--", text_color="#aaaaaa")
             else:
-                r = rssis.get(key)
-                rssi_str = f" ({r:.0f})" if r is not None else ""
-                lbl.configure(text=f"{d:.2f} m{rssi_str}", text_color=_GREEN_TXT)
+                lbl.configure(text=f"{d:.2f} m", text_color=_GREEN_TXT)
 
         self.after(1000, self._update_distances)
 
     # ── Log helper ───────────────────────────────────────────────────────────
 
     def _append_lst_log(self, msg: str) -> None:
+        msg = f"[{time.strftime('%H:%M:%S')}] {msg}"
         self._lst_log_text.configure(state="normal")
         self._lst_log_text.insert("end", msg + "\n")
         line_count = int(self._lst_log_text.index("end-1c").split(".")[0])
@@ -828,6 +862,8 @@ class ShouterDebugTab(ctk.CTkFrame):
     # ── Log helper ───────────────────────────────────────────────────────────
 
     def _append_sht_log(self, line: str) -> None:
+        # Prepend wall-clock timestamp
+        line = f"[{time.strftime('%H:%M:%S')}] {line}"
         # Determine color tag
         lo = line.lower()
         if '[sht] poll' in lo:
