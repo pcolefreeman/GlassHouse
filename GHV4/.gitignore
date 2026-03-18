@@ -26,3 +26,6 @@ GHV3_Distro/data/
 
 # Models (large binary files)
 models/
+
+#ignore gitignore
+.gitignore
