@@ -91,7 +91,8 @@ class BackgroundCaptureThread(threading.Thread):
                 f"[GHV3] label={self._meta['label']}  "
                 f"zone={self._meta['zone_id']}  "
                 f"row={self._meta['grid_row']}  "
-                f"col={self._meta['grid_col']}"
+                f"col={self._meta['grid_col']}  "
+                f"activity={self._meta.get('activity', 'none')}"
             )
 
             music_est = CSIMUSICEstimator()
@@ -149,6 +150,8 @@ class CaptureTab(ctk.CTkFrame):
         # Capture state
         self._selected: set[tuple[int, int]] = set()
         self._cell_btns: dict[tuple[int, int], ctk.CTkButton] = {}
+        self._activity: str = "none"
+        self._activity_btns: dict[str, ctk.CTkButton] = {}
         self._log_queue: queue.Queue = queue.Queue()
         self._capture_thread: BackgroundCaptureThread | None = None
         self._capture_end_time: float | None = None
@@ -278,6 +281,30 @@ class CaptureTab(ctk.CTkFrame):
             info_col, text="from first selected cell", font=("", 10), text_color="#aaaaaa"
         ).pack(anchor="w")
 
+        # Activity
+        af = ctk.CTkFrame(self)
+        af.pack(fill="x", **pad)
+        ctk.CTkLabel(af, text="ACTIVITY", font=("", 11, "bold")).pack(
+            anchor="w", padx=8, pady=(8, 2)
+        )
+        act_row = ctk.CTkFrame(af, fg_color="transparent")
+        act_row.pack(fill="x", padx=8, pady=(0, 8))
+        for activity in ("sitting", "standing", "moving", "covered"):
+            btn = ctk.CTkButton(
+                act_row,
+                text=activity.capitalize(),
+                width=90, height=32,
+                fg_color="white",
+                text_color="#999999",
+                border_width=2,
+                border_color=_NORMAL_BD,
+                corner_radius=8,
+                hover_color="#f0f0f0",
+                command=lambda a=activity: self._toggle_activity(a),
+            )
+            btn.pack(side="left", padx=(0, 6))
+            self._activity_btns[activity] = btn
+
         # Run Duration
         dur_frame = ctk.CTkFrame(self, fg_color="transparent")
         dur_frame.pack(fill="x", padx=12, pady=(2, 2))
@@ -373,6 +400,24 @@ class CaptureTab(ctk.CTkFrame):
         self._selected.clear()
         self._sync_label()
 
+    def _toggle_activity(self, activity: str) -> None:
+        if self._activity == activity:
+            # Deselect — revert to default
+            self._activity = "none"
+            self._activity_btns[activity].configure(
+                fg_color="white", text_color="#999999", border_color=_NORMAL_BD
+            )
+        else:
+            # Deselect previous
+            if self._activity in self._activity_btns:
+                self._activity_btns[self._activity].configure(
+                    fg_color="white", text_color="#999999", border_color=_NORMAL_BD
+                )
+            self._activity = activity
+            self._activity_btns[activity].configure(
+                fg_color=_GREEN_BG, text_color=_GREEN_TXT, border_color=_GREEN_BD
+            )
+
     def _sync_label(self) -> None:
         self._label_display.configure(text=build_label(self._selected))
         r, c = first_cell(self._selected)
@@ -411,6 +456,7 @@ class CaptureTab(ctk.CTkFrame):
             "zone_id":  zone,
             "grid_row": r,
             "grid_col": c,
+            "activity": self._activity,
         }
 
     def _start_capture(self) -> None:
@@ -441,7 +487,7 @@ class CaptureTab(ctk.CTkFrame):
         if dur_s is not None:
             self._append_log(f"[GHV3] Auto-stop in {dur_s:.0f}s")
 
-        meta = {k: args[k] for k in ("label", "zone_id", "grid_row", "grid_col")}
+        meta = {k: args[k] for k in ("label", "zone_id", "grid_row", "grid_col", "activity")}
         self._capture_thread = BackgroundCaptureThread(
             port=args["port"],
             output_path=output_path,

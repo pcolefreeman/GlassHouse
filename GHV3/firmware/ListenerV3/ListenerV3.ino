@@ -378,6 +378,12 @@ void loop() {
         ranging_done = true;
         run_ranging_phase();
     }
+    
+    if (registered_shouter_count < 4) {
+        Serial.printf("[LST] Waiting for shouters (%d/4 registered)\n", registered_shouter_count);
+        last_cycle_ms = millis();
+        return;
+    }
 
     bool polled_any = false;
     for (uint8_t id = 1; id <= 4; id++) {

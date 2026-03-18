@@ -48,3 +48,16 @@ def first_cell(selected: set[tuple[int, int]]) -> tuple[int, int]:
     if not selected:
         return (-1, -1)
     return min(selected)
+
+
+# Row-major order for 3×3 grid — matches CSV column order
+_GRID_CELLS = [(r, c) for r in range(3) for c in range(3)]
+
+
+def build_activity_columns(cell_activities: dict) -> list:
+    """Return 9 activity strings in row-major order for CSV metadata columns.
+
+    Each value is the activity for that cell ('sitting', 'standing', 'moving',
+    'covered'), or '' if the cell has no activity assigned.
+    """
+    return [cell_activities.get((r, c), '') for r, c in _GRID_CELLS]

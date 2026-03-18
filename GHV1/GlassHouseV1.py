@@ -21,7 +21,7 @@ Zone prompt:
   1-9 → Grid cell number
 
 Capture automatically stops after the specified duration and returns
-to the zone prompt — no Ctrl+C required.
+to the zone prompt
 
 Paths (edit the CONFIG block below if needed)
 -----
@@ -66,7 +66,7 @@ SHOUTER_MACS = {
     "68:FE:71:90:60:A0": 1,
     "68:FE:71:90:68:14": 2,
     "68:FE:71:90:6B:90": 3,
-    # "XX:XX:XX:XX:XX:XX": 4,
+    "20:E7:C8:EC:F5:DC": 4,
 }
 
 # Sorted list of active shouter IDs — drives column generation

@@ -1,13 +1,10 @@
 """
 glasshouse.py  —  Project Glass House  |  CSI Data Collector
-=============================================================
-Single-threaded pipeline: Serial → parse → bucket → CSV.
-No intermediate .bin files.  No threads.
 
 Zone prompt:
   -1  → exit cleanly
    0  → Empty room baseline
-  1-9 → Grid cell number
+  1-N → Grid cell number (grid size is configurable)
 
 Capture automatically stops after the specified duration and returns
 to the zone prompt — no Ctrl+C required.
@@ -17,21 +14,7 @@ Paths (edit CONFIG block below if needed)
   BASE_OUTPUT_DIR : folder where run subfolders are created
 
 
-  ============= Improvements to be Made ==================
-        grid scaling with room size
-        Add more positions/actions tesing subject can do
-        remove extraneous subcarriers
-        need to add option to test for multiple people within perimeter
-            -> only tests for 1 person as of now
-  =========================================================
-
-  NULL_SUBCARRIERS = set([
-    0,                                              # DC leakage / anomalous high amplitude
-    1,                                              # suspicious outlier (~11 vs neighbors ~22)
-    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,   # zero block 1
-    64,                                             # DC null
-    93, 94, 95, 96, 97, 98, 99,                    # zero block 2
-])
+  To Be Fixed -> add in grid autoscaling based on input of width and length of perimeter
 """
 
 import csv
@@ -50,14 +33,31 @@ import numpy as np
 # ============================================================
 #  CONFIG
 # ============================================================
-BASE_OUTPUT_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\GHV1\data\raw" # *** change path for device
+BASE_OUTPUT_DIR = r"C:\Users\19124\OneDrive\Documents\Senior_Cap\GitRepo\GlassHouse\training_data"
 
 PORT        = "COM3"        # Windows: "COM3"  |  Linux: "/dev/ttyUSB0"
 BAUD        = 921600
 
 BUCKET_MS   = 200           # time window to average frames per shouter
-SUBCARRIERS = 128           # 256 byte CSI / 2 bytes per complex sample
+SUBCARRIERS = 128           # raw subcarriers from ESP32 (256 byte CSI / 2 bytes each)
 MIN_FRAMES  = 1             # min shouters heard per bucket (1 = keep partial rows as NaN)
+
+# ----------------------------------------------------------
+#  NULL SUBCARRIERS — removed before CSV output
+#  These indices carry no useful signal (DC leakage, zero
+#  blocks, hardware artefacts) and would add noise to ML.
+# ----------------------------------------------------------
+NULL_SUBCARRIERS = {
+    0,                                              # DC leakage / anomalous high amplitude
+    1,                                              # suspicious outlier (~11 vs neighbors ~22)
+    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,   # zero block 1
+    64,                                             # DC null
+    93, 94, 95, 96, 97, 98, 99,                    # zero block 2
+}
+
+# Ordered list of subcarrier indices that are actually written to CSV
+VALID_SC = [sc for sc in range(SUBCARRIERS) if sc not in NULL_SUBCARRIERS]
+N_VALID  = len(VALID_SC)   # 108 with the defaults above
 
 
 # ============================================================
@@ -67,7 +67,7 @@ SHOUTER_MACS = {
     "68:FE:71:90:60:A0": 1,
     "68:FE:71:90:68:14": 2,
     "68:FE:71:90:6B:90": 3,
-    # "XX:XX:XX:XX:XX:XX": 4,
+    "20:E7:C8:EC:F5:DC": 4,
 }
 
 ACTIVE_SHOUTER_IDS = sorted(SHOUTER_MACS.values())
@@ -82,7 +82,27 @@ HEADER_SIZE = 16
 MAGIC_0     = 0xAA
 MAGIC_1     = 0x55
 
-GRID_STATES = ["Occupied", "Standing", "Seated", "Moving"]
+# ----------------------------------------------------------
+#  ACTIONS — what the subject(s) are doing during capture.
+#  Used as the state_key in folder names and metadata.
+# ----------------------------------------------------------
+ACTIONS = [
+    "Standing",         # upright, stationary
+    "Seated",           # sitting in chair / on floor
+    "Walking",          # moving around the zone
+    "Covered",        # arm/hand movements while stationary
+    "Lying",            # on the floor / couch
+    "Occupied",         # generic / unknown posture (default)
+]
+
+ACTION_POSTURE = {
+    "Standing":  "standing",
+    "Seated":    "seated",
+    "Walking":   "moving",
+    "Covered": "covered",
+    "Lying":     "lying",
+    "Occupied":  "center",
+}
 
 
 # ============================================================
@@ -94,25 +114,39 @@ class SessionMeta:
         self.subject_id  = "Subject_A"
         self.room_width  = 24.0
         self.room_length = 24.0
+        self.grid_cols   = 3
+        self.grid_rows   = 3
         self.date        = datetime.now().strftime("%Y-%m-%d")
 
     def prompt(self):
         print("\n=== Session Setup ===")
-        op = input("Operator name        : ").strip()
+
+        op = input("Operator name               : ").strip()
         if op:
             self.operator = op
-        sid = input("Subject ID           : ").strip()
+
+        sid = input("Subject ID                  : ").strip()
         if sid:
             self.subject_id = sid
-        w = input(f"Room width  (ft) [{self.room_width:.0f}] : ").strip()
-        h = input(f"Room length (ft) [{self.room_length:.0f}] : ").strip()
+
+        w = input(f"Room width  (ft) [{self.room_width:.0f}]      : ").strip()
+        h = input(f"Room length (ft) [{self.room_length:.0f}]      : ").strip()
         if w:
             self.room_width  = float(w)
         if h:
             self.room_length = float(h)
+
+        gc = input(f"Grid columns    [{self.grid_cols}]          : ").strip()
+        gr = input(f"Grid rows       [{self.grid_rows}]          : ").strip()
+        if gc:
+            self.grid_cols = int(gc)
+        if gr:
+            self.grid_rows = int(gr)
+
         print(f"\nSession ready  —  Operator: {self.operator}  "
               f"Subject: {self.subject_id}  "
               f"Room: {self.room_width:.0f}x{self.room_length:.0f}ft  "
+              f"Grid: {self.grid_cols}x{self.grid_rows}  "
               f"Date: {self.date}\n")
 
 
@@ -152,10 +186,11 @@ def print_grid(zones, cols, rows, width_ft, length_ft):
         print(row_str)
     print()
 
-def build_grid_state_token(zone_input, state_key):
+def build_grid_state_token(zone_input, action, n_subjects):
     if zone_input == 0:
         return "Empty"
-    return f"Grid{zone_input}{state_key}"
+    people = f"{n_subjects}P" if n_subjects > 1 else ""
+    return f"Grid{zone_input}{action}{people}"
 
 def build_folder_name(session, grid_state_token, duration_s, run_index):
     room = f"{session.room_width:.0f}x{session.room_length:.0f}Room"
@@ -169,19 +204,24 @@ def create_run_folder(session, grid_state_token, duration_s, run_index):
     return path
 
 def write_metadata_json(folder_path, session, grid_state_token,
-                        duration_s, run_index, posture, zone_id):
+                        duration_s, run_index, posture, zone_id, n_subjects):
     meta = {
         "room_width_ft":    session.room_width,
         "room_length_ft":   session.room_length,
+        "grid_cols":        session.grid_cols,
+        "grid_rows":        session.grid_rows,
         "grid_state":       grid_state_token,
         "duration_seconds": duration_s,
         "run_index":        run_index,
         "date":             session.date,
         "operator":         session.operator,
         "subject_id":       session.subject_id,
+        "n_subjects":       n_subjects,
         "posture":          posture,
         "zone_id":          zone_id,
         "shouters":         [f"ESP32_S{s}" for s in ACTIVE_SHOUTER_IDS],
+        "valid_subcarriers":VALID_SC,
+        "null_subcarriers": sorted(NULL_SUBCARRIERS),
         "notes":            "",
     }
     with open(os.path.join(folder_path, "metadata.json"), "w") as f:
@@ -193,11 +233,12 @@ def write_metadata_json(folder_path, session, grid_state_token,
 # ============================================================
 def prompt_capture_params(zones):
     """
-    Returns (zone_input, state_key, posture, duration_s, run_index)
+    Returns (zone_input, action, posture, duration_s, run_index, n_subjects)
     or None if -1 entered (exit).
     """
+    max_zone = max(zones.keys())
     print("\n--- New Capture ---")
-    print("Zone:  0=Empty  1-9=Grid cell  -1=Exit") # change
+    print(f"Zone:  0=Empty  1-{max_zone}=Grid cell  -1=Exit")
 
     while True:
         try:
@@ -211,24 +252,38 @@ def prompt_capture_params(zones):
             break
         if zone_input in zones:
             break
-        print(f"  Invalid. Choose -1, 0, or one of {list(zones.keys())}")
+        print(f"  Invalid. Choose -1, 0, or one of {sorted(zones.keys())}")
 
-    state_key = "Occupied"
-    posture   = "center"
+    action  = "Occupied"
+    posture = "center"
+
     if zone_input != 0:
-        print("\nGrid states:")
-        for i, s in enumerate(GRID_STATES, 1):
-            print(f"  {i}. {s}")
+
+        # --- number of subjects ---
         while True:
             try:
-                choice    = int(input("Select state (default 1): ").strip() or "1")
-                state_key = GRID_STATES[choice - 1]
+                n_subjects = int(input("Number of subjects in zone [1]: ").strip() or "1")
+                if n_subjects >= 1:
+                    break
+                print("  Must be >= 1.")
+            except ValueError:
+                print("  Enter a positive integer.")
+
+        # --- action ---
+        print("\nActions:")
+        for i, a in enumerate(ACTIONS, 1):
+            print(f"  {i}. {a}")
+        while True:
+            try:
+                choice = int(input(f"Select action (default 1): ").strip() or "1")
+                action = ACTIONS[choice - 1]
                 break
             except (ValueError, IndexError):
-                print(f"  Choose 1-{len(GRID_STATES)}")
-        posture_map = {"Occupied": "center", "Standing": "standing", # update
-                       "Seated":   "seated",  "Moving":   "moving"}
-        posture = posture_map.get(state_key, "center")
+                print(f"  Choose 1-{len(ACTIONS)}")
+        posture = ACTION_POSTURE.get(action, "center")
+
+    else:
+        n_subjects = 0
 
     while True:
         try:
@@ -248,7 +303,7 @@ def prompt_capture_params(zones):
         except ValueError:
             print("  Enter a positive integer.")
 
-    return zone_input, state_key, posture, duration_s, run_index
+    return zone_input, action, posture, duration_s, run_index, n_subjects
 
 
 # ============================================================
@@ -274,36 +329,59 @@ def _normalize_amplitude(amplitudes):
     return list((arr - arr.min()) / rng)
 
 def _extract_features(csi_complex, rssi, noise_floor):
-    amplitudes = [abs(c)                     for c in csi_complex]
-    phases     = [math.atan2(c.imag, c.real) for c in csi_complex]
-    unwrapped  = list(np.unwrap(phases))
+    """
+    Extracts features from all 128 subcarriers first, then filters
+    to VALID_SC before returning.  phase_diff is computed on the
+    full unwrapped phase array and then filtered to valid indices
+    (dropping any diff that spans a null subcarrier boundary).
+    """
+    amplitudes_all = [abs(c)                     for c in csi_complex]
+    phases_all     = [math.atan2(c.imag, c.real) for c in csi_complex]
+    unwrapped_all  = list(np.unwrap(phases_all))
+    amp_norm_all   = _normalize_amplitude(amplitudes_all)
+    snr_all        = _compute_snr(amplitudes_all, noise_floor)
+
+    # phase_diff on full array — index i of pdiff corresponds to
+    # the difference between subcarrier i+1 and subcarrier i.
+    # We keep pdiff[i] only when BOTH i and i+1 are valid.
+    pdiff_all = list(np.diff(unwrapped_all))
+    valid_pdiff_idx = [i for i in range(SUBCARRIERS - 1)
+                       if i not in NULL_SUBCARRIERS and (i + 1) not in NULL_SUBCARRIERS]
+
     return {
-        "amplitudes":     amplitudes,
-        "phases":         unwrapped,
-        "phase_diff":     list(np.diff(unwrapped)),
-        "amp_normalized": _normalize_amplitude(amplitudes),
-        "snr":            _compute_snr(amplitudes, noise_floor),
+        "amplitudes":     [amplitudes_all[sc] for sc in VALID_SC],
+        "phases":         [unwrapped_all[sc]  for sc in VALID_SC],
+        "phase_diff":     [pdiff_all[i]       for i in valid_pdiff_idx],
+        "amp_normalized": [amp_norm_all[sc]   for sc in VALID_SC],
+        "snr":            [snr_all[sc]        for sc in VALID_SC],
         "rssi":           rssi,
         "noise_floor":    noise_floor,
+        # store valid_pdiff_idx length so CSV builder knows column count
+        "_n_pdiff":       len(valid_pdiff_idx),
     }
+
+# Compute once at import time so build_csv_header() can use it
+_VALID_PDIFF_IDX = [i for i in range(SUBCARRIERS - 1)
+                    if i not in NULL_SUBCARRIERS and (i + 1) not in NULL_SUBCARRIERS]
+N_VALID_PDIFF    = len(_VALID_PDIFF_IDX)
 
 
 # ============================================================
 #  CSV
 # ============================================================
 def build_csv_header():
-    header = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
+    header = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col", "n_subjects"]
     for s in ACTIVE_SHOUTER_IDS:
         px = f"s{s}"
-        for sc in range(SUBCARRIERS):
+        for sc in VALID_SC:
             header.append(f"{px}_amp_{sc}")
-        for sc in range(SUBCARRIERS):
+        for sc in VALID_SC:
             header.append(f"{px}_amp_norm_{sc}")
-        for sc in range(SUBCARRIERS):
+        for sc in VALID_SC:
             header.append(f"{px}_phase_{sc}")
-        for sc in range(SUBCARRIERS - 1):
-            header.append(f"{px}_pdiff_{sc}")
-        for sc in range(SUBCARRIERS):
+        for i in _VALID_PDIFF_IDX:
+            header.append(f"{px}_pdiff_{i}")
+        for sc in VALID_SC:
             header.append(f"{px}_snr_{sc}")
         header.append(f"{px}_rssi")
         header.append(f"{px}_noise_floor")
@@ -318,7 +396,7 @@ def open_csv(folder_path, header):
         writer.writeheader()
     return f, writer
 
-def write_bucket_to_csv(writer, bucket_data, zone_info, zone_id, header):
+def write_bucket_to_csv(writer, bucket_data, zone_info, zone_id, n_subjects, header):
     """
     bucket_data : dict  {shouter_id: [frame, ...], "t_bucket": ms}
     Averages frames per shouter, fills NaN for any shouter not heard.
@@ -334,6 +412,7 @@ def write_bucket_to_csv(writer, bucket_data, zone_info, zone_id, header):
     row["zone_id"]      = zone_id
     row["grid_row"]     = zone_info["row"]
     row["grid_col"]     = zone_info["col"]
+    row["n_subjects"]   = n_subjects
 
     for sid in ACTIVE_SHOUTER_IDS:
         px        = f"s{sid}"
@@ -350,13 +429,13 @@ def write_bucket_to_csv(writer, bucket_data, zone_info, zone_id, header):
         avg_rssi       = float(np.mean([f["rssi"]        for f in frames_in]))
         avg_nf         = float(np.mean([f["noise_floor"] for f in frames_in]))
 
-        for sc in range(len(avg_amp)):
-            row[f"{px}_amp_{sc}"]      = round(float(avg_amp[sc]),      4)
-            row[f"{px}_amp_norm_{sc}"] = round(float(avg_amp_norm[sc]), 4)
-            row[f"{px}_phase_{sc}"]    = round(float(avg_phase[sc]),    4)
-            row[f"{px}_snr_{sc}"]      = round(float(avg_snr[sc]),      4)
-        for sc in range(len(avg_phase_diff)):
-            row[f"{px}_pdiff_{sc}"]    = round(float(avg_phase_diff[sc]), 4)
+        for idx, sc in enumerate(VALID_SC):
+            row[f"{px}_amp_{sc}"]      = round(float(avg_amp[idx]),      4)
+            row[f"{px}_amp_norm_{sc}"] = round(float(avg_amp_norm[idx]), 4)
+            row[f"{px}_phase_{sc}"]    = round(float(avg_phase[idx]),    4)
+            row[f"{px}_snr_{sc}"]      = round(float(avg_snr[idx]),      4)
+        for idx, i in enumerate(_VALID_PDIFF_IDX):
+            row[f"{px}_pdiff_{i}"]     = round(float(avg_phase_diff[idx]), 4)
         row[f"{px}_rssi"]        = round(avg_rssi, 2)
         row[f"{px}_noise_floor"] = round(avg_nf,   2)
 
@@ -393,7 +472,7 @@ def wait_for_ready(ser):
 # ============================================================
 #  CAPTURE LOOP  —  serial → parse → bucket → CSV
 # ============================================================
-def run_capture(ser, folder_path, zone_info, zone_id, duration_s, csv_header):
+def run_capture(ser, folder_path, zone_info, zone_id, n_subjects, duration_s, csv_header):
     """
     Reads the serial port for duration_s seconds.
     Parses frames on the fly, buckets them, writes rows to CSV.
@@ -462,7 +541,7 @@ def run_capture(ser, folder_path, zone_info, zone_id, duration_s, csv_header):
                 if mac not in SHOUTER_MACS:
                     continue
 
-                # extract features
+                # extract features (null subcarriers removed inside)
                 csi_bytes   = buf[payload_start:frame_end]
                 csi_complex = _parse_csi_bytes(csi_bytes)
                 features    = _extract_features(csi_complex, rssi, noise_floor)
@@ -478,9 +557,10 @@ def run_capture(ser, folder_path, zone_info, zone_id, duration_s, csv_header):
 
                 if bid not in buckets:
                     # flush buckets that are now closed (older than bid-1)
-                    for cb in sorted(b for b in buckets if b < bid - 1):
+                    for cb in sorted(b for b in list(buckets) if b < bid - 1):
                         rows_written += write_bucket_to_csv(
-                            csv_writer, buckets[cb], zone_info, zone_id, csv_header)
+                            csv_writer, buckets[cb], zone_info, zone_id,
+                            n_subjects, csv_header)
                         del buckets[cb]
 
                     buckets[bid] = {sid: [] for sid in ACTIVE_SHOUTER_IDS}
@@ -497,7 +577,7 @@ def run_capture(ser, folder_path, zone_info, zone_id, duration_s, csv_header):
         # flush all remaining open buckets
         for cb in sorted(buckets):
             rows_written += write_bucket_to_csv(
-                csv_writer, buckets[cb], zone_info, zone_id, csv_header)
+                csv_writer, buckets[cb], zone_info, zone_id, n_subjects, csv_header)
         csv_file.flush()
         csv_file.close()
 
@@ -515,18 +595,23 @@ if __name__ == "__main__":
     session    = SessionMeta()
     session.prompt()
 
-    zones      = build_zone_map(3, 3, session.room_width, session.room_length) # update
+    zones      = build_zone_map(session.grid_cols, session.grid_rows,
+                                session.room_width, session.room_length)
     csv_header = build_csv_header()
 
-    print_grid(zones, 3, 3, session.room_width, session.room_length) # update
+    print_grid(zones, session.grid_cols, session.grid_rows,
+               session.room_width, session.room_length)
 
     print("=== Glass House — CSI Data Collector ===")
     print(f"  Serial port         : {PORT}  @  {BAUD} baud")
     print(f"  Training output     : {BASE_OUTPUT_DIR}")
     print(f"  Bucket size         : {BUCKET_MS}ms")
-    print(f"  Subcarriers         : {SUBCARRIERS} per shouter (raw)")
+    print(f"  Subcarriers (raw)   : {SUBCARRIERS}")
+    print(f"  Null subcarriers    : {len(NULL_SUBCARRIERS)} removed  →  {N_VALID} used")
     print(f"  Shouters active     : {len(ACTIVE_SHOUTER_IDS)}  (IDs: {ACTIVE_SHOUTER_IDS})")
-    print(f"  Min shouters/bucket : {MIN_FRAMES}\n")
+    print(f"  Min shouters/bucket : {MIN_FRAMES}")
+    print(f"  Grid                : {session.grid_cols}x{session.grid_rows}"
+          f"  ({session.grid_cols * session.grid_rows} zones)\n")
 
     # open serial once — stays open for the entire session
     try:
@@ -545,23 +630,24 @@ if __name__ == "__main__":
                 print("\nSession complete. Goodbye.")
                 break
 
-            zone_input, state_key, posture, duration_s, run_index = params
-            grid_state_token = build_grid_state_token(zone_input, state_key)
+            zone_input, action, posture, duration_s, run_index, n_subjects = params
+            grid_state_token = build_grid_state_token(zone_input, action, n_subjects)
 
             zone_info = {"label": "empty", "row": 0, "col": 0} \
                         if zone_input == 0 else zones[zone_input]
 
             folder_path = create_run_folder(session, grid_state_token, duration_s, run_index)
             write_metadata_json(folder_path, session, grid_state_token,
-                                duration_s, run_index, posture, zone_input)
+                                duration_s, run_index, posture, zone_input, n_subjects)
 
+            subj_str = f"{n_subjects} subject{'s' if n_subjects != 1 else ''}"
             print(f"\n  Run folder  : {folder_path}")
-            print(f"  Grid state  : {grid_state_token}  |  Posture: {posture}"
-                  f"  |  Duration: {duration_s}s  |  Run: {run_index:02d}")
+            print(f"  Grid state  : {grid_state_token}  |  Action: {action}"
+                  f"  |  Subjects: {subj_str}  |  Duration: {duration_s}s  |  Run: {run_index:02d}")
             print(f"  Capturing   — auto-stops in {duration_s}s  (Ctrl+C to stop early)\n")
 
             rows = run_capture(ser, folder_path, zone_info, zone_input,
-                               duration_s, csv_header)
+                               n_subjects, duration_s, csv_header)
 
             print(f"  Capture complete  →  {os.path.basename(folder_path)}  ({rows} rows written)")
             print("  Select next capture or enter -1 to exit.\n")

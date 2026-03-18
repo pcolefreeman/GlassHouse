@@ -3,7 +3,7 @@
 import pytest
 from ghv3_1.cell_logic import (
     validate_width, validate_depth, validate_zone,
-    build_label, first_cell,
+    build_label, first_cell, build_activity_columns,
 )
 
 
@@ -105,3 +105,31 @@ def test_first_cell_multi_picks_smallest_row_then_col():
 
 def test_first_cell_same_row_picks_smallest_col():
     assert first_cell({(1, 2), (1, 0)}) == (1, 0)
+
+
+# ── build_activity_columns ───────────────────────────────────────────────────
+
+def test_build_activity_columns_empty_dict_returns_nine_empty_strings():
+    result = build_activity_columns({})
+    assert result == [''] * 9
+
+def test_build_activity_columns_row_major_order():
+    # r0c0=index0, r0c1=index1, ..., r2c2=index8
+    result = build_activity_columns({(0, 0): 'sitting'})
+    assert result[0] == 'sitting'
+    assert all(v == '' for v in result[1:])
+
+def test_build_activity_columns_multiple_cells():
+    activities = {(0, 0): 'sitting', (1, 1): 'standing', (2, 2): 'moving'}
+    result = build_activity_columns(activities)
+    assert result[0] == 'sitting'   # r0c0
+    assert result[4] == 'standing'  # r1c1
+    assert result[8] == 'moving'    # r2c2
+    assert result[1] == ''          # r0c1 not set
+
+def test_build_activity_columns_all_cells():
+    activities = {(r, c): 'covered' for r in range(3) for c in range(3)}
+    assert build_activity_columns(activities) == ['covered'] * 9
+
+def test_build_activity_columns_returns_list_of_nine():
+    assert len(build_activity_columns({})) == 9

@@ -177,7 +177,7 @@ def build_feature_names(active_ids=None) -> list:
     """Return the ordered CSV column name list.  Must match CSVWriter output."""
     if active_ids is None:
         active_ids = ACTIVE_SHOUTER_IDS
-    header = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
+    header = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col", "activity"]
     for s in active_ids:
         for px in [f"s{s}", f"s{s}_tx"]:
             for sc in range(SUBCARRIERS):

@@ -203,7 +203,8 @@ class CSVWriter(threading.Thread):
                sf['listener_ms']  if sf else 0)
         # Fill meta positions (first 5 columns)
         meta_vals = [ts, meta.get('label',''), meta.get('zone_id',''),
-                     meta.get('grid_row',''), meta.get('grid_col','')]
+                     meta.get('grid_row',''), meta.get('grid_col',''),
+                     meta.get('activity', '')]
         for i, v in enumerate(meta_vals):
             vec[i] = v
         self._writer.writerow(vec)
