@@ -1,0 +1,85 @@
+GHV3 Listener Debug Log — COM3 — 2026-03-17 21:56:48
+============================================================
+
+[21:56:48] [DBG] Listener connected on COM3
+[21:56:48] [LST] UDP listening on 3333
+[21:56:49] [LST] CSI capture enabled
+[21:57:01] [LST] HELLO sid=1 IP=192.168.4.2 MAC=68:FE:71:90:60:A0
+[21:57:03] [LST] Shouter 1 disconnected, ranging reset
+[21:57:04] [LST] HELLO sid=1 IP=192.168.4.2 MAC=68:FE:71:90:60:A0
+[21:57:06] [LST] HELLO sid=2 IP=192.168.4.3 MAC=68:FE:71:90:68:14
+[21:57:14] [LST] HELLO sid=3 IP=192.168.4.4 MAC=68:FE:71:90:6B:90
+[21:57:21] [LST] HELLO sid=4 IP=192.168.4.5 MAC=20:E7:C8:EC:F5:DC
+[21:57:26] [DIAG] Ranging phase restarted — resetting MUSIC buffers
+[21:57:26] [LST] Starting ranging phase
+[21:57:26] [LST] Ranging: requesting beacons from shouter 1
+[21:57:27] [LST] Ranging: beacon 1 delay done, polling
+[21:57:27] [LST] poll_all: polling shouter 1
+[21:57:29] [LST] poll_all: polling shouter 2
+[21:57:29] [MUSIC] snap #1: reporter=2 peer=1
+[21:57:29] [MUSIC] snap #11: reporter=2 peer=1
+[21:57:29] [MUSIC] snap #21: reporter=2 peer=1
+[21:57:30] [MUSIC] snap #31: reporter=2 peer=1
+[21:57:31] [LST] poll_all: polling shouter 3
+[21:57:31] [MUSIC] snap #41: reporter=3 peer=1
+[21:57:31] [MUSIC] snap #51: reporter=3 peer=1
+[21:57:32] [MUSIC] snap #61: reporter=3 peer=1
+[21:57:33] [LST] poll_all: polling shouter 4
+[21:57:33] [MUSIC] snap #71: reporter=4 peer=1
+[21:57:33] [MUSIC] snap #81: reporter=4 peer=1
+[21:57:34] [MUSIC] snap #91: reporter=4 peer=1
+[21:57:34] [MUSIC] snap #101: reporter=4 peer=1
+[21:57:35] [LST] Ranging: beacon 1 complete, snaps=105
+[21:57:35] [LST] Ranging: requesting beacons from shouter 2
+[21:57:36] [LST] Ranging: beacon 2 delay done, polling
+[21:57:36] [LST] poll_all: polling shouter 1
+[21:57:36] [MUSIC] snap #111: reporter=1 peer=2
+[21:57:36] [MUSIC] snap #121: reporter=1 peer=2
+[21:57:36] [MUSIC] snap #131: reporter=1 peer=2
+[21:57:38] [LST] poll_all: polling shouter 2
+[21:57:40] [LST] poll_all: polling shouter 3
+[21:57:40] [MUSIC] snap #141: reporter=3 peer=2
+[21:57:40] [MUSIC] snap #151: reporter=3 peer=2
+[21:57:41] [MUSIC] snap #161: reporter=3 peer=2
+[21:57:41] [MUSIC] snap #171: reporter=3 peer=2
+[21:57:42] [LST] poll_all: polling shouter 4
+[21:57:42] [MUSIC] snap #181: reporter=4 peer=2
+[21:57:42] [MUSIC] snap #191: reporter=4 peer=2
+[21:57:43] [MUSIC] snap #201: reporter=4 peer=2
+[21:57:44] [LST] Ranging: beacon 2 complete, snaps=205
+[21:57:44] [LST] Ranging: requesting beacons from shouter 3
+[21:57:45] [LST] Ranging: beacon 3 delay done, polling
+[21:57:45] [LST] poll_all: polling shouter 1
+[21:57:45] [MUSIC] snap #211: reporter=1 peer=3
+[21:57:45] [MUSIC] snap #221: reporter=1 peer=3
+[21:57:45] [MUSIC] snap #231: reporter=1 peer=3
+[21:57:47] [LST] poll_all: polling shouter 2
+[21:57:47] [MUSIC] snap #241: reporter=2 peer=3
+[21:57:47] [MUSIC] snap #251: reporter=2 peer=3
+[21:57:47] [MUSIC] snap #261: reporter=2 peer=3
+[21:57:48] [MUSIC] snap #271: reporter=2 peer=3
+[21:57:49] [LST] poll_all: polling shouter 3
+[21:57:51] [LST] poll_all: polling shouter 4
+[21:57:51] [MUSIC] snap #281: reporter=4 peer=3
+[21:57:51] [MUSIC] snap #291: reporter=4 peer=3
+[21:57:52] [MUSIC] snap #301: reporter=4 peer=3
+[21:57:53] [LST] Ranging: beacon 3 complete, snaps=310
+[21:57:53] [LST] Ranging: requesting beacons from shouter 4
+[21:57:54] [LST] Ranging: beacon 4 delay done, polling
+[21:57:54] [LST] poll_all: polling shouter 1
+[21:57:54] [MUSIC] snap #311: reporter=1 peer=4
+[21:57:54] [MUSIC] snap #321: reporter=1 peer=4
+[21:57:54] [MUSIC] snap #331: reporter=1 peer=4
+[21:57:55] [MUSIC] snap #341: reporter=1 peer=4
+[21:57:56] [LST] poll_all: polling shouter 2
+[21:57:56] [MUSIC] snap #351: reporter=2 peer=4
+[21:57:56] [MUSIC] snap #361: reporter=2 peer=4
+[21:57:57] [MUSIC] snap #371: reporter=2 peer=4
+[21:57:58] [LST] poll_all: polling shouter 3
+[21:57:58] [MUSIC] snap #381: reporter=3 peer=4
+[21:57:58] [MUSIC] snap #391: reporter=3 peer=4
+[21:57:58] [MUSIC] snap #401: reporter=3 peer=4
+[21:57:59] [MUSIC] snap #411: reporter=3 peer=4
+[21:58:00] [LST] poll_all: polling shouter 4
+[21:58:02] [LST] Ranging: beacon 4 complete, snaps=415
+[21:58:02] [LST] Ranging done: 415 snap frames emitted

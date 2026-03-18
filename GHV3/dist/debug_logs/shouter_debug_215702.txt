@@ -1,0 +1,402 @@
+GHV3 Shouter Debug Log — COM4 — 2026-03-17 21:57:02
+============================================================
+
+[21:57:02] [DBG] Shouter connected on COM4
+[21:57:04] [SHT] Connecting.....
+[21:57:04] [SHT] Connected, IP=192.168.4.2
+[21:57:04] [SHT] HELLO sent
+[21:57:04] [SHT] ESP-NOW ready
+[21:57:04] [SHT] POLL seq=20
+[21:57:04] [SHT] SHOUT tx=1 poll=20 csi=256
+[21:57:04] [SHT] POLL seq=21
+[21:57:04] [SHT] SHOUT tx=2 poll=21 csi=256
+[21:57:04] [SHT] POLL seq=22
+[21:57:04] [SHT] SHOUT tx=3 poll=22 csi=256
+[21:57:04] [SHT] POLL seq=23
+[21:57:04] [SHT] SHOUT tx=4 poll=23 csi=256
+[21:57:04] [SHT] POLL seq=24
+[21:57:04] [SHT] SHOUT tx=5 poll=24 csi=256
+[21:57:05] [SHT] POLL seq=25
+[21:57:05] [SHT] SHOUT tx=6 poll=25 csi=256
+[21:57:05] [SHT] POLL seq=26
+[21:57:05] [SHT] SHOUT tx=7 poll=26 csi=256
+[21:57:05] [SHT] POLL seq=27
+[21:57:05] [SHT] SHOUT tx=8 poll=27 csi=256
+[21:57:05] [SHT] POLL seq=28
+[21:57:05] [SHT] SHOUT tx=9 poll=28 csi=256
+[21:57:05] [SHT] POLL seq=29
+[21:57:05] [SHT] SHOUT tx=10 poll=29 csi=256
+[21:57:05] [SHT] POLL seq=30
+[21:57:05] [SHT] SHOUT tx=11 poll=30 csi=256
+[21:57:05] [SHT] POLL seq=31
+[21:57:05] [SHT] SHOUT tx=12 poll=31 csi=256
+[21:57:05] [SHT] POLL seq=32
+[21:57:05] [SHT] SHOUT tx=13 poll=32 csi=256
+[21:57:05] [SHT] POLL seq=33
+[21:57:05] [SHT] SHOUT tx=14 poll=33 csi=256
+[21:57:05] [SHT] POLL seq=34
+[21:57:05] [SHT] SHOUT tx=15 poll=34 csi=256
+[21:57:05] [SHT] POLL seq=35
+[21:57:05] [SHT] SHOUT tx=16 poll=35 csi=256
+[21:57:06] [SHT] POLL seq=36
+[21:57:06] [SHT] SHOUT tx=17 poll=36 csi=256
+[21:57:06] [SHT] POLL seq=37
+[21:57:06] [SHT] SHOUT tx=18 poll=37 csi=256
+[21:57:06] [SHT] POLL seq=38
+[21:57:06] [SHT] SHOUT tx=19 poll=38 csi=256
+[21:57:06] [SHT] POLL seq=39
+[21:57:06] [SHT] SHOUT tx=20 poll=39 csi=256
+[21:57:06] [SHT] POLL seq=40
+[21:57:06] [SHT] SHOUT tx=21 poll=40 csi=256
+[21:57:06] [SHT] POLL seq=41
+[21:57:06] [SHT] SHOUT tx=22 poll=41 csi=256
+[21:57:06] [SHT] POLL seq=42
+[21:57:06] [SHT] SHOUT tx=23 poll=42 csi=256
+[21:57:06] [SHT] POLL seq=43
+[21:57:06] [SHT] SHOUT tx=24 poll=43 csi=256
+[21:57:07] [SHT] POLL seq=44
+[21:57:07] [SHT] SHOUT tx=25 poll=44 csi=256
+[21:57:07] [SHT] POLL seq=45
+[21:57:07] [SHT] SHOUT tx=26 poll=45 csi=256
+[21:57:07] [SHT] POLL seq=46
+[21:57:07] [SHT] SHOUT tx=27 poll=46 csi=256
+[21:57:07] [SHT] POLL seq=47
+[21:57:07] [SHT] SHOUT tx=28 poll=47 csi=256
+[21:57:07] [SHT] POLL seq=48
+[21:57:07] [SHT] SHOUT tx=29 poll=48 csi=256
+[21:57:07] [SHT] POLL seq=49
+[21:57:07] [SHT] SHOUT tx=30 poll=49 csi=256
+[21:57:08] [SHT] POLL seq=50
+[21:57:08] [SHT] SHOUT tx=31 poll=50 csi=256
+[21:57:08] [SHT] POLL seq=51
+[21:57:08] [SHT] SHOUT tx=32 poll=51 csi=256
+[21:57:08] [SHT] POLL seq=52
+[21:57:08] [SHT] SHOUT tx=33 poll=52 csi=256
+[21:57:08] [SHT] POLL seq=53
+[21:57:08] [SHT] SHOUT tx=34 poll=53 csi=256
+[21:57:08] [SHT] POLL seq=54
+[21:57:08] [SHT] SHOUT tx=35 poll=54 csi=256
+[21:57:09] [SHT] POLL seq=55
+[21:57:09] [SHT] SHOUT tx=36 poll=55 csi=256
+[21:57:09] [SHT] POLL seq=56
+[21:57:09] [SHT] SHOUT tx=37 poll=56 csi=256
+[21:57:09] [SHT] POLL seq=57
+[21:57:09] [SHT] SHOUT tx=38 poll=57 csi=256
+[21:57:09] [SHT] POLL seq=58
+[21:57:09] [SHT] SHOUT tx=39 poll=58 csi=256
+[21:57:09] [SHT] POLL seq=59
+[21:57:09] [SHT] SHOUT tx=40 poll=59 csi=256
+[21:57:10] [SHT] POLL seq=60
+[21:57:10] [SHT] SHOUT tx=41 poll=60 csi=256
+[21:57:10] [SHT] POLL seq=61
+[21:57:10] [SHT] SHOUT tx=42 poll=61 csi=256
+[21:57:10] [SHT] POLL seq=62
+[21:57:10] [SHT] SHOUT tx=43 poll=62 csi=256
+[21:57:10] [SHT] POLL seq=63
+[21:57:10] [SHT] SHOUT tx=44 poll=63 csi=256
+[21:57:10] [SHT] POLL seq=64
+[21:57:10] [SHT] SHOUT tx=45 poll=64 csi=256
+[21:57:11] [SHT] POLL seq=65
+[21:57:11] [SHT] SHOUT tx=46 poll=65 csi=256
+[21:57:11] [SHT] POLL seq=66
+[21:57:11] [SHT] SHOUT tx=47 poll=66 csi=256
+[21:57:11] [SHT] POLL seq=67
+[21:57:11] [SHT] SHOUT tx=48 poll=67 csi=256
+[21:57:11] [SHT] POLL seq=68
+[21:57:11] [SHT] SHOUT tx=49 poll=68 csi=256
+[21:57:12] [SHT] POLL seq=69
+[21:57:12] [SHT] SHOUT tx=50 poll=69 csi=256
+[21:57:12] [SHT] POLL seq=70
+[21:57:12] [SHT] SHOUT tx=51 poll=70 csi=256
+[21:57:12] [SHT] POLL seq=71
+[21:57:12] [SHT] SHOUT tx=52 poll=71 csi=256
+[21:57:12] [SHT] POLL seq=72
+[21:57:12] [SHT] SHOUT tx=53 poll=72 csi=256
+[21:57:12] [SHT] POLL seq=73
+[21:57:12] [SHT] SHOUT tx=54 poll=73 csi=256
+[21:57:13] [SHT] POLL seq=74
+[21:57:13] [SHT] SHOUT tx=55 poll=74 csi=256
+[21:57:13] [SHT] POLL seq=75
+[21:57:13] [SHT] SHOUT tx=56 poll=75 csi=256
+[21:57:13] [SHT] POLL seq=76
+[21:57:13] [SHT] SHOUT tx=57 poll=76 csi=256
+[21:57:13] [SHT] POLL seq=77
+[21:57:13] [SHT] SHOUT tx=58 poll=77 csi=256
+[21:57:13] [SHT] POLL seq=78
+[21:57:13] [SHT] SHOUT tx=59 poll=78 csi=256
+[21:57:14] [SHT] POLL seq=79
+[21:57:14] [SHT] SHOUT tx=60 poll=79 csi=256
+[21:57:14] [SHT] POLL seq=80
+[21:57:14] [SHT] SHOUT tx=61 poll=80 csi=256
+[21:57:14] [SHT] POLL seq=81
+[21:57:14] [SHT] SHOUT tx=62 poll=81 csi=256
+[21:57:14] [SHT] POLL seq=82
+[21:57:14] [SHT] SHOUT tx=63 poll=82 csi=256
+[21:57:15] [SHT] POLL seq=83
+[21:57:15] [SHT] SHOUT tx=64 poll=83 csi=256
+[21:57:15] [SHT] POLL seq=84
+[21:57:15] [SHT] SHOUT tx=65 poll=84 csi=256
+[21:57:15] [SHT] POLL seq=85
+[21:57:15] [SHT] SHOUT tx=66 poll=85 csi=256
+[21:57:15] [SHT] POLL seq=86
+[21:57:15] [SHT] SHOUT tx=67 poll=86 csi=256
+[21:57:16] [SHT] POLL seq=87
+[21:57:16] [SHT] SHOUT tx=68 poll=87 csi=256
+[21:57:16] [SHT] POLL seq=88
+[21:57:16] [SHT] SHOUT tx=69 poll=88 csi=256
+[21:57:16] [SHT] POLL seq=89
+[21:57:16] [SHT] SHOUT tx=70 poll=89 csi=256
+[21:57:17] [SHT] POLL seq=90
+[21:57:17] [SHT] SHOUT tx=71 poll=90 csi=256
+[21:57:17] [SHT] POLL seq=91
+[21:57:17] [SHT] SHOUT tx=72 poll=91 csi=256
+[21:57:17] [SHT] POLL seq=92
+[21:57:17] [SHT] SHOUT tx=73 poll=92 csi=256
+[21:57:17] [SHT] POLL seq=93
+[21:57:17] [SHT] SHOUT tx=74 poll=93 csi=256
+[21:57:18] [SHT] POLL seq=94
+[21:57:18] [SHT] SHOUT tx=75 poll=94 csi=256
+[21:57:18] [SHT] POLL seq=95
+[21:57:18] [SHT] SHOUT tx=76 poll=95 csi=256
+[21:57:18] [SHT] POLL seq=96
+[21:57:18] [SHT] SHOUT tx=77 poll=96 csi=256
+[21:57:19] [SHT] POLL seq=97
+[21:57:19] [SHT] SHOUT tx=78 poll=97 csi=256
+[21:57:19] [SHT] POLL seq=98
+[21:57:19] [SHT] SHOUT tx=79 poll=98 csi=256
+[21:57:19] [SHT] POLL seq=99
+[21:57:19] [SHT] SHOUT tx=80 poll=99 csi=256
+[21:57:20] [SHT] POLL seq=100
+[21:57:20] [SHT] SHOUT tx=81 poll=100 csi=256
+[21:57:20] [SHT] POLL seq=101
+[21:57:20] [SHT] SHOUT tx=82 poll=101 csi=256
+[21:57:20] [SHT] POLL seq=102
+[21:57:20] [SHT] SHOUT tx=83 poll=102 csi=256
+[21:57:21] [SHT] POLL seq=103
+[21:57:21] [SHT] SHOUT tx=84 poll=103 csi=256
+[21:57:21] [SHT] POLL seq=104
+[21:57:21] [SHT] SHOUT tx=85 poll=104 csi=256
+[21:57:21] [SHT] POLL seq=105
+[21:57:21] [SHT] SHOUT tx=86 poll=105 csi=256
+[21:57:22] [SHT] POLL seq=106
+[21:57:22] [SHT] SHOUT tx=87 poll=106 csi=256
+[21:57:22] [SHT] POLL seq=107
+[21:57:22] [SHT] SHOUT tx=88 poll=107 csi=256
+[21:57:22] [SHT] POLL seq=108
+[21:57:22] [SHT] SHOUT tx=89 poll=108 csi=256
+[21:57:23] [SHT] POLL seq=109
+[21:57:23] [SHT] SHOUT tx=90 poll=109 csi=256
+[21:57:23] [SHT] POLL seq=110
+[21:57:23] [SHT] SHOUT tx=91 poll=110 csi=256
+[21:57:24] [SHT] POLL seq=111
+[21:57:24] [SHT] SHOUT tx=92 poll=111 csi=256
+[21:57:24] [SHT] POLL seq=112
+[21:57:24] [SHT] SHOUT tx=93 poll=112 csi=256
+[21:57:25] [SHT] POLL seq=113
+[21:57:25] [SHT] SHOUT tx=94 poll=113 csi=256
+[21:57:25] [SHT] POLL seq=114
+[21:57:25] [SHT] SHOUT tx=95 poll=114 csi=256
+[21:57:25] [SHT] POLL seq=115
+[21:57:25] [SHT] SHOUT tx=96 poll=115 csi=256
+[21:57:26] [SHT] POLL seq=116
+[21:57:26] [SHT] SHOUT tx=97 poll=116 csi=256
+[21:57:27] [SHT] POLL seq=117
+[21:57:27] [SHT] SHOUT tx=98 poll=117 csi=256
+[21:57:35] [SHT] snap peer=2 seq=0 len=256
+[21:57:35] [SHT] snap peer=2 seq=1 len=256
+[21:57:35] [SHT] snap peer=2 seq=2 len=256
+[21:57:35] [SHT] snap peer=2 seq=3 len=256
+[21:57:35] [SHT] snap peer=2 seq=4 len=256
+[21:57:35] [SHT] snap peer=2 seq=5 len=256
+[21:57:35] [SHT] snap peer=2 seq=6 len=256
+[21:57:35] [SHT] snap peer=2 seq=7 len=256
+[21:57:35] [SHT] snap peer=2 seq=8 len=256
+[21:57:35] [SHT] snap peer=2 seq=9 len=256
+[21:57:35] [SHT] snap peer=2 seq=10 len=256
+[21:57:36] [SHT] snap peer=2 seq=11 len=256
+[21:57:36] [SHT] snap peer=2 seq=12 len=256
+[21:57:36] [SHT] snap peer=2 seq=13 len=256
+[21:57:36] [SHT] snap peer=2 seq=14 len=256
+[21:57:36] [SHT] snap peer=2 seq=15 len=256
+[21:57:36] [SHT] snap peer=2 seq=16 len=256
+[21:57:36] [SHT] snap peer=2 seq=17 len=256
+[21:57:36] [SHT] snap peer=2 seq=18 len=256
+[21:57:36] [SHT] snap peer=2 seq=19 len=256
+[21:57:36] [SHT] snap peer=2 seq=20 len=256
+[21:57:36] [SHT] snap peer=2 seq=21 len=256
+[21:57:36] [SHT] snap peer=2 seq=22 len=256
+[21:57:36] [SHT] snap peer=2 seq=23 len=256
+[21:57:36] [SHT] snap peer=2 seq=24 len=256
+[21:57:36] [SHT] snap peer=2 seq=25 len=256
+[21:57:36] [SHT] snap peer=2 seq=26 len=256
+[21:57:36] [SHT] snap peer=2 seq=27 len=256
+[21:57:36] [SHT] snap peer=2 seq=28 len=256
+[21:57:36] [SHT] snap peer=2 seq=29 len=256
+[21:57:36] [SHT] snap peer=2 seq=30 len=256
+[21:57:36] [SHT] snap peer=2 seq=31 len=256
+[21:57:36] [SHT] POLL seq=118
+[21:57:36] [SHT] SHOUT tx=99 poll=118 csi=256
+[21:57:44] [SHT] snap peer=3 seq=0 len=256
+[21:57:44] [SHT] snap peer=3 seq=1 len=256
+[21:57:44] [SHT] snap peer=3 seq=2 len=256
+[21:57:44] [SHT] snap peer=3 seq=3 len=256
+[21:57:44] [SHT] snap peer=3 seq=4 len=256
+[21:57:44] [SHT] snap peer=3 seq=5 len=256
+[21:57:44] [SHT] snap peer=3 seq=6 len=256
+[21:57:44] [SHT] snap peer=3 seq=7 len=256
+[21:57:44] [SHT] snap peer=3 seq=8 len=256
+[21:57:44] [SHT] snap peer=3 seq=9 len=256
+[21:57:44] [SHT] snap peer=3 seq=10 len=256
+[21:57:44] [SHT] snap peer=3 seq=11 len=256
+[21:57:45] [SHT] snap peer=3 seq=12 len=256
+[21:57:45] [SHT] snap peer=3 seq=13 len=256
+[21:57:45] [SHT] snap peer=3 seq=14 len=256
+[21:57:45] [SHT] snap peer=3 seq=15 len=256
+[21:57:45] [SHT] snap peer=3 seq=16 len=256
+[21:57:45] [SHT] snap peer=3 seq=17 len=256
+[21:57:45] [SHT] snap peer=3 seq=18 len=256
+[21:57:45] [SHT] snap peer=3 seq=19 len=256
+[21:57:45] [SHT] snap peer=3 seq=20 len=256
+[21:57:45] [SHT] snap peer=3 seq=21 len=256
+[21:57:45] [SHT] snap peer=3 seq=22 len=256
+[21:57:45] [SHT] snap peer=3 seq=23 len=256
+[21:57:45] [SHT] snap peer=3 seq=24 len=256
+[21:57:45] [SHT] snap peer=3 seq=25 len=256
+[21:57:45] [SHT] snap peer=3 seq=26 len=256
+[21:57:45] [SHT] snap peer=3 seq=27 len=256
+[21:57:45] [SHT] snap peer=3 seq=28 len=256
+[21:57:45] [SHT] snap peer=3 seq=29 len=256
+[21:57:45] [SHT] snap peer=3 seq=30 len=256
+[21:57:45] [SHT] snap peer=3 seq=31 len=256
+[21:57:45] [SHT] snap peer=3 seq=32 len=256
+[21:57:45] [SHT] snap peer=3 seq=33 len=256
+[21:57:45] [SHT] snap peer=3 seq=34 len=256
+[21:57:45] [SHT] POLL seq=119
+[21:57:45] [SHT] SHOUT tx=100 poll=119 csi=256
+[21:57:53] [SHT] snap peer=4 seq=0 len=256
+[21:57:53] [SHT] snap peer=4 seq=1 len=256
+[21:57:53] [SHT] snap peer=4 seq=2 len=256
+[21:57:53] [SHT] snap peer=4 seq=3 len=256
+[21:57:53] [SHT] snap peer=4 seq=4 len=256
+[21:57:53] [SHT] snap peer=4 seq=5 len=256
+[21:57:53] [SHT] snap peer=4 seq=6 len=256
+[21:57:53] [SHT] snap peer=4 seq=7 len=256
+[21:57:53] [SHT] snap peer=4 seq=8 len=256
+[21:57:53] [SHT] snap peer=4 seq=9 len=256
+[21:57:53] [SHT] snap peer=4 seq=10 len=256
+[21:57:53] [SHT] snap peer=4 seq=11 len=256
+[21:57:53] [SHT] snap peer=4 seq=12 len=256
+[21:57:54] [SHT] snap peer=4 seq=13 len=256
+[21:57:54] [SHT] snap peer=4 seq=14 len=256
+[21:57:54] [SHT] snap peer=4 seq=15 len=256
+[21:57:54] [SHT] snap peer=4 seq=16 len=256
+[21:57:54] [SHT] snap peer=4 seq=17 len=256
+[21:57:54] [SHT] snap peer=4 seq=18 len=256
+[21:57:54] [SHT] snap peer=4 seq=19 len=256
+[21:57:54] [SHT] snap peer=4 seq=20 len=256
+[21:57:54] [SHT] snap peer=4 seq=21 len=256
+[21:57:54] [SHT] snap peer=4 seq=22 len=256
+[21:57:54] [SHT] snap peer=4 seq=23 len=256
+[21:57:54] [SHT] snap peer=4 seq=24 len=256
+[21:57:54] [SHT] snap peer=4 seq=25 len=256
+[21:57:54] [SHT] snap peer=4 seq=26 len=256
+[21:57:54] [SHT] snap peer=4 seq=27 len=256
+[21:57:54] [SHT] snap peer=4 seq=28 len=256
+[21:57:54] [SHT] snap peer=4 seq=29 len=256
+[21:57:54] [SHT] snap peer=4 seq=30 len=256
+[21:57:54] [SHT] snap peer=4 seq=31 len=256
+[21:57:54] [SHT] snap peer=4 seq=32 len=256
+[21:57:54] [SHT] snap peer=4 seq=33 len=256
+[21:57:54] [SHT] snap peer=4 seq=34 len=256
+[21:57:54] [SHT] POLL seq=120
+[21:57:54] [SHT] SHOUT tx=101 poll=120 csi=256
+[21:58:02] [SHT] POLL seq=121
+[21:58:02] [SHT] SHOUT tx=102 poll=121 csi=256
+[21:58:03] [SHT] POLL seq=122
+[21:58:03] [SHT] SHOUT tx=103 poll=122 csi=256
+[21:58:03] [SHT] POLL seq=123
+[21:58:03] [SHT] SHOUT tx=104 poll=123 csi=256
+[21:58:03] [SHT] POLL seq=124
+[21:58:03] [SHT] SHOUT tx=105 poll=124 csi=256
+[21:58:04] [SHT] POLL seq=125
+[21:58:04] [SHT] SHOUT tx=106 poll=125 csi=256
+[21:58:04] [SHT] POLL seq=126
+[21:58:04] [SHT] SHOUT tx=107 poll=126 csi=256
+[21:58:05] [SHT] POLL seq=127
+[21:58:05] [SHT] SHOUT tx=108 poll=127 csi=256
+[21:58:05] [SHT] POLL seq=128
+[21:58:05] [SHT] SHOUT tx=109 poll=128 csi=256
+[21:58:06] [SHT] POLL seq=129
+[21:58:06] [SHT] SHOUT tx=110 poll=129 csi=256
+[21:58:06] [SHT] POLL seq=130
+[21:58:06] [SHT] SHOUT tx=111 poll=130 csi=256
+[21:58:06] [SHT] POLL seq=131
+[21:58:06] [SHT] SHOUT tx=112 poll=131 csi=256
+[21:58:07] [SHT] POLL seq=132
+[21:58:07] [SHT] SHOUT tx=113 poll=132 csi=256
+[21:58:07] [SHT] POLL seq=133
+[21:58:07] [SHT] SHOUT tx=114 poll=133 csi=256
+[21:58:08] [SHT] POLL seq=134
+[21:58:08] [SHT] SHOUT tx=115 poll=134 csi=256
+[21:58:08] [SHT] POLL seq=135
+[21:58:08] [SHT] SHOUT tx=116 poll=135 csi=256
+[21:58:08] [SHT] POLL seq=136
+[21:58:08] [SHT] SHOUT tx=117 poll=136 csi=256
+[21:58:09] [SHT] POLL seq=137
+[21:58:09] [SHT] SHOUT tx=118 poll=137 csi=256
+[21:58:09] [SHT] POLL seq=138
+[21:58:09] [SHT] SHOUT tx=119 poll=138 csi=256
+[21:58:10] [SHT] POLL seq=139
+[21:58:10] [SHT] SHOUT tx=120 poll=139 csi=256
+[21:58:10] [SHT] POLL seq=140
+[21:58:10] [SHT] SHOUT tx=121 poll=140 csi=256
+[21:58:10] [SHT] POLL seq=141
+[21:58:10] [SHT] SHOUT tx=122 poll=141 csi=256
+[21:58:11] [SHT] POLL seq=142
+[21:58:11] [SHT] SHOUT tx=123 poll=142 csi=256
+[21:58:11] [SHT] POLL seq=143
+[21:58:11] [SHT] SHOUT tx=124 poll=143 csi=256
+[21:58:12] [SHT] POLL seq=144
+[21:58:12] [SHT] SHOUT tx=125 poll=144 csi=256
+[21:58:12] [SHT] POLL seq=145
+[21:58:12] [SHT] SHOUT tx=126 poll=145 csi=256
+[21:58:13] [SHT] POLL seq=146
+[21:58:13] [SHT] SHOUT tx=127 poll=146 csi=256
+[21:58:13] [SHT] POLL seq=147
+[21:58:13] [SHT] SHOUT tx=128 poll=147 csi=256
+[21:58:13] [SHT] POLL seq=148
+[21:58:13] [SHT] SHOUT tx=129 poll=148 csi=256
+[21:58:14] [SHT] POLL seq=149
+[21:58:14] [SHT] SHOUT tx=130 poll=149 csi=256
+[21:58:14] [SHT] POLL seq=150
+[21:58:14] [SHT] SHOUT tx=131 poll=150 csi=256
+[21:58:14] [SHT] POLL seq=151
+[21:58:14] [SHT] SHOUT tx=132 poll=151 csi=256
+[21:58:15] [SHT] POLL seq=152
+[21:58:15] [SHT] SHOUT tx=133 poll=152 csi=256
+[21:58:15] [SHT] POLL seq=153
+[21:58:15] [SHT] SHOUT tx=134 poll=153 csi=256
+[21:58:16] [SHT] POLL seq=154
+[21:58:16] [SHT] SHOUT tx=135 poll=154 csi=256
+[21:58:16] [SHT] POLL seq=155
+[21:58:16] [SHT] SHOUT tx=136 poll=155 csi=256
+[21:58:17] [SHT] POLL seq=156
+[21:58:17] [SHT] SHOUT tx=137 poll=156 csi=256
+[21:58:17] [SHT] POLL seq=157
+[21:58:17] [SHT] SHOUT tx=138 poll=157 csi=256
+[21:58:17] [SHT] POLL seq=158
+[21:58:17] [SHT] SHOUT tx=139 poll=158 csi=256
+[21:58:18] [SHT] POLL seq=159
+[21:58:18] [SHT] SHOUT tx=140 poll=159 csi=256
+[21:58:18] [SHT] POLL seq=160
+[21:58:18] [SHT] SHOUT tx=141 poll=160 csi=256
+[21:58:19] [SHT] POLL seq=161
+[21:58:19] [SHT] SHOUT tx=142 poll=161 csi=256
+[21:58:19] [SHT] POLL seq=162
+[21:58:19] [SHT] SHOUT tx=143 poll=162 csi=256
+[21:58:19] [SHT] POLL seq=163
+[21:58:19] [SHT] SHOUT tx=144 poll=163 csi=256
+[21:58:20] [SHT] POLL seq=164
+[21:58:20] [SHT] SHOUT tx=145 poll=164 csi=256
+[21:58:20] [SHT] POLL seq=165
+[21:58:20] [SHT] SHOUT tx=146 poll=165 csi=256

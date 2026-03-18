@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv /c/GlassHouse/GHV4/GHV3_Distro /c/GlassHouse/GHV4/GHV4_Distro)",
+      "Bash(mv /c/GlassHouse/GHV4/GHV3_Collector.spec /c/GlassHouse/GHV4/GHV4_Collector.spec)",
+      "Bash(python -m pytest tests/ -v --tb=short)"
+    ]
+  }
+}
