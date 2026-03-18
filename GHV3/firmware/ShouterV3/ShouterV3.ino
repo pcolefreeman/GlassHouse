@@ -130,8 +130,6 @@ void on_esp_now_recv(const esp_now_recv_info_t *recv_info,
         bcn->magic[1] != RANGE_BCN_MAGIC_1) return;
     uint8_t sid = bcn->shouter_id;
     if (sid < 1 || sid > 4 || sid == SHOUTER_ID) return;
-    // Skip passive background beacons — not from a structured ranging window
-    if (bcn->bcn_seq == 0xFF) return;
     int8_t rssi = (int8_t)recv_info->rx_ctrl->rssi;
     portENTER_CRITICAL(&peer_mux);
     if (peer_table[sid].valid) {
@@ -145,6 +143,9 @@ void on_esp_now_recv(const esp_now_recv_info_t *recv_info,
         if (peer_table[sid].count < 255) peer_table[sid].count++;
     }
     portEXIT_CRITICAL(&peer_mux);
+    // Passive background beacons (bcn_seq=0xFF) update peer_table RSSI above but
+    // are not part of a structured ranging window — skip CSI snapshots for them.
+    if (bcn->bcn_seq == 0xFF) return;
     // Snapshot the CSI that shouter_csi_cb stored for this exact ESP-NOW frame.
     // Callback ordering: shouter_csi_cb (ISR, Core 0) always completes before
     // on_esp_now_recv (WiFi task, Core 0) resumes. get_latest_csi() returns the
