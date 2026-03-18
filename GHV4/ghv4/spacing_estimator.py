@@ -1,37 +1,35 @@
-# GHV3.1/ghv3_1/spacing_estimator.py
-"""spacing_estimator.py — RSSI-based shouter spacing estimation for GHV3.
+# GHV4/ghv4/spacing_estimator.py
+"""spacing_estimator.py — MUSIC-only shouter spacing estimation for GHV4.
 
 Public API:
-    SpacingEstimator(spacing_path, config_path)
-    .start()                  — start daemon thread
-    .feed(frame)              — enqueue a ranging frame dict {'payload': bytes}
-    .get_distances()          — snapshot dict {"1-2": dist_m, ...}
-    ._process(frame)          — exposed for unit testing (bypass queue)
-    ._distance(rssi_pair)     — log-distance path loss model
+    CSIMUSICEstimator()
+    .collect(reporter_id, peer_id, csi_bytes) — feed CSI snapshot
+    .get_distances()                          — snapshot dict {"1-2": dist_m, ...}
+    .reset_all()                              — clear all buffers
+
+    SpacingEstimator(spacing_path, music_estimator)
+    .start()                  — start daemon writer thread
+    .get_distances()          — delegates to CSIMUSICEstimator
     ._maybe_write()           — rate-limited atomic JSON write
 """
 import json
 import os
 import queue
-import struct
 import threading
 import time
-from typing import Dict, Optional
+from typing import Dict
 
 import logging
 
 import numpy as np
 from scipy.constants import c as SPEED_OF_LIGHT
 
-_log = logging.getLogger("ghv3_1.spacing_estimator")
+_log = logging.getLogger("ghv4.spacing_estimator")
 
-from ghv3_1.config import (
+from ghv4.config import (
     PAIR_KEYS,
     NULL_SUBCARRIER_INDICES,
     SUBCARRIERS,
-    DEFAULT_RSSI_N,
-    DEFAULT_RSSI_REF_DBM,
-    DEFAULT_RSSI_D0_M,
     MUSIC_TAU_MAX_S,
     MUSIC_TAU_STEPS,
     MUSIC_MIN_SNAP,
@@ -40,14 +38,6 @@ from ghv3_1.config import (
 )
 
 _PAIR_INDICES = [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
-# Fallback config when ranging_config.json is missing — uses config.py defaults
-_DEFAULT_CONFIG = {
-    "n": DEFAULT_RSSI_N,             # 2.5 (generic)
-    "rssi_ref_dbm": DEFAULT_RSSI_REF_DBM,  # -40.0 (generic)
-    "d0_m": DEFAULT_RSSI_D0_M,      # 1.0
-}
-ALPHA = 0.1
-MIN_SAMPLES = 1
 
 # MUSIC CSI ranging constants
 CH6_CENTER_HZ         = 2_437_000_000.0
@@ -62,7 +52,7 @@ class CSIMUSICEstimator:
     """
     Collects per-pair CSI snapshots from [0xEE][0xFF] serial frames and
     computes offset-free pairwise distances via MUSIC super-resolution CIR.
-    Thread-safe. get_distances() returns a dict compatible with SpacingEstimator.
+    Thread-safe. get_distances() returns a dict {"1-2": dist_m, ...}.
     """
 
     def __init__(self) -> None:
@@ -247,24 +237,21 @@ class CSIMUSICEstimator:
 
 
 class SpacingEstimator:
-    """Consumes [0xCC][0xDD] ranging frames; produces spacing.json."""
+    """MUSIC-only spacing estimator. Writes spacing.json from CSIMUSICEstimator.
+
+    Preserves the public interface (start, get_distances, feed) so that UI code
+    and serial_io continue to work without changes. The feed() method is now a
+    no-op since RSSI distance calculation has been removed — [0xCC][0xDD] frames
+    are consumed and discarded at the serial layer.
+    """
 
     def __init__(self, spacing_path: str = "spacing.json",
-                 config_path: str = "ranging_config.json",
                  music_estimator=None):
         self._path             = spacing_path
-        self._config_path      = config_path
-        self._config           = self._load_config(config_path)
         self._music_estimator  = music_estimator
-        # 1-indexed; row=reporter, col=peer; index 0 unused pad
-        self._rssi  = np.zeros((5, 5), dtype=float)
-        self._count = np.zeros((5, 5), dtype=int)
-        self._ranging_queue: queue.Queue = queue.Queue()
-        self._last_write = 0.0
-        self._lock = threading.Lock()
-        self._prev_source: dict = {}  # pair_key → "rssi" | "music"
+        self._last_write       = 0.0
         self._thread = threading.Thread(
-            target=self._run, daemon=True, name="SpacingEstimator"
+            target=self._run, daemon=True, name="SpacingWriter"
         )
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -273,135 +260,53 @@ class SpacingEstimator:
         self._thread.start()
 
     def feed(self, frame: dict) -> None:
-        """Non-blocking. Called from GlassHouseV3 dispatch loop."""
-        self._ranging_queue.put(frame)
+        """No-op. Retained for interface compatibility."""
+        pass
 
     def get_distances(self) -> Dict[str, float]:
-        """Thread-safe snapshot. MUSIC distances take precedence over RSSI."""
-        rssi_dist  = self._get_rssi_distances()
-        music_dist = self._music_estimator.get_distances() if self._music_estimator else {}
-        merged = {**rssi_dist, **music_dist}
-        # Log only on source transitions (not every 200ms call)
-        for k, d in merged.items():
-            src = "music" if k in music_dist else "rssi"
-            if self._prev_source.get(k) != src:
-                _log.info("Distance %s source changed: %s -> %s (d=%.2f m)",
-                          k, self._prev_source.get(k, "none"), src, d)
-                self._prev_source[k] = src
-        return merged
+        """Thread-safe snapshot. Returns MUSIC distances only."""
+        if self._music_estimator is None:
+            return {}
+        return self._music_estimator.get_distances()
 
     def get_rssi_values(self) -> Dict[str, float]:
-        """Thread-safe snapshot of per-pair average EMA RSSI (dBm)."""
-        with self._lock:
-            result = {}
-            for key, (i, j) in zip(PAIR_KEYS, _PAIR_INDICES):
-                if min(int(self._count[i][j]), int(self._count[j][i])) >= MIN_SAMPLES:
-                    result[key] = (self._rssi[i][j] + self._rssi[j][i]) / 2.0
-            return result
+        """No-op stub. RSSI distance removed in GHV4. Returns empty dict."""
+        return {}
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
-    def _get_rssi_distances(self) -> Dict[str, float]:
-        """RSSI-only distances. Called by get_distances()."""
-        with self._lock:
-            result = {}
-            for key, (i, j) in zip(PAIR_KEYS, _PAIR_INDICES):
-                samples = min(int(self._count[i][j]), int(self._count[j][i]))
-                if samples >= MIN_SAMPLES:
-                    rssi_pair = (self._rssi[i][j] + self._rssi[j][i]) / 2.0
-                    result[key] = self._distance(rssi_pair)
-            return dict(result)
-
     def _run(self) -> None:
+        """Periodically write spacing.json with MUSIC distances."""
         while True:
-            frame = self._ranging_queue.get()
-            self._config = self._load_config(self._config_path)  # hot-reload on each frame
-            self._process(frame)
+            time.sleep(1.0)
+            self._maybe_write()
 
-    def _process(self, frame: dict) -> None:
-        """Parse frame payload and update RSSI/count arrays. Called from daemon thread."""
-        payload = frame.get('payload', b'')
-        if len(payload) < 12:
-            return
-        ver, reporter_id = struct.unpack_from('<BB', payload, 0)
-        peer_rssi  = list(struct.unpack_from('<5b', payload, 2))
-        peer_count = list(struct.unpack_from('<5B', payload, 7))
-
-        with self._lock:
-            for peer_id in range(1, 5):
-                if peer_id == reporter_id:
-                    continue
-                if peer_count[peer_id] == 0:
-                    continue  # shouter has no data for this peer
-                new_rssi = float(peer_rssi[peer_id])
-                if self._count[reporter_id][peer_id] == 0:
-                    # First observation — initialise without blending
-                    self._rssi[reporter_id][peer_id] = new_rssi
-                else:
-                    self._rssi[reporter_id][peer_id] = (
-                        (1.0 - ALPHA) * self._rssi[reporter_id][peer_id]
-                        + ALPHA * new_rssi
-                    )
-                self._count[reporter_id][peer_id] += 1
-
-        # Compute merged distances OUTSIDE the lock, then pass to writer
-        merged = self.get_distances()
-        self._maybe_write(merged)
-
-    def _distance(self, rssi_pair: float) -> float:
-        """Log-distance path loss: d = d0 × 10^((rssi_ref − rssi) / (10n))."""
-        cfg = self._config
-        n, rssi_ref, d0 = cfg["n"], cfg["rssi_ref_dbm"], cfg["d0_m"]
-        return d0 * (10 ** ((rssi_ref - rssi_pair) / (10.0 * n)))
-
-    def _maybe_write(self, merged_distances: dict = None) -> None:
+    def _maybe_write(self) -> None:
         """Write spacing.json atomically, rate-limited to <=1 write/second."""
         now = time.time()
         if now - self._last_write < 1.0:
             return
         self._last_write = now
 
-        # If no merged distances provided, compute them (for direct callers)
-        if merged_distances is None:
-            merged_distances = self.get_distances()
+        distances = self.get_distances()
+        if not distances:
+            return
 
-        # Determine source for each pair
-        music_dist = self._music_estimator.get_distances() if self._music_estimator else {}
-
-        with self._lock:
-            pairs = {}
-            for key, (i, j) in zip(PAIR_KEYS, _PAIR_INDICES):
-                if key not in merged_distances:
-                    continue
-                samples = min(int(self._count[i][j]), int(self._count[j][i]))
-                rssi_pair = (self._rssi[i][j] + self._rssi[j][i]) / 2.0 if samples >= MIN_SAMPLES else None
-                source = "music" if key in music_dist else "rssi"
-                pairs[key] = {
-                    "distance_m": round(merged_distances[key], 2),
-                    "source": source,
-                    "rssi_avg": round(rssi_pair, 1) if rssi_pair is not None else None,
-                    "samples": samples,
-                }
-            out = {
-                "version": 1,
-                "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "pairs":   pairs,
-                "config":  self._config,
+        pairs = {}
+        for key in PAIR_KEYS:
+            if key not in distances:
+                continue
+            pairs[key] = {
+                "distance_m": round(distances[key], 2),
+                "source": "music",
             }
+        out = {
+            "version": 2,
+            "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "pairs":   pairs,
+        }
 
         tmp = self._path + ".tmp"
         with open(tmp, "w") as f:
             json.dump(out, f, indent=2)
         os.replace(tmp, self._path)
-
-    def _load_config(self, config_path: str) -> dict:
-        try:
-            with open(config_path) as f:
-                cfg = json.load(f)
-            return {
-                "n":           float(cfg.get("n",           _DEFAULT_CONFIG["n"])),
-                "rssi_ref_dbm": float(cfg.get("rssi_ref_dbm", _DEFAULT_CONFIG["rssi_ref_dbm"])),
-                "d0_m":        float(cfg.get("d0_m",        _DEFAULT_CONFIG["d0_m"])),
-            }
-        except FileNotFoundError:
-            return dict(_DEFAULT_CONFIG)
