@@ -26,10 +26,11 @@ static volatile int       ring_count = 0;
 static portMUX_TYPE       ring_mux   = portMUX_INITIALIZER_UNLOCKED;
 
 // ── CSI snapshot buffer (ranging phase) ───────────────────────────────────
-#define N_SNAP 30
+#define N_SNAP 35
 // csi_snap_buf[peer_id][snap_seq]; indices 1–4 valid, index 0 unused.
 // Only 3 of 4 peer slots populated (a shouter never beacons to itself).
-// Total: 5 × 30 × sizeof(CsiEntry) ≈ 5 × 30 × 392 = 58,800 bytes (~57 KB).
+// Total: 5 × 35 × sizeof(CsiEntry) ≈ 5 × 35 × 392 = 68,600 bytes (~67 KB).
+// N_SNAP=60 overflowed DRAM by 42616 bytes; max safe is ~38.
 static CsiEntry csi_snap_buf[5][N_SNAP];
 static uint8_t  csi_snap_count[5] = {};
 static portMUX_TYPE snap_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -75,7 +76,7 @@ bool get_latest_csi(CsiEntry* out) {
 }
 
 // ── Per-device configuration — change SHOUTER_ID before flashing each board ──
-#define SHOUTER_ID    2          // 1, 2, 3, or 4 — change before flashing each board
+#define SHOUTER_ID    4          // 1, 2, 3, or 4 — change before flashing each board
 static_assert(SHOUTER_ID >= 1 && SHOUTER_ID <= 4, "SHOUTER_ID must be 1, 2, 3, or 4");
 #define SSID          "CSI_PRIVATE_AP"
 // NOTE: AP is open (no WPA2 password). WiFi.softAP(SSID, nullptr, CHANNEL) on listener
@@ -390,6 +391,7 @@ void loop() {
         if (peer == SHOUTER_ID) continue;
         portENTER_CRITICAL(&snap_mux);
         uint8_t n = csi_snap_count[peer];
+        csi_snap_count[peer] = 0;  // clear after reading — snaps are one-shot per ranging phase
         portEXIT_CRITICAL(&snap_mux);
         for (uint8_t s = 0; s < n; s++) {
             portENTER_CRITICAL(&snap_mux);
@@ -408,7 +410,7 @@ void loop() {
             udp.write((uint8_t*)&pkt,
                       (uint16_t)(offsetof(csi_snap_pkt_t, csi) + pkt.csi_len));
             udp.endPacket();
-            delay(3);  // Pace snapshot packets to avoid overflowing listener UDP RX buffer
+            delay(15);  // Pace snapshot packets — 15ms > 4.25ms serial TX floor with good margin
         }
     }
 }

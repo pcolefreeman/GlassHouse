@@ -12,7 +12,8 @@
 #define POLL_INTERVAL_MIN_MS      50
 #define INTER_SHOUTER_GAP_MS       5   // guard interval between consecutive shouter polls to clear the channel
 #define RANGING_COOLDOWN_MS    30000   // minimum ms between ranging phases; prevents re-ranging on brief dropout
-#define SNAP_DRAIN_MS            350   // per-shouter drain window during ranging: 90 snaps × 3ms + margin
+#define RANGING_STABILITY_MS    5000   // all 4 shouters must be registered this long before ranging starts
+#define SNAP_DRAIN_MS           2000   // per-shouter drain window: 35 snaps × 3 peers × 15ms + margin
 
 // ── Shouter registry ───────────────────────────────────────────────────────────
 static IPAddress shouter_ip[5];          // indices 1–4; [0] unused
@@ -25,6 +26,7 @@ volatile uint32_t current_poll_seq = 0;
 uint32_t poll_seq = 0;
 static volatile bool ranging_done = false;
 static unsigned long ranging_completed_ms = 0;  // millis() when last ranging phase finished
+static unsigned long last_hello_ms = 0;         // millis() of most recent HELLO from any shouter
 static uint16_t snap_frames_emitted = 0;
 
 // ── Listener CSI ring buffer — callback stores here; loop drains to Serial ────
@@ -160,6 +162,7 @@ bool handle_incoming_udp(response_pkt_t* pkt_out) {
             shouter_ip[sid] = udp.remoteIP();
             memcpy(shouter_mac[sid], buf + 2, 6);
             shouter_ready[sid] = true;
+            last_hello_ms = millis();
             // NOTE: udp.remoteIP().toString() returns a temporary String; capture before c_str().
             String remote_str = udp.remoteIP().toString();
             Serial.printf("[LST] HELLO sid=%d IP=%s MAC=%02X:%02X:%02X:%02X:%02X:%02X\n",
@@ -215,6 +218,7 @@ bool handle_incoming_udp(response_pkt_t* pkt_out) {
 void poll_all_shouters() {
     for (uint8_t id = 1; id <= 4; id++) {
         if (!shouter_ready[id]) continue;
+        Serial.printf("[LST] poll_all: polling shouter %d\n", id);
 
         portENTER_CRITICAL(&lst_ring_mux);
         current_poll_seq = poll_seq;
@@ -244,7 +248,7 @@ void poll_all_shouters() {
                 emit_shouter_frame(&resp, id, true, millis());
                 break;
             }
-            delayMicroseconds(100);
+            delay(1);  // yield to FreeRTOS scheduler — feeds TWDT
         }
         if (!got_response) {
             emit_shouter_frame(nullptr, id, false, millis());
@@ -258,10 +262,10 @@ void poll_all_shouters() {
             response_pkt_t dummy;
             handle_incoming_udp(&dummy);
             drain_listener_csi();
-            delayMicroseconds(200);
+            yield();  // yield without 1ms floor — process snaps as fast as possible
         }
         unsigned long gap_end = millis() + INTER_SHOUTER_GAP_MS;
-        while (millis() < gap_end) drain_listener_csi();
+        while (millis() < gap_end) { drain_listener_csi(); yield(); }
     }
     poll_seq++;
 }
@@ -290,11 +294,12 @@ void run_ranging_phase() {
     delay(50);
 
     // Sequential ranging: one shouter beacons at a time
-    const uint8_t  N_BCN      = 30;   // was 10; 30 samples → better bidirectional average
+    const uint8_t  N_BCN      = 35;   // matches N_SNAP=35 on shouter (DRAM limit)
     const uint16_t BCN_MS     = 20;   // unchanged
     const uint16_t MARGIN_MS  = 50;   // unchanged
 
     for (int beacon_id = 1; beacon_id <= 4; beacon_id++) {
+        Serial.printf("[LST] Ranging: requesting beacons from shouter %d\n", beacon_id);
         range_req_pkt_t rr;
         rr.magic[0]    = RANGE_REQ_MAGIC_0;
         rr.magic[1]    = RANGE_REQ_MAGIC_1;
@@ -306,8 +311,10 @@ void run_ranging_phase() {
         udp.write((uint8_t *)&rr, sizeof(rr));
         udp.endPacket();
         delay((uint32_t)N_BCN * BCN_MS + MARGIN_MS);
+        Serial.printf("[LST] Ranging: beacon %d delay done, polling\n", beacon_id);
         // One normal poll cycle collects ranging_rpt_pkt_t from all shouters
         poll_all_shouters();
+        Serial.printf("[LST] Ranging: beacon %d complete, snaps=%d\n", beacon_id, snap_frames_emitted);
     }
     Serial.printf("[LST] Ranging done: %d snap frames emitted\n", snap_frames_emitted);
     ranging_completed_ms = millis();
@@ -372,9 +379,13 @@ void loop() {
     }
 
     // One-shot ranging phase once all 4 shouters register.
+    // Stability window: wait RANGING_STABILITY_MS after the last HELLO to ensure
+    // all shouters are stable before starting ranging.
     // Cooldown prevents re-ranging on brief dropout/reconnect cycles.
     if (!ranging_done && registered_shouter_count == 4 &&
-        (millis() - ranging_completed_ms >= RANGING_COOLDOWN_MS)) {
+        (millis() - ranging_completed_ms >= RANGING_COOLDOWN_MS) &&
+        (millis() - last_hello_ms >= RANGING_STABILITY_MS)) {
+        Serial.println("[LST] All 4 shouters stable — starting ranging");
         ranging_done = true;
         run_ranging_phase();
     }

@@ -58,7 +58,7 @@ DEFAULT_RSSI_D0_M = 1.0
 MUSIC_TAU_MAX_S = 100e-9      # 30 m search range
 MUSIC_TAU_STEPS = 1000         # 0.1 ns → ~3 cm steps
 MUSIC_MIN_SNAP = 15            # min snapshots per direction to run MUSIC
-MUSIC_MAX_SNAP = 30            # matches N_SNAP in firmware
+MUSIC_MAX_SNAP = 35            # matches N_SNAP in firmware (DRAM limit on ESP32)
 CSI_NOISE_FLOOR = 2            # min max(abs(csi)) to accept snapshot; tunable
 
 # ── UI constants ───────────────────────────────────────────────
