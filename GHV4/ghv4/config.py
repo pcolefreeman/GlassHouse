@@ -57,3 +57,17 @@ MAX_LOG_LINES = 500
 # ── EDA constants ──────────────────────────────────────────────
 META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
 EXPECTED_COLS = 5134
+
+# ---------------------------------------------------------------------------
+# ML Distance Estimation
+# ---------------------------------------------------------------------------
+VALID_SUBCARRIER_COUNT = SUBCARRIERS - len(NULL_SUBCARRIER_INDICES)  # 121
+DISTANCE_FEATURE_COUNT = VALID_SUBCARRIER_COUNT * 2 * 2             # 484
+
+CALIBRATION_WINDOW_S   = 30       # seconds of snap collection
+CALIBRATION_EXTENSION_S = 15      # extension if insufficient data
+CALIBRATION_MAX_EXTENSIONS = 2    # max number of extensions
+CALIBRATION_MIN_PAIRS  = 10       # min matched fwd/rev pairs per shouter pair
+
+DISTANCE_MODEL_DIR     = "distance_models"
+DISTANCE_MAX_TREES     = 200      # max estimators per GB/RF model (Pi memory budget)

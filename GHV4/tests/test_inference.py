@@ -64,3 +64,75 @@ def test_spacing_appended_to_feature_vector():
     assert len(combined) == 106
     assert combined[-6] == 2.5
     assert combined[-1] == 2.6
+
+
+import numpy as np
+
+def test_run_calibration_with_serial(tmp_path):
+    """run_calibration creates a calibrator, reads snaps via SerialReader, writes spacing."""
+    import json
+    import struct
+    import queue
+    import threading
+    from io import BytesIO
+    from ghv4.inference import run_calibration
+    from ghv4.config import PAIR_KEYS, DISTANCE_FEATURE_COUNT, CALIBRATION_MIN_PAIRS
+    from sklearn.ensemble import GradientBoostingRegressor
+    from sklearn.preprocessing import StandardScaler
+    import joblib
+
+    # --- set up dummy model dir ---
+    model_dir = tmp_path / "distance_models"
+    model_dir.mkdir()
+
+    rng = np.random.default_rng(42)
+    X_d = rng.standard_normal((50, DISTANCE_FEATURE_COUNT))
+    y_d = rng.uniform(3.0, 8.0, 50)
+
+    for pair_id in PAIR_KEYS:
+        m = GradientBoostingRegressor(n_estimators=10, random_state=42)
+        m.fit(X_d, y_d)
+        joblib.dump(m, model_dir / f"{pair_id}_model.pkl")
+
+    # Scaler must be fit on 242 amp columns (matching distance_preprocess.py)
+    amp_indices = list(range(121)) + list(range(242, 363))
+    scaler = StandardScaler().fit(X_d[:, :len(amp_indices)])  # 242 columns
+    joblib.dump(scaler, model_dir / "distance_scaler.pkl")
+
+    from ghv4.distance_features import FEATURE_NAMES
+    with open(model_dir / "distance_feature_names.txt", "w") as f:
+        f.write("\n".join(FEATURE_NAMES))
+
+    spacing_path = tmp_path / "spacing.json"
+
+    # --- build a fake serial stream with enough snap frames for pair 1-2 ---
+    frames = bytearray()
+    for seq in range(CALIBRATION_MIN_PAIRS + 5):
+        csi = bytes(rng.integers(-127, 127, 256, dtype=np.int8))
+        # forward: reporter=1, peer=2
+        hdr = struct.pack("<BBBBH", 1, 1, 2, seq, 256)
+        frames += bytes([0xEE, 0xFF]) + hdr + csi
+        # reverse: reporter=2, peer=1
+        hdr = struct.pack("<BBBBH", 1, 2, 1, seq, 256)
+        frames += bytes([0xEE, 0xFF]) + hdr + csi
+
+    # Wrap BytesIO in a thin shim that exposes a .timeout attribute,
+    # because SerialReader._read_one_frame accesses self._ser.timeout when
+    # processing [0xEE][0xFF] snap frames.
+    class _BytesIOWithTimeout(BytesIO):
+        timeout = 1.0
+
+    distances = run_calibration(
+        ser=_BytesIOWithTimeout(bytes(frames)),
+        model_dir=str(model_dir),
+        spacing_path=str(spacing_path),
+        window_s=0.0,  # skip waiting — data is already in the buffer
+    )
+
+    assert "1-2" in distances
+    assert distances["1-2"] > 0
+
+    data = json.loads(spacing_path.read_text())
+    assert data["version"] == 2
+    assert "1-2" in data["pairs"]
+    assert data["pairs"]["1-2"]["source"] == "ml"

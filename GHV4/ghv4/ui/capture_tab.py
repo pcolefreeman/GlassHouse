@@ -347,6 +347,44 @@ class CaptureTab(ctk.CTkFrame):
         self._start_btn.pack(side="left", expand=True, fill="x", padx=(0, 4))
         self._stop_btn.pack(side="left",  expand=True, fill="x", padx=(4, 0))
 
+        # Distance Data Collection
+        dist_frame = ctk.CTkFrame(self)
+        dist_frame.pack(fill="x", **pad)
+        ctk.CTkLabel(dist_frame, text="DISTANCE TRAINING DATA", font=("", 11, "bold")).pack(
+            anchor="w", padx=8, pady=(8, 2)
+        )
+        dist_row = ctk.CTkFrame(dist_frame, fg_color="transparent")
+        dist_row.pack(fill="x", padx=8, pady=(0, 8))
+
+        ctk.CTkLabel(dist_row, text="Width (m):").pack(side="left")
+        self._width_var = ctk.StringVar(value="7.62")
+        ctk.CTkEntry(dist_row, textvariable=self._width_var, width=80).pack(side="left", padx=(4, 12))
+
+        ctk.CTkLabel(dist_row, text="Depth (m):").pack(side="left")
+        self._depth_var = ctk.StringVar(value="7.62")
+        ctk.CTkEntry(dist_row, textvariable=self._depth_var, width=80).pack(side="left", padx=(4, 12))
+
+        self._dist_collect_btn = ctk.CTkButton(
+            dist_row,
+            text="Collect Distance Data",
+            fg_color="#2d6da4",
+            hover_color="#1f5a8a",
+            text_color="white",
+            command=self._on_collect_distance,
+        )
+        self._dist_collect_btn.pack(side="left", padx=(8, 0))
+
+        self._dist_stop_btn = ctk.CTkButton(
+            dist_row,
+            text="Stop",
+            fg_color="#e0e8f0",
+            hover_color="#e0e8f0",
+            text_color="#aaaaaa",
+            state="disabled",
+            command=self._on_stop_distance,
+        )
+        self._dist_stop_btn.pack(side="left", padx=(8, 0))
+
         # Shouter distances
         self._spacing_cards = SpacingCards(self)
         self._spacing_cards.pack(fill="x", padx=12, pady=(0, 6))
@@ -526,6 +564,131 @@ class CaptureTab(ctk.CTkFrame):
             return
         self._countdown_label.configure(text=f"{remaining:.0f}s remaining")
         self.after(500, self._tick_countdown)
+
+    def _on_collect_distance(self) -> None:
+        """Start collecting distance training data via snap frames."""
+        try:
+            width_m = float(self._width_var.get())
+            depth_m = float(self._depth_var.get())
+        except ValueError:
+            self._append_log("[ERROR] Width and depth must be numbers")
+            return
+
+        if width_m <= 0 or depth_m <= 0:
+            self._append_log("[ERROR] Width and depth must be positive")
+            return
+
+        port = self._port_var.get().strip()
+        if not port:
+            self._append_log("[ERROR] Select a serial port first")
+            return
+
+        import csv
+        import serial
+        from ghv4.distance_preprocess import derive_distances
+        from ghv4.distance_features import snap_csi_to_complex, pair_features, FEATURE_NAMES
+        from ghv4.config import DISTANCE_FEATURE_COUNT
+
+        dists = derive_distances(width_m, depth_m)
+        session_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_dir = _resolve_output_dir("distance_data/raw")
+        os.makedirs(out_dir, exist_ok=True)
+        csv_path = os.path.join(out_dir, f"dist_{session_id}.csv")
+
+        self._append_log(f"[DIST] Distance collection → {csv_path}")
+        self._append_log(f"[DIST]   width={width_m}m  depth={depth_m}m  session={session_id}")
+
+        # Snap matching buffers
+        snap_buf = {}  # (reporter_id, peer_id) → {snap_seq: complex_csi}
+        csv_lock = threading.Lock()
+        feat_cols = [f"feat_{i}" for i in range(DISTANCE_FEATURE_COUNT)]
+        header = feat_cols + ["pair_id", "distance_m", "session_id", "timestamp", "width_m", "depth_m"]
+        match_count = [0]  # mutable counter for matched pairs
+
+        csv_file = open(csv_path, "w", newline="")
+        writer = csv.writer(csv_file)
+        writer.writerow(header)
+
+        def snap_cb(reporter_id, peer_id, snap_seq, csi_bytes):
+            """Called by SerialReader for each [0xEE][0xFF] frame."""
+            csi = snap_csi_to_complex(csi_bytes)
+            if csi is None:
+                return
+            key = (reporter_id, peer_id)
+            rev_key = (peer_id, reporter_id)
+
+            with csv_lock:
+                snap_buf.setdefault(key, {})[snap_seq] = csi
+                if rev_key in snap_buf and snap_seq in snap_buf[rev_key]:
+                    lo, hi = min(reporter_id, peer_id), max(reporter_id, peer_id)
+                    pair_id = f"{lo}-{hi}"
+                    if pair_id not in dists:
+                        return
+                    if lo == reporter_id:
+                        fwd, rev = csi, snap_buf[rev_key][snap_seq]
+                    else:
+                        fwd, rev = snap_buf[rev_key][snap_seq], csi
+                    vec = pair_features(fwd, rev)
+                    ts = datetime.datetime.now().isoformat()
+                    row = vec + [pair_id, dists[pair_id], session_id, ts, width_m, depth_m]
+                    writer.writerow(row)
+                    match_count[0] += 1
+
+        # Store references for stop handler
+        self._dist_csv_file = csv_file
+        self._dist_snap_cb = snap_cb
+        self._dist_match_count = match_count
+        self._dist_stop_event = threading.Event()
+
+        # Start serial reading in background thread
+        try:
+            ser = serial.Serial(port, BAUD_RATE, timeout=1)
+        except Exception as e:
+            self._append_log(f"[ERROR] Cannot open {port}: {e}")
+            csv_file.close()
+            return
+
+        self._dist_ser = ser
+        fq = queue.Queue()
+        from ghv4.serial_io import SerialReader
+        reader = SerialReader(ser, fq, snap_callback=snap_cb)
+
+        def _dist_reader_loop():
+            while not self._dist_stop_event.is_set():
+                try:
+                    reader._read_one_frame()
+                except Exception:
+                    break
+
+        self._dist_reader_thread = threading.Thread(target=_dist_reader_loop, daemon=True)
+        self._dist_reader_thread.start()
+
+        # Update UI
+        self._dist_collect_btn.configure(state="disabled")
+        self._dist_stop_btn.configure(
+            state="normal", fg_color="#c0392b", hover_color="#9b2820", text_color="white"
+        )
+        self._append_log("[DIST] Collection started. Press Stop to finish.")
+
+    def _on_stop_distance(self) -> None:
+        """Stop distance data collection."""
+        if hasattr(self, '_dist_stop_event'):
+            self._dist_stop_event.set()
+        if hasattr(self, '_dist_reader_thread'):
+            self._dist_reader_thread.join(timeout=2.0)
+        if hasattr(self, '_dist_ser') and self._dist_ser.is_open:
+            self._dist_ser.close()
+        if hasattr(self, '_dist_csv_file'):
+            self._dist_csv_file.close()
+
+        count = getattr(self, '_dist_match_count', [0])[0]
+        self._append_log(f"[DIST] Collection stopped. {count} matched pairs written.")
+
+        # Reset UI
+        self._dist_collect_btn.configure(state="normal")
+        self._dist_stop_btn.configure(
+            state="disabled", fg_color="#e0e8f0", hover_color="#e0e8f0", text_color="#aaaaaa"
+        )
 
     def _reset_buttons(self) -> None:
         self._start_btn.configure(state="normal")

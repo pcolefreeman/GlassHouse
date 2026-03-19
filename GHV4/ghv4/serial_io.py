@@ -25,12 +25,13 @@ _log = logging.getLogger("ghv4.serial_io")
 class SerialReader(threading.Thread):
     """Reads a byte stream, detects magic sequences, parses frames, enqueues them."""
 
-    def __init__(self, ser, frame_queue: queue.Queue, music_estimator=None):
+    def __init__(self, ser, frame_queue: queue.Queue, music_estimator=None, snap_callback=None):
         super().__init__(daemon=True, name="SerialReader")
         self._ser              = ser
         self._queue            = frame_queue
         self._running          = False
         self._music_estimator  = music_estimator
+        self._snap_callback    = snap_callback
         self._snap_parsed   = 0
         self._snap_failed   = 0
         self._sync_errors   = 0
@@ -112,10 +113,18 @@ class SerialReader(threading.Thread):
                 self._snap_failed += 1
                 return  # partial frame — return to top-level loop
             frame = csi_parser.parse_csi_snap_frame(header + csi_bytes)
-            if frame and self._music_estimator is not None:
-                self._music_estimator.collect(
-                    frame['reporter_id'], frame['peer_id'], frame['csi']
-                )
+            if frame:
+                if self._music_estimator is not None:
+                    self._music_estimator.collect(
+                        frame['reporter_id'], frame['peer_id'], frame['csi']
+                    )
+                if self._snap_callback is not None:
+                    self._snap_callback(
+                        frame['reporter_id'],
+                        frame['peer_id'],
+                        frame['snap_seq'],
+                        frame['csi'],
+                    )
                 self._snap_parsed += 1
             elif frame is None:
                 self._snap_failed += 1

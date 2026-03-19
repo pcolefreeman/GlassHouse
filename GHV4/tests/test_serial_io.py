@@ -124,3 +124,29 @@ def test_read_exact_returns_none_on_short_read():
     reader = SerialReader(ser, queue.Queue())
     result = reader._read_exact(8)
     assert result is None
+
+
+def test_snap_callback_receives_parsed_frame():
+    """When snap_callback is set, [0xEE][0xFF] frames are forwarded."""
+    from ghv4.serial_io import SerialReader
+
+    received = []
+
+    def on_snap(reporter_id, peer_id, snap_seq, csi_bytes):
+        received.append((reporter_id, peer_id, snap_seq, csi_bytes))
+
+    # Build a [0xEE][0xFF] frame: header (6 bytes after magic): ver=1, reporter=1, peer=2, seq=10, csi_len=256
+    header = struct.pack("<BBBBH", 1, 1, 2, 10, 256)
+    csi_payload = bytes(256)
+    frame_data = bytes([0xEE, 0xFF]) + header + csi_payload
+
+    ser = _FakeSerial(frame_data)
+    fq = queue.Queue()
+
+    reader = SerialReader(ser, fq, snap_callback=on_snap)
+    reader._read_one_frame()
+
+    assert len(received) == 1
+    assert received[0][0] == 1   # reporter_id
+    assert received[0][1] == 2   # peer_id
+    assert received[0][2] == 10  # snap_seq

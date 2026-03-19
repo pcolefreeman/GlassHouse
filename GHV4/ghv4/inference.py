@@ -10,12 +10,15 @@ Usage:
 """
 import argparse
 import json
+import logging
 import math
 import serial
 import time
 
 from ghv4 import csi_parser
 from ghv4.config import PAIR_KEYS, BAUD_RATE
+
+_log = logging.getLogger(__name__)
 
 SPACING_REFRESH_S = 5
 
@@ -37,6 +40,106 @@ def load_model(path: str):
     """
     import joblib
     return joblib.load(path)
+
+
+def run_calibration(
+    ser,
+    model_dir: str,
+    spacing_path: str,
+    window_s: float = None,
+) -> dict:
+    """Run calibration phase: collect snaps via serial, predict distances, write spacing.
+
+    Creates a DistanceCalibrator, reads [0xEE][0xFF] snap frames from `ser`
+    for `window_s` seconds, then predicts per-pair distances and writes
+    spacing.json. Extends the window if any pair has insufficient data.
+
+    Args:
+        ser: Open serial port object (or BytesIO for testing).
+        model_dir: Path to distance_models/ directory.
+        spacing_path: Where to write spacing.json.
+        window_s: Collection window in seconds (default from config).
+                  Set to 0.0 for testing with pre-filled BytesIO buffers.
+
+    Returns:
+        Dict mapping pair_id → predicted distance in meters.
+    """
+    import queue
+    import threading
+    from ghv4.config import (
+        CALIBRATION_WINDOW_S,
+        CALIBRATION_EXTENSION_S,
+        CALIBRATION_MAX_EXTENSIONS,
+        PAIR_KEYS,
+    )
+    from ghv4.distance_inference import DistanceCalibrator
+    from ghv4.serial_io import SerialReader
+
+    if window_s is None:
+        window_s = CALIBRATION_WINDOW_S
+
+    cal = DistanceCalibrator(model_dir)
+
+    if not cal._models:
+        _log.warning("No distance models found in %s, skipping calibration", model_dir)
+        return {}
+
+    _log.info("Calibration: collecting snaps for %.0f seconds...", window_s)
+
+    # Create a SerialReader with snap_callback that feeds the calibrator
+    fq = queue.Queue()
+    reader = SerialReader(
+        ser, fq,
+        snap_callback=cal.feed_snap,
+    )
+
+    # Run reader in a background thread for the calibration window
+    stop_event = threading.Event()
+
+    def _timed_run():
+        while not stop_event.is_set():
+            try:
+                reader._read_one_frame()
+            except Exception:
+                break
+
+    reader_thread = threading.Thread(target=_timed_run, daemon=True)
+    reader_thread.start()
+
+    # Wait for collection window
+    if window_s > 0:
+        time.sleep(window_s)
+    else:
+        # For testing: let reader drain the buffer
+        reader_thread.join(timeout=2.0)
+
+    stop_event.set()
+    reader_thread.join(timeout=2.0)
+
+    # Predict distances
+    distances = cal.predict_distances()
+
+    # Extension logic: extend if any pair with a model is missing
+    extensions = 0
+    while extensions < CALIBRATION_MAX_EXTENSIONS:
+        missing = [p for p in PAIR_KEYS if p in cal._models and p not in distances]
+        if not missing:
+            break
+        extensions += 1
+        _log.info("Extending calibration +%ds for pairs: %s",
+                  CALIBRATION_EXTENSION_S, missing)
+
+        stop_event.clear()
+        reader_thread = threading.Thread(target=_timed_run, daemon=True)
+        reader_thread.start()
+        time.sleep(CALIBRATION_EXTENSION_S)
+        stop_event.set()
+        reader_thread.join(timeout=2.0)
+
+        distances = cal.predict_distances()
+
+    cal.write_spacing(spacing_path, distances)
+    return distances
 
 
 def main():

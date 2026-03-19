@@ -103,3 +103,32 @@ def test_header_sizes_positive():
     assert SHOUTER_HDR_SIZE > 0
     assert RANGING_PAYLOAD_SIZE > 0
     assert CSI_SNAP_HDR_SIZE > 0
+
+
+def test_distance_constants_exist():
+    from ghv4 import config
+    assert hasattr(config, "CALIBRATION_WINDOW_S")
+    assert config.CALIBRATION_WINDOW_S == 30
+    assert hasattr(config, "CALIBRATION_EXTENSION_S")
+    assert config.CALIBRATION_EXTENSION_S == 15
+    assert hasattr(config, "CALIBRATION_MAX_EXTENSIONS")
+    assert config.CALIBRATION_MAX_EXTENSIONS == 2
+    assert hasattr(config, "CALIBRATION_MIN_PAIRS")
+    assert config.CALIBRATION_MIN_PAIRS == 10
+    assert hasattr(config, "DISTANCE_MODEL_DIR")
+    assert config.DISTANCE_MODEL_DIR == "distance_models"
+    assert hasattr(config, "DISTANCE_MAX_TREES")
+    assert config.DISTANCE_MAX_TREES == 200
+
+
+def test_distance_valid_subcarriers():
+    from ghv4 import config
+    assert hasattr(config, "VALID_SUBCARRIER_COUNT")
+    assert config.VALID_SUBCARRIER_COUNT == 121  # 128 - 7 nulls
+
+
+def test_distance_feature_count():
+    from ghv4 import config
+    # 121 amp_norm + 121 phase per direction, 2 directions
+    assert hasattr(config, "DISTANCE_FEATURE_COUNT")
+    assert config.DISTANCE_FEATURE_COUNT == 484

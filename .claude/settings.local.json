@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-md-management:revise-claude-md)",
+      "Skill(claude-md-management:revise-claude-md:*)",
+      "Bash(python -m pytest tests/test_config.py::test_distance_constants_exist tests/test_config.py::test_distance_valid_subcarriers tests/test_config.py::test_distance_feature_count -v)",
+      "Bash(python -m pytest tests/test_config.py -v)",
+      "Bash(python -m pytest tests/test_config.py --tb=short)",
+      "Bash(python -c \"from ghv4 import config; print\\(f''SUBCARRIERS: {config.SUBCARRIERS}''\\); print\\(f''NULL_SUBCARRIER_INDICES: {config.NULL_SUBCARRIER_INDICES}''\\); print\\(f''Null count: {len\\(config.NULL_SUBCARRIER_INDICES\\)}''\\); print\\(f''VALID_SUBCARRIER_COUNT: {config.VALID_SUBCARRIER_COUNT}''\\); print\\(f''DISTANCE_FEATURE_COUNT: {config.DISTANCE_FEATURE_COUNT}''\\)\")",
+      "Bash(python -m pytest tests/test_config.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_distance_features.py -v)",
+      "Bash(python -m pytest tests/ -v --ignore=tests/test_distance_features.py -q)",
+      "Bash(python -m pytest tests/ -q --ignore=tests/test_distance_features.py --ignore=tests/test_glass_house_filename.py --ignore=tests/test_viz.py)",
+      "Bash(python -m pytest tests/test_distance_preprocess.py -v)",
+      "Bash(python -m pip install joblib scikit-learn)",
+      "Bash(python -m pytest tests/test_distance_train.py -v)",
+      "Bash(python -m pytest tests/test_distance_inference.py -v)",
+      "Bash(python -c \"from ghv4.distance_inference import DistanceCalibrator; print\\(''OK''\\)\")",
+      "Bash(python -m pytest tests/test_serial_io.py -v)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest tests/test_inference.py -v)",
+      "Bash(python -m py_compile ghv4/ui/capture_tab.py)",
+      "Bash(python -m pytest tests/test_distance_e2e.py -v)",
+      "Bash(python -m pytest tests/test_distance_features.py tests/test_distance_inference.py tests/test_distance_preprocess.py tests/test_distance_train.py tests/test_distance_e2e.py -v)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/ -v --tb=short --ignore=tests/test_viz.py)",
+      "Bash(python -c \"from ghv4.distance_inference import DistanceCalibrator; print\\(''No pandas import - OK''\\)\")",
+      "Bash(python -m pytest tests/ -v --tb=short --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
+      "Bash(python -m pytest tests/test_viz.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_debug_tab.py -v --tb=short)"
+    ]
+  }
+}
