@@ -7,14 +7,14 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 ## Quick Status
 - Test count: 189 passing (2026-03-19)
 - Last exe rebuild: needs rebuild (2026-03-19 ML distance code still unstaged)
-- Unstaged changes: ML distance pipeline files, config.py, inference.py, serial_io.py, capture_tab.py, tests
+- Unstaged changes: ML distance pipeline + CLAUDE.md reorganization (5 CLAUDE.md files)
 - Active branch: master
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
 V3 source lives in the `ghv4/` subdirectory (repo root also has GHV1/, Arduino_IDE/, etc.).
 Never track exe binaries — ghv4_Collector.exe is ~100MB and hits GitHub's hard limit.
-`.gitignore` lives at `ghv4/.gitignore`; Windows can silently save it as UTF-16 — git ignores UTF-16 .gitignore files entirely. Verify encoding with `xxd .gitignore | head -1` (should NOT start with `ff fe`).
+`.gitignore` lives at the repo root. Windows can silently save it as UTF-16 — git ignores UTF-16 .gitignore files entirely. Verify encoding with `xxd .gitignore | head -1` (should NOT start with `ff fe`).
 
 ## Hardware
 - **Listener + Shouters**: ESP32-WROOM-UE (devkitC); baud rate 921600

@@ -149,7 +149,29 @@ def main():
     parser.add_argument('--baud',    type=int, default=BAUD_RATE)
     parser.add_argument('--spacing', default='spacing.json',
                         help="Path to spacing.json (default: spacing.json in cwd)")
+    parser.add_argument('--calibrate', action='store_true',
+                        help="Run distance calibration phase and write spacing.json, then exit")
+    parser.add_argument('--model-dir', default='distance_models/',
+                        help="Path to distance_models/ directory (used with --calibrate)")
     args = parser.parse_args()
+
+    if args.calibrate:
+        ser = None
+        try:
+            ser = serial.Serial(args.port, args.baud, timeout=1)
+            print(f"[CAL] Calibrating on {args.port} — writing {args.spacing}")
+            distances = run_calibration(ser, args.model_dir, args.spacing)
+            if distances:
+                for pair, dist in sorted(distances.items()):
+                    print(f"  {pair}: {dist:.2f} m")
+            else:
+                print("[CAL] No distance models found or no data collected.")
+        except KeyboardInterrupt:
+            print("\n[CAL] Interrupted.")
+        finally:
+            if ser:
+                ser.close()
+        return
 
     model = None
     if args.model:

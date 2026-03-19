@@ -1,0 +1,38 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+
+# ── PyInstaller build artifacts ───────────────────────────────────────────────
+GHV4/build/
+GHV4/dist/
+
+# ── Distribution binary (too large for git — ~100 MB hits GitHub hard limit) ──
+GHV4/ghv4_Distro/ghv4_Collector.exe
+
+# ── Data directories ──────────────────────────────────────────────────────────
+GHV4/data/
+GHV4/distance_data/
+
+# ── Processed data (numpy arrays, scaler) ─────────────────────────────────────
+*.npy
+*.pkl
+
+# ── Models ────────────────────────────────────────────────────────────────────
+GHV4/models/
+GHV4/distance_models/
+
+# ── Runtime artifacts ─────────────────────────────────────────────────────────
+spacing.json
+ghv4_debug_*.log
+
+# ── pytest ────────────────────────────────────────────────────────────────────
+.pytest_cache/
+
+# ── Superpowers plans/specs (internal dev docs) ───────────────────────────────
+GHV4/docs/
+/docs
