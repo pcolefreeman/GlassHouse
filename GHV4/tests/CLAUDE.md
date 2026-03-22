@@ -8,6 +8,8 @@
   minimal environments. Pre-existing, not regressions.
 - **`test_pi_display.py` requires pygame** — uses `pytest.importorskip("pygame")` to
   auto-skip if pygame is not installed. Mocks pygame display init so no actual window opens.
+- **pygame does not build on Python 3.14** — `pip install pygame` fails. On Pi (Python 3.11/3.12)
+  use `sudo apt install python3-pygame`. Tests use `importorskip` to auto-skip gracefully.
 
 ## Removed Tests
 

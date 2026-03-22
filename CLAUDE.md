@@ -5,12 +5,12 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- Test count: 181 passing (2026-03-22)
-- Last exe rebuild: needs rebuild (inference.py + preprocess.py + debug_tab + serial_io changed)
-- Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix
+- Test count: 181 passing + 1 skipped (2026-03-22)
+- Last exe rebuild: needs rebuild (inference.py + preprocess.py + debug_tab + serial_io + pi_display + config changed)
+- Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix + Pi LCD display
 - Active branch: main
 - Pending: Hardware test of firmware improvements (need ESP32 boards)
-- Pending: Pi LCD operator display for live inference visualization
+- Pending: End-to-end firmware/serial/data-collection debugging plan
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
