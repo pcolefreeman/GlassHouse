@@ -26,6 +26,10 @@ python run_train.py --model rf             # force a specific model
 python run_inference.py --port COM3 --model models/model.pkl --spacing data/raw/spacing.json
 python run_inference.py --port COM3        # dry-run (no model needed)
 
+# Pi LCD display (operator zone tracker — pygame-based)
+python run_pi_display.py --port /dev/ttyUSB0 --model models/model.pkl --fullscreen
+python run_pi_display.py --demo            # cycle cells without hardware
+
 # Tests
 pytest tests/
 ```

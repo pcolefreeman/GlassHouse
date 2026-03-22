@@ -1,5 +1,5 @@
 # Firmware — ESP32 Protocol & Gotchas
-<!-- last verified: 2026-03-22 -->
+<!-- last verified: 2026-03-22 (CC/DD removal applied) -->
 
 ## Important
 - **Canonical firmware is in `GHV4/firmware/`** — `ListenerV4/` and `ShouterV4/` directories. `GHV3/firmware/` contains identical copies but is not the active working set.

@@ -5,12 +5,12 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- Test count: 189 passing (2026-03-22)
-- Last exe rebuild: needs rebuild (2026-03-19 ML distance code still unstaged)
-- Unstaged changes: ML distance pipeline + CLAUDE.md reorg + firmware 12-improvement + debug_tab regex fixes
+- Test count: 181 passing (2026-03-22)
+- Last exe rebuild: needs rebuild (inference.py + preprocess.py + debug_tab + serial_io changed)
+- Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix
 - Active branch: main
-- Pending: Hardware test of 12 firmware improvements (need ESP32 boards)
-- Pending: Audit improvements between listener firmware and Python data storage pipeline
+- Pending: Hardware test of firmware improvements (need ESP32 boards)
+- Pending: Pi LCD operator display for live inference visualization
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -28,6 +28,7 @@ Never track exe binaries — ghv4_Collector.exe is ~100MB and hits GitHub's hard
 ```
 run_gui.py             — entry point: launches GUI
 run_inference.py       — entry point: live inference
+run_pi_display.py      — entry point: Pi LCD operator display (pygame)
 run_preprocess.py      — entry point: preprocessing pipeline
 run_train.py           — entry point: model training
 
@@ -40,6 +41,7 @@ ghv4/
   preprocess.py        — raw CSV → X.npy, y.npy, feature_names.txt, scaler.pkl
   train.py             — CV comparison → VotingClassifier → StackingClassifier → saves best
   inference.py         — live serial → feature extraction → model.predict()
+  pi_display.py        — pygame 3×3 grid display for Pi LCD (operator view)
   eda_utils.py         — label parsing, shared EDA helpers
   viz.py               — visualization widgets (heatmap, spacing overlay)
   cell_logic.py        — pure label/cell helper functions

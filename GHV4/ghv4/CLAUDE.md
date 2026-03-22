@@ -30,8 +30,20 @@ placeholder default; the user selects the actual port before connecting.
 - 6 per-pair GBT/RF regressors, max 200 trees each, trained on PC, inference on Pi 4B
 - Calibration phase: 30s snap collection → median prediction → spacing.json
 
+## Pi LCD Display (implemented 2026-03-22)
+- Module: `ghv4/pi_display.py` — pygame-based 3×3 grid operator display
+- Entry point: `run_pi_display.py` (--port, --model, --fullscreen, --demo)
+- InferenceThread reuses `inference.py` functions (load_model, load_spacing, etc.)
+- DemoThread cycles cells without hardware for testing
+- Colors match `viz.py` confidence mode (#FF6B35 rescue orange, #0d0d0d dark bg)
+- Pi deployment: `pip install pygame>=2.5.0`; for headless use `SDL_VIDEODRIVER=kmsdrm`
+
 ## Gotchas
 
+- **Inference requires preprocessing artifacts** — `inference.py` loads `feature_names.txt` and
+  `scaler.pkl` from `--processed-dir` (default `data/processed/`). Without these, predictions
+  use raw unscaled features. The `apply_preprocessing()` function mirrors `preprocess.py`'s
+  column-drop + StandardScaler + phase/π transforms.
 - **`_shouter_states` location** — lives on `ListenerDebugTab` in `ghv4/ui/debug_tab.py`,
   protected by `threading.Lock()`. The original spec incorrectly placed it in `spacing_tab.py`.
 - **Garbled binary in Listener/Shouter log** — caused by ESP32 bootloader bytes at startup and CSI frame

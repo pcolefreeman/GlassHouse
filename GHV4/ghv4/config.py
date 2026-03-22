@@ -52,6 +52,16 @@ CSI_NOISE_FLOOR = 2            # min max(abs(csi)) to accept snapshot; tunable
 # ── UI constants ───────────────────────────────────────────────
 MAX_LOG_LINES = 500
 
+# ── Pi Display ────────────────────────────────────────────────
+PI_DISPLAY_FPS         = 10                  # 10 Hz redraw
+PI_DISPLAY_BG          = (13, 13, 13)        # #0d0d0d (matches viz.py dark bg)
+PI_CELL_ACTIVE         = (255, 107, 53)      # #FF6B35 rescue orange (matches viz.py)
+PI_CELL_INACTIVE       = (26, 26, 26)        # #1a1a1a (matches viz.py)
+PI_CELL_BORDER         = (68, 68, 68)        # #444444
+PI_TEXT_ACTIVE         = (255, 255, 255)     # white
+PI_TEXT_INACTIVE       = (102, 102, 102)     # #666666
+PI_SCREEN_SIZE         = (800, 480)          # Standard Pi 7" DSI LCD
+
 # ── EDA constants ──────────────────────────────────────────────
 META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
 EXPECTED_COLS = 5134

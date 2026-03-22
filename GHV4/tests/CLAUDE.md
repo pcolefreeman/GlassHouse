@@ -6,6 +6,13 @@
 - **`test_viz.py` and `test_debug_tab.py` fail without display** — `matplotlib` and
   `customtkinter` require a display/GUI environment; these tests fail in headless or
   minimal environments. Pre-existing, not regressions.
+- **`test_pi_display.py` requires pygame** — uses `pytest.importorskip("pygame")` to
+  auto-skip if pygame is not installed. Mocks pygame display init so no actual window opens.
+
+## Removed Tests
+
+- **8 tests removed (2026-03-22)** — `[CC][DD]` ranging frame tests deleted from
+  `test_serial_io.py` (4) and `test_debug_tab.py` (4) after dead code removal.
 
 ## Fixture Requirements
 
