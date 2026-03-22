@@ -25,65 +25,6 @@ class _FakeSerial:
         return True
 
 
-def _make_cc_frame(reporter_id=1, peer_rssi=None, peer_count=None):
-    """Build a complete [0xCC][0xDD] serial frame as bytes."""
-    if peer_rssi is None:
-        peer_rssi = [0, 0, -55, -60, -65]
-    if peer_count is None:
-        peer_count = [0, 0, 5, 4, 7]
-    payload = struct.pack('<BB5b5B', 1, reporter_id, *peer_rssi, *peer_count)
-    return bytes([0xCC, 0xDD]) + payload  # 14 bytes total
-
-
-# ── SerialReader 0xCC branch (consume-and-discard) ───────────────────────────
-
-def test_serial_reader_discards_cc_frame():
-    """A [0xCC][0xDD] frame must be consumed but NOT enqueued (RSSI removed in GHV4)."""
-    from ghv4.serial_io import SerialReader
-    data = _make_cc_frame(reporter_id=2)
-    ser = _FakeSerial(data)
-    q = queue.Queue()
-    reader = SerialReader(ser, q)
-    reader._read_one_frame()
-    assert q.empty(), "0xCC frame should be discarded, not enqueued"
-
-
-def test_serial_reader_cc_ignores_wrong_second_byte():
-    """[0xCC] not followed by [0xDD] must be silently dropped."""
-    from ghv4.serial_io import SerialReader
-    data = bytes([0xCC, 0x00])
-    ser = _FakeSerial(data)
-    q = queue.Queue()
-    reader = SerialReader(ser, q)
-    reader._read_one_frame()
-    assert q.empty()
-
-
-def test_serial_reader_cc_short_payload_consumed():
-    """A [0xCC][0xDD] frame with < 12 payload bytes must not crash."""
-    from ghv4.serial_io import SerialReader
-    data = bytes([0xCC, 0xDD]) + bytes(6)  # only 6 payload bytes
-    ser = _FakeSerial(data)
-    q = queue.Queue()
-    reader = SerialReader(ser, q)
-    reader._read_one_frame()
-    assert q.empty()
-
-
-def test_serial_reader_cc_keeps_stream_aligned():
-    """After consuming a [0xCC][0xDD] frame, the next frame must parse correctly."""
-    from ghv4.serial_io import SerialReader
-    # 0xCC frame followed by a 0xEE frame header (incomplete, but stream position matters)
-    cc_data = _make_cc_frame()
-    # After consuming CC frame, reader should be at the right position
-    ser = _FakeSerial(cc_data)
-    q = queue.Queue()
-    reader = SerialReader(ser, q)
-    reader._read_one_frame()
-    # Stream should be fully consumed (14 bytes: 2 magic + 12 payload)
-    assert ser._buf.read(1) == b''
-
-
 # ── [0xEE][0xFF] dispatch → CSIMUSICEstimator ─────────────────────────────────
 
 def _make_ee_frame(reporter=1, peer=2, seq=0, csi_len=256) -> bytes:

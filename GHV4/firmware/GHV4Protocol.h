@@ -54,10 +54,6 @@ typedef struct __attribute__((packed)) {
 #define RANGE_REQ_MAGIC_1  0xA1
 #define RANGE_BCN_MAGIC_0  0xBB
 #define RANGE_BCN_MAGIC_1  0xA2
-#define RANGE_RPT_MAGIC_0  0xBB
-#define RANGE_RPT_MAGIC_1  0xA3
-#define SER_C_MAGIC_0      0xCC
-#define SER_C_MAGIC_1      0xDD
 
 // peer_info_pkt_t — listener → each shouter (32 bytes)
 typedef struct __attribute__((packed)) {
@@ -87,21 +83,17 @@ typedef struct __attribute__((packed)) {
     uint32_t bcn_seq;
 } range_bcn_pkt_t;          // 8 bytes
 
-// ranging_rpt_pkt_t — shouter → listener (14 bytes)
-// Arrays are size [5], 1-indexed. Slot 0 is unused pad (always 0).
-typedef struct __attribute__((packed)) {
-    uint8_t magic[2];       // [0xBB][0xA3]
-    uint8_t ver;            // = 1
-    uint8_t shouter_id;     // self (reporter), 1–4
-    int8_t  peer_rssi[5];   // indices 1–4 valid; index 0 = 0x00 pad
-    uint8_t peer_count[5];  // sample count per peer; index 0 = 0 pad
-} ranging_rpt_pkt_t;        // 2+1+1+5+5 = 14 bytes
+// ── ACK packet ───────────────────────────────────────────────────────────
+#define ACK_MAGIC_0  0xBB
+#define ACK_MAGIC_1  0xA5
 
-/*
- * Serial frame C: [0xCC][0xDD]   — listener → Pi after each poll cycle
- *   magic(2) ver(1) reporter_id(1) peer_rssi[5](5) peer_count[5](5) = 14 bytes
- *   Payload after magic: 12 bytes (same layout as ranging_rpt_pkt_t bytes 2–13).
- */
+// ack_pkt_t — bidirectional (6 bytes)
+typedef struct __attribute__((packed)) {
+    uint8_t  magic[2];      // [0xBB][0xA5]
+    uint8_t  ack_type;      // magic[1] of packet being ACKed (0xFA=HELLO, 0xA0=PEER_INFO)
+    uint8_t  assigned_id;   // only for HELLO ACK; 0 otherwise
+    uint16_t ack_seq;       // seq from original packet (0 if N/A)
+} ack_pkt_t;                // 6 bytes
 
 // ── MUSIC CSI snapshot ─────────────────────────────────────────────────────
 #define CSI_SNAP_MAGIC_0  0xBB

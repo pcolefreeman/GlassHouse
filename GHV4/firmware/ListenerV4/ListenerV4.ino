@@ -14,11 +14,33 @@
 #define RANGING_COOLDOWN_MS    30000   // minimum ms between ranging phases; prevents re-ranging on brief dropout
 #define RANGING_STABILITY_MS    5000   // all 4 shouters must be registered this long before ranging starts
 #define SNAP_DRAIN_MS           2000   // per-shouter drain window: 35 snaps × 3 peers × 15ms + margin
+#define USE_BROADCAST_POLL  1     // 1 = broadcast + stagger; 0 = sequential (fallback)
+#define STAGGER_MS         40     // per-shouter stagger delay for broadcast polling
 
 // ── Shouter registry ───────────────────────────────────────────────────────────
 static IPAddress shouter_ip[5];          // indices 1–4; [0] unused
 static uint8_t   shouter_mac[5][6];      // MAC per shouter ID, from HELLO
 static bool      shouter_ready[5] = {};  // true once HELLO received
+
+// MAC → ID lookup table. Populate with actual MACs from `esptool.py read_mac`.
+// If a MAC doesn't match, assign next available ID as fallback.
+static const uint8_t known_macs[4][6] = {
+    {0x68, 0xFE, 0x71, 0x90, 0x60, 0xA0},  // ID 1
+    {0x68, 0xFE, 0x71, 0x90, 0x68, 0x14},  // ID 2
+    {0x68, 0xFE, 0x71, 0x90, 0x6B, 0x90},  // ID 3
+    {0x20, 0xE7, 0xC8, 0xEC, 0xF5, 0xDC},  // ID 4
+};
+
+uint8_t mac_to_id(const uint8_t mac[6]) {
+    for (int i = 0; i < 4; i++) {
+        if (memcmp(known_macs[i], mac, 6) == 0) return (uint8_t)(i + 1);
+    }
+    // Fallback: assign next available ID for unknown MACs (board replacement)
+    for (int i = 1; i <= 4; i++) {
+        if (!shouter_ready[i]) return (uint8_t)i;
+    }
+    return 0;  // all slots full
+}
 
 // ── Globals ────────────────────────────────────────────────────────────────────
 WiFiUDP  udp;
@@ -28,6 +50,32 @@ static volatile bool ranging_done = false;
 static unsigned long ranging_completed_ms = 0;  // millis() when last ranging phase finished
 static unsigned long last_hello_ms = 0;         // millis() of most recent HELLO from any shouter
 static uint16_t snap_frames_emitted = 0;
+static volatile uint32_t csi_overflow_count = 0;
+static uint32_t lst_poll_count = 0;
+static uint16_t consecutive_miss[5] = {};  // index 1-4; tracks consecutive poll misses
+static bool     miss_warned[5] = {};       // true once warning emitted; reset on hit
+
+// ── Ranging state machine ────────────────────────────────────────────────────
+enum RangingState {
+    RNG_IDLE, RNG_SEND_PEER_INFO, RNG_WAIT_PEER_ACK,
+    RNG_BEACON_ROUND, RNG_WAIT_BEACONS, RNG_DRAIN_SNAPS,
+    RNG_NEXT_SHOUTER, RNG_COMPLETE
+};
+static volatile RangingState rng_state = RNG_IDLE;  // volatile: written by WiFi event handler (Core 0), read by loop() (Core 1)
+static uint8_t  rng_current_shouter = 0;
+static uint32_t rng_state_entered_ms = 0;
+
+// Ranging constants (moved from run_ranging_phase)
+static const uint8_t  RNG_N_BCN     = 35;
+static const uint16_t RNG_BCN_MS    = 20;
+static const uint16_t RNG_MARGIN_MS = 50;
+
+// Dynamic snap drain tracking (#9)
+static uint16_t snap_drain_count = 0;
+static uint32_t last_snap_ms = 0;
+static const uint16_t SNAP_EXPECTED_MAX = 105;  // N_BCN * 3 peers
+static const uint32_t SNAP_SILENCE_MS   = 500;
+static const uint32_t SNAP_HARD_CAP_MS  = 3000;
 
 // ── Listener CSI ring buffer — callback stores here; loop drains to Serial ────
 #define LST_RING_SIZE 4
@@ -52,10 +100,15 @@ void IRAM_ATTR listener_csi_cb(void* ctx, wifi_csi_info_t* info) {
     if (!info || !info->buf || info->len <= 0) return;
     uint16_t copy_len = (info->len <= CSI_MAX_BYTES) ? info->len : CSI_MAX_BYTES;
     portENTER_CRITICAL_ISR(&lst_ring_mux);
+    if (lst_ring_write - lst_ring_read >= LST_RING_SIZE) {
+        csi_overflow_count++;
+        portEXIT_CRITICAL_ISR(&lst_ring_mux);
+        return;  // ring full — skip this frame
+    }
     int idx = lst_ring_write % LST_RING_SIZE;
     memcpy(lst_ring[idx].mac, info->mac, 6);
     lst_ring[idx].snap_seq    = current_poll_seq;
-    lst_ring[idx].ts_ms       = (uint32_t)(esp_timer_get_time() / 1000);  // IRAM-safe
+    lst_ring[idx].ts_ms       = (uint32_t)(esp_timer_get_time() / 1000);
     lst_ring[idx].rssi        = info->rx_ctrl.rssi;
     lst_ring[idx].noise_floor = info->rx_ctrl.noise_floor;
     lst_ring[idx].csi_len     = copy_len;
@@ -124,16 +177,6 @@ void emit_shouter_frame(const response_pkt_t* resp, uint8_t id,
     if (clen > 0 && is_hit) Serial.write(resp->csi, clen);
 }
 
-// Serial frame C: [0xCC][0xDD] + 12-byte payload (ranging_rpt_pkt_t bytes 2–13)
-void emit_ranging_frame(const ranging_rpt_pkt_t *rpt) {
-    uint8_t buf[14];
-    buf[0] = SER_C_MAGIC_0;    // 0xCC
-    buf[1] = SER_C_MAGIC_1;    // 0xDD
-    // Bytes 2–13: copy bytes [2..13] of ranging_rpt_pkt_t (skip the 2-byte magic)
-    memcpy(buf + 2, ((const uint8_t *)rpt) + 2, 12);
-    Serial.write(buf, 14);
-}
-
 // Serial frame D: [0xEE][0xFF] + ver(1)+reporter_id(1)+peer_id(1)+bcn_seq(1)+csi_len(2)+csi[N]
 // pkt->magic[2] ([BB][A4]) is NOT forwarded — Python parser expects 6-byte header after magic.
 void emit_csi_snap_frame(const csi_snap_pkt_t *pkt) {
@@ -157,31 +200,37 @@ bool handle_incoming_udp(response_pkt_t* pkt_out) {
     if (magic[0] == HELLO_MAGIC_0 && magic[1] == HELLO_MAGIC_1) {
         uint8_t buf[sizeof(hello_pkt_t) - 2];
         udp.read(buf, sizeof(buf));
-        uint8_t sid = buf[1];  // shouter_id
+        uint8_t *src_mac = buf + 2;  // MAC starts at offset 2 in buf (after ver, shouter_id)
+        uint8_t sid = mac_to_id(src_mac);
+        if (sid == 0) {
+            Serial.printf("[LST] WARN unknown MAC %02X:%02X:%02X:%02X:%02X:%02X — no slots available\n",
+                src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
+            udp.flush();
+            return false;
+        }
         if (sid >= 1 && sid <= 4) {
             shouter_ip[sid] = udp.remoteIP();
-            memcpy(shouter_mac[sid], buf + 2, 6);
+            memcpy(shouter_mac[sid], src_mac, 6);
             shouter_ready[sid] = true;
             last_hello_ms = millis();
             // NOTE: udp.remoteIP().toString() returns a temporary String; capture before c_str().
             String remote_str = udp.remoteIP().toString();
-            Serial.printf("[LST] HELLO sid=%d IP=%s MAC=%02X:%02X:%02X:%02X:%02X:%02X\n",
+            Serial.printf("[LST] HELLO sid=%d (MAC-assigned) IP=%s MAC=%02X:%02X:%02X:%02X:%02X:%02X\n",
                 sid, remote_str.c_str(),
-                buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+                src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
+            // Send HELLO ACK with assigned ID
+            ack_pkt_t ack = {};
+            ack.magic[0]    = ACK_MAGIC_0;
+            ack.magic[1]    = ACK_MAGIC_1;
+            ack.ack_type    = HELLO_MAGIC_1;  // 0xFA
+            ack.assigned_id = sid;
+            ack.ack_seq     = 0;
+            udp.beginPacket(udp.remoteIP(), SHOUTER_PORT);
+            udp.write((uint8_t*)&ack, sizeof(ack));
+            udp.endPacket();
         }
         udp.flush();  // consume any remaining bytes in this UDP packet
         return false;
-    }
-
-    // RANGE_RPT_MAGIC [0xBB][0xA3] — shouter's ranging report
-    if (magic[0] == RANGE_RPT_MAGIC_0 && magic[1] == RANGE_RPT_MAGIC_1) {
-        ranging_rpt_pkt_t rpt;
-        rpt.magic[0] = magic[0];
-        rpt.magic[1] = magic[1];
-        udp.read(((uint8_t*)&rpt) + 2, sizeof(ranging_rpt_pkt_t) - 2);
-        emit_ranging_frame(&rpt);
-        return false;   // MUST return false — do NOT treat as poll hit
-        // Returning true here would skip the real response_pkt_t and emit a MISS.
     }
 
     // CSI_SNAP_MAGIC [0xBB][0xA4] — shouter's CSI snapshot for MUSIC ranging
@@ -202,6 +251,18 @@ bool handle_incoming_udp(response_pkt_t* pkt_out) {
         return false;
     }
 
+    // ACK_MAGIC [0xBB][0xA5] — shouter acknowledges PEER_INFO
+    if (magic[0] == ACK_MAGIC_0 && magic[1] == ACK_MAGIC_1) {
+        ack_pkt_t ack;
+        ack.magic[0] = magic[0];
+        ack.magic[1] = magic[1];
+        udp.read(((uint8_t*)&ack) + 2, sizeof(ack_pkt_t) - 2);
+        if (ack.ack_type == PEER_INFO_MAGIC_1) {  // 0xA0
+            Serial.printf("[LST] PEER_INFO ACK from shouter (type=0x%02X)\n", ack.ack_type);
+        }
+        return false;
+    }
+
     if (magic[0] == RESP_MAGIC_0 && magic[1] == RESP_MAGIC_1) {
         pkt_out->magic[0] = magic[0];
         pkt_out->magic[1] = magic[1];
@@ -214,110 +275,128 @@ bool handle_incoming_udp(response_pkt_t* pkt_out) {
     return false;
 }
 
-// ── poll_all_shouters — used by run_ranging_phase ─────────────────────────────
-void poll_all_shouters() {
-    for (uint8_t id = 1; id <= 4; id++) {
-        if (!shouter_ready[id]) continue;
-        Serial.printf("[LST] poll_all: polling shouter %d\n", id);
+// ── Non-blocking ranging state machine ────────────────────────────────────────
+void advance_ranging() {
+    uint32_t now = millis();
 
-        portENTER_CRITICAL(&lst_ring_mux);
-        current_poll_seq = poll_seq;
-        portEXIT_CRITICAL(&lst_ring_mux);
-
-        poll_pkt_t pkt;
-        memset(&pkt, 0, sizeof(pkt));
-        pkt.magic[0]    = POLL_MAGIC_0;
-        pkt.magic[1]    = POLL_MAGIC_1;
-        pkt.ver         = 1;
-        pkt.target_id   = id;
-        pkt.poll_seq    = poll_seq;
-        pkt.listener_ms = millis();
-        memset(pkt.pad, 0xA5, POLL_PAD_SIZE);
-        udp.beginPacket(shouter_ip[id], SHOUTER_PORT);
-        udp.write((uint8_t*)&pkt, sizeof(pkt));
-        udp.endPacket();
-
-        unsigned long deadline = millis() + POLL_TIMEOUT_MS;
-        bool got_response = false;
-        response_pkt_t resp;
-        while (millis() < deadline) {
-            drain_listener_csi();
-            if (handle_incoming_udp(&resp)) {
-                if (resp.poll_seq != poll_seq || resp.shouter_id != id) continue;
-                got_response = true;
-                emit_shouter_frame(&resp, id, true, millis());
-                break;
-            }
-            delay(1);  // yield to FreeRTOS scheduler — feeds TWDT
+    switch (rng_state) {
+    case RNG_IDLE: {
+        // Check trigger conditions
+        uint8_t cnt = 0;
+        for (int i = 1; i <= 4; i++) if (shouter_ready[i]) cnt++;
+        if (!ranging_done && cnt == 4 &&
+            (now - ranging_completed_ms >= RANGING_COOLDOWN_MS) &&
+            (now - last_hello_ms >= RANGING_STABILITY_MS)) {
+            Serial.println("[LST] All 4 shouters stable — starting ranging (non-blocking)");
+            rng_state = RNG_SEND_PEER_INFO;
+            rng_state_entered_ms = now;
+            snap_frames_emitted = 0;
         }
-        if (!got_response) {
-            emit_shouter_frame(nullptr, id, false, millis());
+        break;
+    }
+
+    case RNG_SEND_PEER_INFO: {
+        peer_info_pkt_t pi;
+        pi.magic[0] = PEER_INFO_MAGIC_0;
+        pi.magic[1] = PEER_INFO_MAGIC_1;
+        pi.ver      = 1;
+        pi.n_peers  = 4;
+        for (int i = 0; i < 4; i++) {
+            pi.peers[i].shouter_id = (uint8_t)(i + 1);
+            memcpy(pi.peers[i].mac, shouter_mac[i + 1], 6);
         }
-        // Drain snap packets from this shouter before polling the next.
-        // Shouter sends N_SNAP × 3ms ≈ 270ms of UDP after its poll response.
-        // Without this window all 4 shouters burst concurrently and overflow
-        // the listener UDP RX buffer (~8–16 KB), dropping ~85% of snap packets.
-        unsigned long drain_end = millis() + SNAP_DRAIN_MS;
-        while (millis() < drain_end) {
-            response_pkt_t dummy;
-            handle_incoming_udp(&dummy);
-            drain_listener_csi();
-            yield();  // yield without 1ms floor — process snaps as fast as possible
+        for (int s = 1; s <= 4; s++) {
+            udp.beginPacket(shouter_ip[s], SHOUTER_PORT);
+            udp.write((uint8_t *)&pi, sizeof(pi));
+            udp.endPacket();
         }
-        unsigned long gap_end = millis() + INTER_SHOUTER_GAP_MS;
-        while (millis() < gap_end) { drain_listener_csi(); yield(); }
+        rng_state = RNG_WAIT_PEER_ACK;
+        rng_state_entered_ms = now;
+        Serial.println("[LST] PEER_INFO sent to all shouters, waiting 200ms for processing");
+        break;
     }
-    poll_seq++;
-}
 
-// run_ranging_phase — called once after all shouters have registered.
-// Sends PEER_INFO to all shouters, then sequentially requests ranging beacons.
-void run_ranging_phase() {
-    Serial.println("[LST] Starting ranging phase");
-    snap_frames_emitted = 0;
-
-    // Build and send peer_info_pkt_t to each registered shouter
-    peer_info_pkt_t pi;
-    pi.magic[0] = PEER_INFO_MAGIC_0;
-    pi.magic[1] = PEER_INFO_MAGIC_1;
-    pi.ver      = 1;
-    pi.n_peers  = 4;
-    for (int i = 0; i < 4; i++) {
-        pi.peers[i].shouter_id = (uint8_t)(i + 1);        // 1-indexed
-        memcpy(pi.peers[i].mac, shouter_mac[i + 1], 6);
+    case RNG_WAIT_PEER_ACK: {
+        // Best-effort wait: give shouters 200ms to process PEER_INFO before beaconing.
+        // ACKs are logged by handle_incoming_udp but not counted here — proceeding is unconditional.
+        if (now - rng_state_entered_ms >= 200) {
+            rng_current_shouter = 1;
+            rng_state = RNG_BEACON_ROUND;
+            rng_state_entered_ms = now;
+        }
+        break;
     }
-    for (int s = 1; s <= 4; s++) {
-        udp.beginPacket(shouter_ip[s], SHOUTER_PORT);
-        udp.write((uint8_t *)&pi, sizeof(pi));
-        udp.endPacket();
-    }
-    delay(50);
 
-    // Sequential ranging: one shouter beacons at a time
-    const uint8_t  N_BCN      = 35;   // matches N_SNAP=35 on shouter (DRAM limit)
-    const uint16_t BCN_MS     = 20;   // unchanged
-    const uint16_t MARGIN_MS  = 50;   // unchanged
-
-    for (int beacon_id = 1; beacon_id <= 4; beacon_id++) {
-        Serial.printf("[LST] Ranging: requesting beacons from shouter %d\n", beacon_id);
+    case RNG_BEACON_ROUND: {
+        Serial.printf("[LST] Ranging: requesting beacons from shouter %d\n", rng_current_shouter);
         range_req_pkt_t rr;
         rr.magic[0]    = RANGE_REQ_MAGIC_0;
         rr.magic[1]    = RANGE_REQ_MAGIC_1;
         rr.ver         = 1;
-        rr.target_id   = beacon_id;
-        rr.n_beacons   = N_BCN;
-        rr.interval_ms = BCN_MS;
-        udp.beginPacket(shouter_ip[beacon_id], SHOUTER_PORT);
+        rr.target_id   = rng_current_shouter;
+        rr.n_beacons   = RNG_N_BCN;
+        rr.interval_ms = RNG_BCN_MS;
+        udp.beginPacket(shouter_ip[rng_current_shouter], SHOUTER_PORT);
         udp.write((uint8_t *)&rr, sizeof(rr));
         udp.endPacket();
-        delay((uint32_t)N_BCN * BCN_MS + MARGIN_MS);
-        Serial.printf("[LST] Ranging: beacon %d delay done, polling\n", beacon_id);
-        // One normal poll cycle collects ranging_rpt_pkt_t from all shouters
-        poll_all_shouters();
-        Serial.printf("[LST] Ranging: beacon %d complete, snaps=%d\n", beacon_id, snap_frames_emitted);
+        rng_state = RNG_WAIT_BEACONS;
+        rng_state_entered_ms = now;
+        break;
     }
-    Serial.printf("[LST] Ranging done: %d snap frames emitted\n", snap_frames_emitted);
-    ranging_completed_ms = millis();
+
+    case RNG_WAIT_BEACONS: {
+        uint32_t wait_ms = (uint32_t)RNG_N_BCN * RNG_BCN_MS + RNG_MARGIN_MS;
+        if (now - rng_state_entered_ms >= wait_ms) {
+            rng_state = RNG_DRAIN_SNAPS;
+            rng_state_entered_ms = now;
+            snap_drain_count = 0;
+            last_snap_ms = now;
+            Serial.printf("[LST] Ranging: beacon %d wait done, draining snaps\n", rng_current_shouter);
+        }
+        break;
+    }
+
+    case RNG_DRAIN_SNAPS: {
+        static uint16_t drain_start_snaps = 0;
+        if (snap_drain_count == 0) {
+            drain_start_snaps = snap_frames_emitted;
+        }
+        uint16_t new_snaps = snap_frames_emitted - drain_start_snaps;
+        if (new_snaps > snap_drain_count) {
+            snap_drain_count = new_snaps;
+            last_snap_ms = now;
+        }
+        bool done = false;
+        if (snap_drain_count >= SNAP_EXPECTED_MAX) done = true;
+        if (now - last_snap_ms >= SNAP_SILENCE_MS) done = true;
+        if (now - rng_state_entered_ms >= SNAP_HARD_CAP_MS) done = true;
+        if (done) {
+            Serial.printf("[LST] Ranging: drained %d snaps for shouter %d\n",
+                snap_drain_count, rng_current_shouter);
+            rng_state = RNG_NEXT_SHOUTER;
+        }
+        break;
+    }
+
+    case RNG_NEXT_SHOUTER: {
+        rng_current_shouter++;
+        if (rng_current_shouter <= 4) {
+            rng_state = RNG_BEACON_ROUND;
+            rng_state_entered_ms = now;
+        } else {
+            rng_state = RNG_COMPLETE;
+        }
+        break;
+    }
+
+    case RNG_COMPLETE: {
+        ranging_done = true;
+        ranging_completed_ms = now;
+        Serial.printf("[LST] Ranging done (non-blocking): %d snap frames emitted\n", snap_frames_emitted);
+        rng_state = RNG_IDLE;
+        break;
+    }
+    }
 }
 
 void setup() {
@@ -335,7 +414,12 @@ void setup() {
             if (memcmp(shouter_mac[i], mac, 6) == 0) {
                 shouter_ready[i] = false;
                 ranging_done = false;
-                Serial.printf("[LST] Shouter %d disconnected, ranging reset\n", i);
+                if (rng_state != RNG_IDLE) {
+                    rng_state = RNG_IDLE;
+                    Serial.printf("[LST] Ranging aborted — shouter %d disconnected\n", i);
+                } else {
+                    Serial.printf("[LST] Shouter %d disconnected, ranging reset\n", i);
+                }
                 break;
             }
         }
@@ -356,7 +440,7 @@ void setup() {
         esp_wifi_set_csi_rx_cb(listener_csi_cb, NULL) != ESP_OK ||
         esp_wifi_set_csi(true) != ESP_OK) {
         Serial.println("[LST] FATAL: CSI enable failed");
-        while (1) delay(1000);
+        delay(3000); ESP.restart();
     }
     Serial.println("[LST] CSI capture enabled");
 }
@@ -365,12 +449,20 @@ static unsigned long last_cycle_ms = 0;
 
 void loop() {
     unsigned long now = millis();
-    if (now - last_cycle_ms < POLL_INTERVAL_MIN_MS) {
-        response_pkt_t dummy;
-        handle_incoming_udp(&dummy);  // handle HELLO packets during inter-cycle gap
-        drain_listener_csi();         // drain buffered CSI frames during idle time
-        return;
-    }
+
+    // Always handle incoming UDP and drain CSI — these run in every state
+    response_pkt_t dummy;
+    handle_incoming_udp(&dummy);
+    drain_listener_csi();
+
+    // Advance ranging state machine (one step per iteration)
+    advance_ranging();
+
+    // Normal polling only when ranging is idle
+    if (rng_state != RNG_IDLE) return;
+
+    // Rate limit polling
+    if (now - last_cycle_ms < POLL_INTERVAL_MIN_MS) return;
 
     // Count registered shouters
     uint8_t registered_shouter_count = 0;
@@ -378,36 +470,73 @@ void loop() {
         if (shouter_ready[i]) registered_shouter_count++;
     }
 
-    // One-shot ranging phase once all 4 shouters register.
-    // Stability window: wait RANGING_STABILITY_MS after the last HELLO to ensure
-    // all shouters are stable before starting ranging.
-    // Cooldown prevents re-ranging on brief dropout/reconnect cycles.
-    if (!ranging_done && registered_shouter_count == 4 &&
-        (millis() - ranging_completed_ms >= RANGING_COOLDOWN_MS) &&
-        (millis() - last_hello_ms >= RANGING_STABILITY_MS)) {
-        Serial.println("[LST] All 4 shouters stable — starting ranging");
-        ranging_done = true;
-        run_ranging_phase();
-    }
-    
     if (registered_shouter_count < 4) {
         Serial.printf("[LST] Waiting for shouters (%d/4 registered)\n", registered_shouter_count);
         last_cycle_ms = millis();
         return;
     }
 
+#if USE_BROADCAST_POLL
+    // Broadcast poll — single packet, staggered responses
+    portENTER_CRITICAL(&lst_ring_mux);
+    current_poll_seq = poll_seq;
+    portEXIT_CRITICAL(&lst_ring_mux);
+
+    poll_pkt_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.magic[0]    = POLL_MAGIC_0;
+    pkt.magic[1]    = POLL_MAGIC_1;
+    pkt.ver         = 1;
+    pkt.target_id   = 0xFF;  // broadcast sentinel
+    pkt.poll_seq    = poll_seq;
+    pkt.listener_ms = millis();
+    memset(pkt.pad, 0xA5, POLL_PAD_SIZE);
+    udp.beginPacket(IPAddress(192, 168, 4, 255), SHOUTER_PORT);
+    udp.write((uint8_t*)&pkt, sizeof(pkt));
+    udp.endPacket();
+
+    // Collect staggered responses
+    bool got[5] = {};
+    unsigned long window_end = millis() + 4 * STAGGER_MS + POLL_TIMEOUT_MS;
+    while (millis() < window_end) {
+        drain_listener_csi();
+        response_pkt_t resp;
+        if (handle_incoming_udp(&resp)) {
+            uint8_t sid = resp.shouter_id;
+            if (resp.poll_seq == poll_seq && sid >= 1 && sid <= 4 && !got[sid]) {
+                got[sid] = true;
+                emit_shouter_frame(&resp, sid, true, millis());
+                consecutive_miss[sid] = 0;
+                miss_warned[sid] = false;
+            }
+        }
+        delayMicroseconds(100);
+    }
+    // Emit misses for shouters that didn't respond
+    for (uint8_t id = 1; id <= 4; id++) {
+        if (!shouter_ready[id]) continue;
+        if (!got[id]) {
+            emit_shouter_frame(nullptr, id, false, millis());
+            consecutive_miss[id]++;
+            if (consecutive_miss[id] >= 10 && !miss_warned[id]) {
+                Serial.printf("[LST] WARN shouter %d: %d consecutive misses\n",
+                    id, consecutive_miss[id]);
+                miss_warned[id] = true;
+            }
+        }
+    }
+    bool polled_any = true;
+
+#else
     bool polled_any = false;
     for (uint8_t id = 1; id <= 4; id++) {
         if (!shouter_ready[id]) continue;
         polled_any = true;
 
-        // Set global BEFORE sending poll — CSI callback reads it.
-        // portENTER_CRITICAL ensures the write is visible to Core 0 (CSI callback).
         portENTER_CRITICAL(&lst_ring_mux);
         current_poll_seq = poll_seq;
         portEXIT_CRITICAL(&lst_ring_mux);
 
-        // Build + send poll
         poll_pkt_t pkt;
         memset(&pkt, 0, sizeof(pkt));
         pkt.magic[0]    = POLL_MAGIC_0;
@@ -421,17 +550,17 @@ void loop() {
         udp.write((uint8_t*)&pkt, sizeof(pkt));
         udp.endPacket();
 
-        // Wait for response; drain CSI ring buffer while waiting
         unsigned long deadline = millis() + POLL_TIMEOUT_MS;
         bool got_response = false;
         response_pkt_t resp;
         while (millis() < deadline) {
             drain_listener_csi();
             if (handle_incoming_udp(&resp)) {
-                // Discard stale responses (wrong poll_seq or wrong shouter)
                 if (resp.poll_seq != poll_seq || resp.shouter_id != id) continue;
                 got_response = true;
                 emit_shouter_frame(&resp, id, true, millis());
+                consecutive_miss[id] = 0;
+                miss_warned[id] = false;
                 break;
             }
             delayMicroseconds(100);
@@ -439,23 +568,27 @@ void loop() {
 
         if (!got_response) {
             emit_shouter_frame(nullptr, id, false, millis());
+            consecutive_miss[id]++;
+            if (consecutive_miss[id] >= 10 && !miss_warned[id]) {
+                Serial.printf("[LST] WARN shouter %d: %d consecutive misses\n",
+                    id, consecutive_miss[id]);
+                miss_warned[id] = true;
+            }
         }
 
-        // Guard interval: let the channel clear before polling the next shouter.
-        // Draining CSI here is useful work to fill the gap.
         unsigned long gap_end = millis() + INTER_SHOUTER_GAP_MS;
         while (millis() < gap_end) drain_listener_csi();
     }
+#endif
 
-    drain_listener_csi();  // final drain after all shouters polled this cycle
+    drain_listener_csi();
 
-    // Always update last_cycle_ms so the inter-cycle gap (above) opens up and
-    // handle_incoming_udp() runs — this is the only path that processes HELLO packets.
-    // Without this, last_cycle_ms stays 0 forever when no shouters are registered and
-    // HELLO packets are never consumed.
-    // Only advance poll_seq when we actually polled someone.
     if (polled_any) {
         poll_seq++;
+        lst_poll_count++;                    // #7: overflow emission counter
+        if (lst_poll_count % 100 == 0) {
+            Serial.printf("[LST] csi_overflow=%lu\n", (unsigned long)csi_overflow_count);
+        }
     }
     last_cycle_ms = millis();
 }

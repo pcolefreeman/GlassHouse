@@ -12,15 +12,96 @@ import argparse
 import json
 import logging
 import math
+import os
 import serial
 import time
 
 from ghv4 import csi_parser
-from ghv4.config import PAIR_KEYS, BAUD_RATE
+from ghv4.config import PAIR_KEYS, BAUD_RATE, SPACING_FEATURE_NAMES
 
 _log = logging.getLogger(__name__)
 
 SPACING_REFRESH_S = 5
+
+
+def load_preprocessor(processed_dir: str):
+    """Load feature_names.txt and scaler.pkl from the processed data directory.
+
+    Returns (trained_feature_names, scaler_dict) or (None, None) if files missing.
+    trained_feature_names: list of column names the model was trained on (post-drop).
+    scaler_dict: {'amp_cols', 'amp_mean', 'amp_std', 'rssi_cols', 'rssi_mean', 'rssi_std'}.
+    """
+    fn_path = os.path.join(processed_dir, "feature_names.txt")
+    sc_path = os.path.join(processed_dir, "scaler.pkl")
+    try:
+        with open(fn_path) as f:
+            trained_names = [line.strip() for line in f if line.strip()]
+        import joblib
+        scaler = joblib.load(sc_path)
+        return trained_names, scaler
+    except FileNotFoundError as e:
+        _log.warning("Preprocessor files not found (%s) — skipping scaling", e)
+        return None, None
+
+
+def apply_preprocessing(raw_features: list, raw_names: list,
+                        trained_names: list, scaler: dict) -> list:
+    """Apply the same column-drop + scaling that preprocess.py applies.
+
+    raw_features: full feature vector from extract_feature_vector (aligned to raw_names).
+    raw_names: column names from build_feature_names().
+    trained_names: post-drop column names from feature_names.txt (excludes spacing).
+    scaler: dict with amp/rssi mean/std arrays.
+
+    Returns a list of scaled floats aligned to trained_names.
+    """
+    # Build lookup: raw column name → value
+    lookup = {name: val for name, val in zip(raw_names, raw_features)}
+
+    # Select only trained columns, apply scaling
+    amp_col_set = set(scaler.get('amp_cols', []))
+    rssi_col_set = set(scaler.get('rssi_cols', []))
+    amp_mean = scaler.get('amp_mean', [])
+    amp_std = scaler.get('amp_std', [])
+    rssi_mean = scaler.get('rssi_mean', [])
+    rssi_std = scaler.get('rssi_std', [])
+
+    # Build ordered indices for amp/rssi columns within trained_names
+    amp_idx_map = {}  # trained_name → index into amp_mean/std arrays
+    rssi_idx_map = {}
+    ai = 0
+    ri = 0
+    for col in trained_names:
+        if col in amp_col_set:
+            amp_idx_map[col] = ai
+            ai += 1
+        elif col in rssi_col_set:
+            rssi_idx_map[col] = ri
+            ri += 1
+
+    result = []
+    for col in trained_names:
+        # Skip spacing features — they're appended separately
+        if col in SPACING_FEATURE_NAMES:
+            continue
+        val = lookup.get(col, float('nan'))
+        if math.isnan(val):
+            result.append(0.0)  # NaN fill matches preprocess.py
+            continue
+        if col in amp_idx_map:
+            idx = amp_idx_map[col]
+            if idx < len(amp_mean):
+                std = amp_std[idx] if amp_std[idx] != 0 else 1.0
+                val = (val - amp_mean[idx]) / std
+        elif col in rssi_idx_map:
+            idx = rssi_idx_map[col]
+            if idx < len(rssi_mean):
+                std = rssi_std[idx] if rssi_std[idx] != 0 else 1.0
+                val = (val - rssi_mean[idx]) / std
+        elif '_phase_' in col or '_pdiff_' in col:
+            val = val / math.pi
+        result.append(val)
+    return result
 
 
 def load_spacing(path: str) -> list:
@@ -153,6 +234,8 @@ def main():
                         help="Run distance calibration phase and write spacing.json, then exit")
     parser.add_argument('--model-dir', default='distance_models/',
                         help="Path to distance_models/ directory (used with --calibrate)")
+    parser.add_argument('--processed-dir', default='data/processed/',
+                        help="Path to processed data dir (feature_names.txt + scaler.pkl)")
     args = parser.parse_args()
 
     if args.calibrate:
@@ -183,9 +266,16 @@ def main():
     else:
         print("[INF] No model specified — dry-run mode")
 
-    feature_names = csi_parser.build_feature_names()
+    raw_feature_names = csi_parser.build_feature_names()
     spacing_vals  = load_spacing(args.spacing)
     last_spacing_load = time.time()
+
+    # Load preprocessing transforms (column drop + scaling)
+    trained_names, scaler = load_preprocessor(args.processed_dir)
+    if model is not None and trained_names is None:
+        print("[WARN] No feature_names.txt/scaler.pkl found — predictions will use raw features")
+    elif trained_names is not None:
+        print(f"[INF] Loaded preprocessor: {len(trained_names)} trained features")
 
     # NOTE: ser is initialised to None so the finally block can always call
     # ser.close() safely, even if Serial() raises serial.SerialException.
@@ -213,13 +303,19 @@ def main():
             eof_count = 0
             # collect_one_exchange always returns matched (lf, sf) pairs here.
             # extract_feature_vector handles sf=None defensively if called elsewhere.
-            features = csi_parser.extract_feature_vector(lf, sf, feature_names)
-            features = features + spacing_vals  # append 6 spacing features
+            raw_features = csi_parser.extract_feature_vector(lf, sf, raw_feature_names)
 
             if model is not None:
-                if any(math.isnan(v) for v in features if isinstance(v, float)):
+                if any(math.isnan(v) for v in raw_features if isinstance(v, float)):
                     print(f"[WARN] Skipping prediction — NaN features (MISS frame)")
                     continue
+                if trained_names is not None and scaler is not None:
+                    features = apply_preprocessing(
+                        raw_features, raw_feature_names, trained_names, scaler
+                    )
+                else:
+                    features = raw_features
+                features = features + spacing_vals  # append 6 spacing features
                 prediction = model.predict([features])
                 print(f"Zone: {prediction[0]}")
             else:

@@ -29,7 +29,7 @@ _NORMAL_BD = "#d0d8e4"
 
 # Regex for [LST] HELLO lines
 _HELLO_RE = re.compile(
-    r'\[LST\]\s+HELLO\s+sid=(\d+)\s+IP=([\d.]+)\s+MAC=([0-9A-Fa-f:]{17})',
+    r'\[LST\]\s+HELLO\s+sid=(\d+)\s+\(MAC-assigned\)\s+IP=([\d.]+)\s+MAC=([0-9A-Fa-f:]{17})',
     re.IGNORECASE,
 )
 
@@ -63,7 +63,6 @@ class ListenerDebugThread(threading.Thread):
       {'type': 'hello',          'sid': int, 'ip': str, 'mac': str, 'ts': float}
       {'type': 'listener_frame', 'frame': dict, 'ts': float}
       {'type': 'shouter_frame',  'frame': dict, 'ts': float}
-      {'type': 'ranging_frame',  'payload': bytes, 'ts': float}
       {'type': 'snap_frame',     'snap': dict, 'ts': float}
       {'type': 'ranging_start'}
     """
@@ -110,20 +109,6 @@ class ListenerDebugThread(threading.Thread):
             frame = csi_parser.parse_listener_frame(b'\xAA\x55' + hdr + csi, 0)
             if frame:
                 self._queue.put({'type': 'listener_frame', 'frame': frame, 'ts': time.time()})
-
-        elif b0 == 0xCC:                          # must be BEFORE >= 0x20
-            b1 = ser.read(1)
-            if not b1 or b1[0] != 0xDD:
-                return
-            payload = ser.read(12)   # ver(1) reporter_id(1) peer_rssi[5](5) peer_count[5](5)
-            if len(payload) < 12:
-                return
-            self._queue.put({
-                'type':    'ranging_frame',
-                'payload': payload,
-                'ts':      time.time(),
-            })
-        # must be before the >= 0x20 branch — 0xCC (204) satisfies >= 0x20
 
         elif b0 == 0xEE:                          # must be BEFORE >= 0x20
             b1 = ser.read(1)
@@ -178,7 +163,7 @@ class ListenerDebugThread(threading.Thread):
                         'mac':  m.group(3).lower(),
                         'ts':   time.time(),
                     })
-                if '[LST] Starting ranging phase' in line:
+                if 'starting ranging' in line.lower():
                     self._queue.put({'type': 'ranging_start'})
                 self._queue.put({'type': 'lst_text', 'line': line})
 
@@ -265,8 +250,6 @@ class ListenerDebugTab(ctk.CTkFrame):
         from ghv4.spacing_estimator import CSIMUSICEstimator
         self._music_estimator = CSIMUSICEstimator()
 
-        # Spacing estimator (lazy init on first ranging frame)
-        self._debug_spacing_est = None
         self._reset_music_cb = None  # callable, set by App to reset capture tab MUSIC
 
         # Debug log file (opened on Connect, closed on Disconnect)
@@ -537,18 +520,6 @@ class ListenerDebugTab(ctk.CTkFrame):
                             f"reporter={snap['reporter_id']} peer={snap['peer_id']}"
                         )
 
-                elif t == 'ranging_frame':
-                    if self._debug_spacing_est is None:
-                        import tempfile
-                        from ghv4.spacing_estimator import SpacingEstimator
-                        _tmp = os.path.join(tempfile.gettempdir(), "ghv4_spacing_live.json")
-                        self._debug_spacing_est = SpacingEstimator(
-                            spacing_path=_tmp,
-                            music_estimator=self._music_estimator,
-                        )
-                        self._debug_spacing_est.start()
-                    self._debug_spacing_est.feed(item)
-
                 elif t == 'ranging_start':
                     self._append_lst_log("[DIAG] Ranging phase restarted — resetting MUSIC buffers")
                     self._music_estimator.reset_all()
@@ -659,8 +630,8 @@ class ListenerDebugTab(ctk.CTkFrame):
 
     @property
     def spacing_estimator(self):
-        """The lazily-created SpacingEstimator (or None)."""
-        return self._debug_spacing_est
+        """SpacingEstimator accessor (ranging frames removed in GHV4)."""
+        return None
 
     def set_reset_music_callback(self, cb) -> None:
         """Register a callback invoked when ranging restarts."""

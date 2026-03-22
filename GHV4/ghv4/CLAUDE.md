@@ -1,5 +1,5 @@
 # ghv4 Python Package — Conventions & Gotchas
-<!-- last verified: 2026-03-20 -->
+<!-- last verified: 2026-03-22 -->
 
 ## Constants Rule
 All cross-module constants live in `ghv4/config.py` — the single source of truth.
@@ -54,3 +54,7 @@ placeholder default; the user selects the actual port before connecting.
 - **StandardScaler for distance models fits on 242 amp columns** — indices `[0:121]` (fwd
   amp_norm) + `[242:363]` (rev amp_norm) out of 484 total features. Test fixtures must
   match this shape or scaler transform will raise.
+- **debug_tab text parsing must match firmware text** — `ListenerDebugThread._read_one`
+  parses `[LST]` text with regex (`_HELLO_RE`) and string matching (`'starting ranging'`).
+  When firmware `Serial.printf` format changes, update `debug_tab.py` to match. Fixed 2026-03-22:
+  HELLO regex updated for `(MAC-assigned)` insertion; ranging detection updated for new text.

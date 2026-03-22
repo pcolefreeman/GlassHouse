@@ -9,7 +9,7 @@ std::map<String, int> mac_dict{
   {"68:FE:71:90:60:A0", 1},
   {"68:FE:71:90:68:14", 2},
   {"68:FE:71:90:6B:90", 3},
-  // {"XX:XX:XX:XX:XX:XX": 4}
+  // {"20:e7:c8:ec:f5:dc": 4}
 };
 
 void setup() {

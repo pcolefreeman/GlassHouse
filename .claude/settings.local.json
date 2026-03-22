@@ -32,7 +32,8 @@
       "Bash(python run_inference.py --help)",
       "Bash(pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
       "Bash(python -m pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
-      "Bash(python -m pytest tests/ -q)"
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python -m pytest tests/ -x -q)"
     ]
   }
 }

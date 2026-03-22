@@ -14,11 +14,9 @@ from ghv4.config import (
     BAUD_RATE,
     MAGIC_LISTENER,
     MAGIC_SHOUTER,
-    MAGIC_RANGING,
     MAGIC_CSI_SNAP,
     LISTENER_HDR_SIZE,
     SHOUTER_HDR_SIZE,
-    RANGING_PAYLOAD_SIZE,
     CSI_SNAP_HDR_SIZE,
     BUCKET_MS,
     MAX_LOG_LINES,
@@ -83,7 +81,6 @@ def test_magic_bytes_are_two_bytes():
     for name, val in [
         ("MAGIC_LISTENER", MAGIC_LISTENER),
         ("MAGIC_SHOUTER", MAGIC_SHOUTER),
-        ("MAGIC_RANGING", MAGIC_RANGING),
         ("MAGIC_CSI_SNAP", MAGIC_CSI_SNAP),
     ]:
         assert len(val) == 2, f"{name} is {len(val)} bytes, expected 2"
@@ -101,7 +98,6 @@ def test_baud_rate_positive():
 def test_header_sizes_positive():
     assert LISTENER_HDR_SIZE > 0
     assert SHOUTER_HDR_SIZE > 0
-    assert RANGING_PAYLOAD_SIZE > 0
     assert CSI_SNAP_HDR_SIZE > 0
 
 

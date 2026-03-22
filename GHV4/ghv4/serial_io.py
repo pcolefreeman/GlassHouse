@@ -83,14 +83,6 @@ class SerialReader(threading.Thread):
             if frame:
                 self._queue.put(('listener', frame))
 
-        elif b0 == 0xCC:
-            b1 = self._ser.read(1)
-            if not b1 or b1[0] != 0xDD:
-                return
-            # Consume and discard 12-byte ranging payload to keep byte stream aligned.
-            # RSSI ranging removed in GHV4 — these frames are no longer processed.
-            self._ser.read(12)
-
         elif b0 == 0xEE:
             b1 = self._ser.read(1)
             if not b1 or b1[0] != 0xFF:

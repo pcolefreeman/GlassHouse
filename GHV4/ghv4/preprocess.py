@@ -30,6 +30,7 @@ from ghv4.config import (
     NULL_PDIFF_INDICES,
     META_COLS,
     PAIR_KEYS,
+    SPACING_FEATURE_NAMES,
 )
 
 RAW_DIR = str(DATA_RAW_DIR)
@@ -201,8 +202,7 @@ def run(raw_dir: str, out_dir: str):
     # ── 6b. Spacing features (unscaled) ──────────────────────────────────────
     spacing = _load_spacing(raw_dir)
     spacing_vals = [spacing[k] for k in PAIR_KEYS]
-    spacing_names = ["dist_s1_s2", "dist_s1_s3", "dist_s1_s4",
-                     "dist_s2_s3", "dist_s2_s4", "dist_s3_s4"]
+    spacing_names = SPACING_FEATURE_NAMES
     spacing_block = np.tile(np.array(spacing_vals, dtype=np.float32), (X.shape[0], 1))
     X = np.hstack([X, spacing_block])
     feat_cols = feat_cols + spacing_names

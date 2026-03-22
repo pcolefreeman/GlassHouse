@@ -5,10 +5,12 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- Test count: 189 passing (2026-03-19)
+- Test count: 189 passing (2026-03-22)
 - Last exe rebuild: needs rebuild (2026-03-19 ML distance code still unstaged)
-- Unstaged changes: ML distance pipeline + CLAUDE.md reorganization (5 CLAUDE.md files)
-- Active branch: master
+- Unstaged changes: ML distance pipeline + CLAUDE.md reorg + firmware 12-improvement + debug_tab regex fixes
+- Active branch: main
+- Pending: Hardware test of 12 firmware improvements (need ESP32 boards)
+- Pending: Audit improvements between listener firmware and Python data storage pipeline
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -34,7 +36,7 @@ ghv4/
   config.py            — single source of truth for ALL cross-module constants
   csi_parser.py        — frame structs, feature extraction (shared by all modules)
   serial_io.py         — SerialReader (byte stream → frame_queue) + CSVWriter (frame_queue → CSV)
-  spacing_estimator.py — consumes [0xCC][0xDD] ranging frames → EMA RSSI → spacing.json
+  spacing_estimator.py — MUSIC distance estimation via [0xEE][0xFF] CSI snapshots → spacing.json
   preprocess.py        — raw CSV → X.npy, y.npy, feature_names.txt, scaler.pkl
   train.py             — CV comparison → VotingClassifier → StackingClassifier → saves best
   inference.py         — live serial → feature extraction → model.predict()
@@ -61,22 +63,24 @@ ghv4_Distro/           — packaged distribution (exe + data dirs + README)
 ```
 firmware/
   ghv4Protocol.h       — shared packet structs + magic byte constants (single copy)
-  ListenerV3/
-    ListenerV3.ino     — listener ESP32 firmware
+  ListenerV4/
+    ListenerV4.ino     — listener ESP32 firmware
                            WiFi AP (SSID: CSI_PRIVATE_AP, ch 6)
                            UDP server on port 3333; polls shouters on port 3334
                            CSI ring buffer (ISR → task) → emit_listener_frame [0xAA][0x55]
-                           Handles HELLO, RANGE_RPT, RESP UDP packets
+                           Handles HELLO, CSI_SNAP, RESP UDP packets
                            emit_shouter_frame [0xBB][0xDD] for each poll hit/miss
-                           emit_ranging_frame [0xCC][0xDD] when ranging_rpt received
-                           run_ranging_phase() — one-shot after all 4 shouters register
+                           emit_csi_snap_frame [0xEE][0xFF] for MUSIC CSI snapshots
+                           Non-blocking ranging state machine (advance_ranging())
+                           Broadcast polling with staggered responses (#if USE_BROADCAST_POLL)
+                           MAC-based runtime ID assignment (no compile-time SHOUTER_ID)
                            Text output: [LST] prefixed lines at 921600 baud
-  ShouterV3/
-    ShouterV3.ino      — shouter ESP32 firmware
+  ShouterV4/
+    ShouterV4.ino      — shouter ESP32 firmware
                            Connects to listener AP as WiFi STA
                            Sends [BB][FA] HELLO on connect, re-sends on reconnect
                            Responds to polls ([BB][CC]) with CSI response ([BB][EE])
-                           During ranging: beacons when instructed, reports RSSI as [BB][A3]
+                           During ranging: beacons when instructed, sends CSI snapshots [BB][A4]
                            CSI ring buffer (ISR → task) → included in SHOUT response
                            Text output: [SHT] prefixed lines at 921600 baud (text only, no binary frames on serial)
 ```

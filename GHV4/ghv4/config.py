@@ -13,13 +13,11 @@ BAUD_RATE = 921_600
 # ── Frame magic bytes ──────────────────────────────────────────
 MAGIC_LISTENER = bytes([0xAA, 0x55])
 MAGIC_SHOUTER  = bytes([0xBB, 0xDD])
-MAGIC_RANGING  = bytes([0xCC, 0xDD])
 MAGIC_CSI_SNAP = bytes([0xEE, 0xFF])
 
 # ── Frame header sizes (after magic bytes consumed) ────────────
 LISTENER_HDR_SIZE = 20
 SHOUTER_HDR_SIZE  = 29
-RANGING_PAYLOAD_SIZE = 12
 CSI_SNAP_HDR_SIZE = 6  # offsetof(csi_snap_pkt_t, csi) minus 2-byte magic
 
 # ── CSI geometry ───────────────────────────────────────────────
