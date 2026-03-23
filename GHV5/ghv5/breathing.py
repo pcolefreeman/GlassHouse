@@ -19,6 +19,8 @@ from ghv5.config import (
     BREATHING_SNAP_HZ,
     BREATHING_PCA_COMPONENTS,
     CELL_LABELS,
+    PRESENCE_VARIANCE_MIDPOINT,
+    PRESENCE_VARIANCE_STEEPNESS,
 )
 from ghv5.csi_parser import parse_csi_bytes
 
@@ -59,97 +61,6 @@ class CSIRingBuffer:
             return None
         # Roll so oldest is row 0
         return np.roll(self._buf, -self._head, axis=0).copy()
-
-
-class CSIRatioExtractor:
-    """Select subcarrier pairs and compute CSI ratio phase.
-
-    CSI Ratio: R(t) = H(t, k1) * conj(H(t, k2))
-    The conjugate multiply cancels CFO/clock drift (common-mode between subcarriers).
-    Only differential phase from physical motion (breathing) remains.
-    """
-
-    def __init__(self, n_subcarriers: int = SUBCARRIERS,
-                 n_pairs: int = BREATHING_NPAIRS,
-                 null_indices: frozenset = NULL_SUBCARRIER_INDICES):
-        valid = sorted(set(range(n_subcarriers)) - set(null_indices))
-        # Select n_pairs+1 evenly spaced subcarriers, then pair adjacent ones
-        # to get exactly n_pairs pairs
-        n_select = n_pairs + 1
-        step = max(1, len(valid) // (n_select + 1))
-        selected = [valid[step * (i + 1)] for i in range(n_select)
-                    if step * (i + 1) < len(valid)]
-        # Pair adjacent selected subcarriers
-        self.pair_indices = [(selected[i], selected[i + 1])
-                            for i in range(min(n_pairs, len(selected) - 1))]
-
-    def extract(self, window: np.ndarray) -> np.ndarray:
-        """Compute CSI ratio phase for each time step and pair.
-
-        Args:
-            window: (n_time, n_subcarriers) complex64 array.
-
-        Returns:
-            (n_time, n_pairs) float32 array of ratio phases in radians.
-        """
-        n_time = window.shape[0]
-        n_pairs = len(self.pair_indices)
-        result = np.empty((n_time, n_pairs), dtype=np.float32)
-        for j, (k1, k2) in enumerate(self.pair_indices):
-            ratio = window[:, k1] * np.conj(window[:, k2])
-            result[:, j] = np.angle(ratio)
-        return result
-
-
-class BreathingAnalyzer:
-    """Detrend + Hanning window + FFT + breathing band power.
-
-    Analyzes ratio phase time series to detect breathing-band (0.1-0.5 Hz) energy.
-    Returns a confidence score (0.0-1.0) representing the fraction of spectral
-    energy in the breathing band vs total energy.
-    """
-
-    def __init__(self, sample_rate_hz: float = BREATHING_SNAP_HZ,
-                 band_hz: tuple = BREATHING_BAND_HZ):
-        self._fs = sample_rate_hz
-        self._band_hz = band_hz
-
-    def analyze(self, ratio_phases: np.ndarray) -> float:
-        """Compute breathing confidence from ratio phase time series.
-
-        Args:
-            ratio_phases: (n_time, n_pairs) float array of CSI ratio phases.
-
-        Returns:
-            Confidence score 0.0-1.0 (max breathing power ratio across pairs).
-        """
-        n_time, n_pairs = ratio_phases.shape
-        freq_resolution = self._fs / n_time
-        # Bin indices for breathing band
-        bin_lo = max(1, int(np.ceil(self._band_hz[0] / freq_resolution)))
-        bin_hi = min(n_time // 2, int(np.floor(self._band_hz[1] / freq_resolution)))
-
-        pair_ratios = []
-        for j in range(n_pairs):
-            signal = ratio_phases[:, j].astype(np.float64)
-            # Detrend: subtract linear fit
-            x = np.arange(n_time, dtype=np.float64)
-            coeffs = np.polyfit(x, signal, 1)
-            signal -= np.polyval(coeffs, x)
-            # Hanning window
-            signal *= np.hanning(n_time)
-            # FFT
-            spectrum = np.fft.rfft(signal)
-            power = np.abs(spectrum) ** 2
-            # Breathing band power ratio (exclude DC bin 0)
-            total_power = np.sum(power[1:])
-            if total_power < 1e-12:
-                pair_ratios.append(0.0)
-                continue
-            breathing_power = np.sum(power[bin_lo:bin_hi + 1])
-            pair_ratios.append(float(breathing_power / total_power))
-
-        return float(np.median(pair_ratios))
 
 
 class GridProjector:
@@ -239,80 +150,31 @@ class BreathingDetector:
                 for key, buf in self._buffers.items()}
 
     def get_grid_scores(self) -> dict[str, float | None]:
-        """Run analysis on all ready paths and project onto grid.
+        """Run presence analysis on all ready paths and project onto grid.
 
-        Uses per-subcarrier amplitude FFT. Breathing moves the dominant
-        reflector, modulating CSI amplitude at the breathing frequency.
-        No calibration required — works in any environment.
+        Uses a two-pass approach: Pass 1 collects per-path mean amplitudes
+        for cross-path ranking context; Pass 2 scores each path.
         """
-        path_confidences = {}
+        # Pass 1: collect mean amplitudes for cross-path ranking
+        all_path_means: dict[tuple, float] = {}
+        ready_windows: dict[tuple, np.ndarray] = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
             window = buf.get_window()
-            confidence = self._amplitude_score(window)
-            _log.info("Path S%d↔S%d amp=%.3f", key[0], key[1], confidence)
-            path_confidences[key] = confidence
-        return self._projector.project(path_confidences)
+            ready_windows[key] = window
+            valid = sorted(set(range(window.shape[1])) - set(NULL_SUBCARRIER_INDICES))
+            amp = np.abs(window[:, valid]).astype(np.float64)
+            all_path_means[key] = float(np.median(np.mean(amp, axis=0)))
 
-    @staticmethod
-    def _amplitude_score(window: np.ndarray) -> float:
-        """Per-subcarrier amplitude FFT, scored as breathing-band SNR.
+        # Pass 2: score each path
+        presence_confidences: dict[tuple, float] = {}
+        for key, window in ready_windows.items():
+            confidence = self._presence_score(window, all_path_means)
+            _log.info("Path S%d↔S%d presence=%.3f", key[0], key[1], confidence)
+            presence_confidences[key] = confidence
 
-        Normalises by the noise floor in the reference band immediately above
-        the breathing band (0.5–1.0 Hz) rather than total power. Both bands
-        sit above the slow sub-0.1 Hz drift that dominates total power, so the
-        ratio is immune to that drift and self-normalising across environments.
-
-        Aggregates using the 95th-percentile subcarrier SNR: only a few of 121
-        subcarriers respond to any given breathing path; median always reflects
-        the non-responsive majority and gives near-zero discrimination.
-
-        Score mapping (log-sigmoid):
-          SNR = 1.0 (flat spectrum / no breathing) → ~5%
-          SNR = 3.0 (clear breathing peak)         → ~50%
-          SNR = 9.0 (strong signal)                → ~95%
-        """
-        n_time, n_subs = window.shape
-        freq_res = BREATHING_SNAP_HZ / n_time
-        bin_lo = max(1, int(np.ceil(BREATHING_BAND_HZ[0] / freq_res)))
-        bin_hi = min(n_time // 2, int(np.floor(BREATHING_BAND_HZ[1] / freq_res)))
-        # Reference band: same number of bins immediately above breathing band
-        n_band = bin_hi - bin_lo + 1
-        ref_lo = bin_hi + 1
-        ref_hi = min(n_time // 2, ref_lo + n_band - 1)
-
-        valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
-        amp = np.abs(window[:, valid]).astype(np.float64)  # (n_time, n_valid)
-
-        # Vectorised linear detrend
-        x = np.arange(n_time, dtype=np.float64)
-        xm = x - x.mean()
-        xvar = float(np.dot(xm, xm))
-        slopes = (xm @ amp) / xvar
-        intercepts = amp.mean(axis=0) - slopes * x.mean()
-        amp -= x[:, None] * slopes + intercepts
-
-        # Hanning taper + vectorised FFT
-        amp *= np.hanning(n_time)[:, None]
-        power = np.abs(np.fft.rfft(amp, axis=0)) ** 2      # (n_freq, n_valid)
-
-        breath = np.mean(power[bin_lo:bin_hi + 1, :], axis=0)   # (n_valid,)
-        ref = np.mean(power[ref_lo:ref_hi + 1, :], axis=0)      # (n_valid,)
-
-        mask = ref > 1e-12
-        if not np.any(mask):
-            return 0.0
-        snr = breath[mask] / ref[mask]                           # per-subcarrier SNR
-
-        # 95th-percentile captures the handful of most-responsive subcarriers
-        snr_p95 = float(np.percentile(snr, 95))
-        _log.debug("  snr_p95=%.3f", snr_p95)
-
-        # Log-sigmoid: SNR=1→5%, SNR=3→50%, SNR=9→95%
-        log_snr = np.log(max(snr_p95, 1e-6))
-        score = 1.0 / (1.0 + np.exp(-3.0 * (log_snr - np.log(3.0))))
-        return float(score)
+        return self._projector.project(presence_confidences)
 
     @staticmethod
     def _pca_score(window: np.ndarray, k: int = BREATHING_PCA_COMPONENTS) -> float:
@@ -372,23 +234,100 @@ class BreathingDetector:
         score = 1.0 / (1.0 + np.exp(-3.0 * (log_snr - np.log(3.0))))
         return float(score)
 
+    @staticmethod
+    def _presence_score(window: np.ndarray,
+                        all_path_means: dict | None = None) -> float:
+        """Zero-calibration presence score: cross-path ranking + amplitude variance.
+
+        Signal 1 — cross-path ranking (requires 3+ paths):
+          Compares this path's mean amplitude against the group median.
+          A body attenuates specific paths; those paths score higher.
+          rank_score = (group_median - this_mean) / group_median, clamped [0, 1].
+
+        Signal 2 — per-path amplitude variance (always available):
+          A person (even stationary) causes involuntary motion that increases
+          amplitude variance vs an empty, static environment.
+          Mapped through a log-sigmoid; midpoint tuned via PRESENCE_VARIANCE_MIDPOINT.
+
+        Final score: max(rank_score, variance_score).
+
+        Args:
+            window: (n_time, n_subcarriers) complex64 CSI array.
+            all_path_means: {(s1, s2): mean_amp} for all ready paths (for ranking).
+                            If None or fewer than 3 entries, rank signal is skipped.
+
+        Returns:
+            Presence confidence 0.0–1.0.
+        """
+        n_time, n_subs = window.shape
+        valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
+        amp = np.abs(window[:, valid]).astype(np.float64)  # (n_time, n_valid)
+
+        # ── Signal 1: cross-path amplitude ranking ──────────────────────────
+        rank_score = 0.0
+        if all_path_means is not None and len(all_path_means) >= 3:
+            this_mean = float(np.median(np.mean(amp, axis=0)))
+            group_median = float(np.median(list(all_path_means.values())))
+            if group_median > 1e-9:
+                rank_score = float(np.clip(
+                    (group_median - this_mean) / group_median, 0.0, 1.0
+                ))
+            _log.debug("  path_mean=%.3f group_median=%.3f rank_score=%.3f",
+                       this_mean, group_median, rank_score)
+
+        # ── Signal 2: per-path amplitude variance ───────────────────────────
+        var_per_sub = np.var(amp, axis=0)                   # variance over time
+        path_var = float(np.percentile(var_per_sub, 75))    # 75th pct across subcarriers
+        _log.debug("  path_var=%.6f", path_var)
+
+        log_var = np.log(max(path_var, 1e-12))
+        log_mid = np.log(max(PRESENCE_VARIANCE_MIDPOINT, 1e-12))
+        variance_score = float(1.0 / (1.0 + np.exp(
+            -PRESENCE_VARIANCE_STEEPNESS * (log_var - log_mid)
+        )))
+        _log.debug("  variance_score=%.3f", variance_score)
+
+        presence = float(max(rank_score, variance_score))
+        _log.debug("  presence=%.3f", presence)
+        return presence
+
     def get_all_scores(self, k: int = BREATHING_PCA_COMPONENTS) -> dict:
-        """Run both amplitude and PCA scoring on all ready path buffers."""
-        amp_confidences: dict[tuple[int, int], float] = {}
-        pca_confidences: dict[tuple[int, int], float] = {}
+        """Run presence and PCA scoring on all ready path buffers.
+
+        Returns:
+            {
+              "presence":  {cell: score_0_to_100_or_None},
+              "pca":       {cell: score_0_to_100_or_None},
+              "path_conf": {(s1, s2): presence_confidence_0_to_1},
+            }
+        """
+        # Pass 1: collect mean amplitudes for cross-path ranking
+        all_path_means: dict[tuple, float] = {}
+        ready_windows: dict[tuple, np.ndarray] = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
             window = buf.get_window()
-            amp_conf = self._amplitude_score(window)
+            ready_windows[key] = window
+            valid = sorted(set(range(window.shape[1])) - set(NULL_SUBCARRIER_INDICES))
+            amp = np.abs(window[:, valid]).astype(np.float64)
+            all_path_means[key] = float(np.median(np.mean(amp, axis=0)))
+
+        # Pass 2: score each path
+        presence_confidences: dict[tuple, float] = {}
+        pca_confidences: dict[tuple, float] = {}
+        for key, window in ready_windows.items():
+            p_conf = self._presence_score(window, all_path_means)
             pca_conf = self._pca_score(window, k=k)
-            amp_confidences[key] = amp_conf
+            presence_confidences[key] = p_conf
             pca_confidences[key] = pca_conf
-            _log.info("Path S%d↔S%d amp=%.3f pca=%.3f", key[0], key[1], amp_conf, pca_conf)
+            _log.info("Path S%d↔S%d presence=%.3f pca=%.3f",
+                      key[0], key[1], p_conf, pca_conf)
+
         return {
-            "amp":       self._projector.project(amp_confidences),
+            "presence":  self._projector.project(presence_confidences),
             "pca":       self._projector.project(pca_confidences),
-            "path_conf": amp_confidences,
+            "path_conf": presence_confidences,
         }
 
 
@@ -497,10 +436,10 @@ class BreathingThread(threading.Thread):
                     frames_since_update = 0
                     all_scores = self._detector.get_all_scores()
                     self._q.put({
-                        "type":      "scores",
-                        "amp_grid":  all_scores["amp"],
-                        "pca_grid":  all_scores["pca"],
-                        "path_conf": all_scores["path_conf"],
+                        "type":          "scores",
+                        "presence_grid": all_scores["presence"],
+                        "pca_grid":      all_scores["pca"],
+                        "path_conf":     all_scores["path_conf"],
                     })
         except Exception as e:
             self._q.put({"type": "status", "msg": f"Error: {e}"})
@@ -533,10 +472,10 @@ class SARDemoThread(threading.Thread):
                 path_conf[key] = float(conf)
             grid = projector.project(path_conf)
             self._q.put({
-                "type":      "scores",
-                "amp_grid":  grid,
-                "pca_grid":  grid,   # demo mode: duplicate amp projection
-                "path_conf": path_conf,
+                "type":          "scores",
+                "presence_grid": grid,
+                "pca_grid":      grid,   # demo mode: duplicate presence projection
+                "path_conf":     path_conf,
             })
             step += 1
             # ~1 Hz update rate
@@ -564,7 +503,7 @@ try:
             from ghv5.config import PI_SCREEN_SIZE
             self._screen_size = screen_size or PI_SCREEN_SIZE
             self._fullscreen = fullscreen
-            self._amp_grid = {cell: None for cell in CELL_LABELS}
+            self._presence_grid = {cell: None for cell in CELL_LABELS}
             self._pca_grid = {cell: None for cell in CELL_LABELS}
             self._path_conf = {}
             self._path_fill = {}
@@ -628,8 +567,8 @@ try:
             return tuple(int(lo + t * (hi - lo))
                          for lo, hi in zip(PI_CELL_INACTIVE, PI_CELL_ACTIVE))
 
-        def update(self, amp_grid, pca_grid, path_conf):
-            self._amp_grid = amp_grid
+        def update(self, presence_grid, pca_grid, path_conf):
+            self._presence_grid = presence_grid
             self._pca_grid = pca_grid
             self._path_conf = path_conf
 
@@ -667,14 +606,14 @@ try:
             # Grid cells
             for (row, col), rect in self._cell_rects.items():
                 label = f"r{row}c{col}"
-                amp_score = self._amp_grid.get(label)
+                amp_score = self._presence_grid.get(label)
                 pca_score = self._pca_grid.get(label)
                 cfill = cell_fill.get(label, 0.0)
 
                 if amp_score is not None:
                     bg = self._cell_color(amp_score)
                     text_color = PI_TEXT_ACTIVE
-                    amp_text = f"A:{amp_score:.0f}%"
+                    amp_text = f"Pr:{amp_score:.0f}%"
                 elif cfill > 0:
                     bg = PI_CELL_INACTIVE
                     text_color = PI_TEXT_INACTIVE
@@ -682,7 +621,7 @@ try:
                 else:
                     bg = PI_CELL_INACTIVE
                     text_color = PI_TEXT_INACTIVE
-                    amp_text = "A:--"
+                    amp_text = "Pr:--"
 
                 pca_text = f"P:{pca_score:.0f}%" if pca_score is not None else "P:--"
 

@@ -19,8 +19,14 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 - Pending: End-to-end firmware/serial/data-collection debugging plan
 - Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
 - Done: AMP verification testing (2026-03-25) — snap frame bug fixed, CSI breathing detection method finalized
-- Known bad: SAR (run_sar.py) — not yet usable
-- Next session: Write GHV5 implementation plan; begin GHV5 project scaffold
+- Done: GHV5 project created (2026-03-23) — standalone breathing detection, 51 tests passing + 1 skipped
+- Done: SAR hardware testing (2026-03-23) — amp method broken (scores decrease with person), PCA shows signal on S2↔S3
+- Finding: `_amplitude_score()` linear detrend removes static attenuation signal — the strongest indicator of human presence
+- Finding: PCA S2↔S3 best single-path discriminator (empty 0.061 → person 0.167, Cohen d = 1.36)
+- Done: Presence detector design + plan (2026-03-23) — spec at GHV5/docs/superpowers/specs/2026-03-23-presence-detector-design.md, plan at GHV5/docs/superpowers/plans/2026-03-23-presence-detector.md
+- Done: Tasks 1-4 of presence detector plan (2026-03-23) — config constants added, TestPresenceScore written, _presence_score() implemented, get_all_scores()/get_grid_scores() updated to two-pass
+- Pending: Tasks 5-11 of presence detector plan — update TestGetAllScores keys, remove dead code, remove dead tests, update thread/display keys, update run_sar.py, final verify
+- Current GHV5 test state: 55 passing + 4 failing (TestGetAllScores still reference old "amp" key, fixed in Task 5) + 1 skipped
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -98,6 +104,15 @@ firmware/
                            CSI ring buffer (ISR → task) → included in SHOUT response
                            Text output: [SHT] prefixed lines at 921600 baud (text only, no binary frames on serial)
 ```
+
+### GHV5 — Breathing Detection Only (`C:\GlassHouse\GHV5\`)
+Standalone project: FFT + PCA dual-score breathing detection, no ML positioning.
+- Package: `ghv5/` (config, csi_parser, serial_io, breathing)
+- Entry point: `run_sar.py` (console + pygame dual-grid display)
+- Tests: 51 passing + 1 skipped (pygame import guard)
+- Firmware: copied from GHV4 unchanged
+- Specs/plans: `GHV4/docs/superpowers/specs/2026-03-23-ghv5-creation-design.md`
+- SAR test results: `GHV5/SAR Results/` (empty_room.txt, person_center.txt)
 
 ## Subsystem Details
 Detailed gotchas, protocols, and conventions are in local CLAUDE.md files

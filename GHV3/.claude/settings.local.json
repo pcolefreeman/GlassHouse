@@ -17,7 +17,22 @@
       "Bash(python -c \"from ghv5.csi_parser import parse_csi_bytes, parse_csi_snap_frame; print\\(''OK''\\)\")",
       "Bash(python -c \"from ghv5.serial_io import SerialReader; print\\(''OK''\\)\")",
       "Bash(python -c \"from ghv5.breathing import BreathingDetector, SARDemoThread; print\\(''OK''\\)\")",
-      "Bash(python run_sar.py --help)"
+      "Bash(python run_sar.py --help)",
+      "Bash(python3 /tmp/parse_sar.py)",
+      "Bash(where python:*)",
+      "Bash(\"/c/Program Files/Python314/python.exe\" /tmp/parse_sar.py)",
+      "Bash(python parse_sar.py)",
+      "Bash(python -c \"from ghv5.config import PRESENCE_VARIANCE_MIDPOINT, PRESENCE_VARIANCE_STEEPNESS; print\\(PRESENCE_VARIANCE_MIDPOINT, PRESENCE_VARIANCE_STEEPNESS\\)\")",
+      "Bash(python -m pytest tests/test_breathing.py::TestPresenceScore -v)",
+      "Bash(python -m pytest tests/test_breathing.py --ignore-glob=\"*TestPresenceScore*\" -q)",
+      "Bash(python -m pytest tests/test_breathing.py::TestGetAllScores -v)",
+      "Bash(python -c \"from ghv5.breathing import BreathingDetector, GridProjector, CSIRingBuffer, reconstruct_csi_from_csv_row; print\\(''OK''\\)\")",
+      "Bash(python -c \"from ghv5.breathing import BreathingDetector, BreathingThread, SARDemoThread; print\\(''OK''\\)\")",
+      "Bash(python -m pytest tests/test_breathing.py::TestDemoThread -v)",
+      "Bash(echo \"STALE_EXIT:$?\")",
+      "Bash(grep -rn '\"\"amp\"\"' ghv5/ run_sar.py tests/)",
+      "Bash(echo \"AMP_EXIT:$?\")",
+      "Bash(echo \"HELP_EXIT:$?\")"
     ]
   }
 }

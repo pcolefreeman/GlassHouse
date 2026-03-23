@@ -20,8 +20,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s
 _log = logging.getLogger("run_sar")
 
 
-def _print_console(amp_scores: dict, pca_scores: dict, path_conf: dict):
-    """Print a 3x3 grid with both amp and PCA scores to the console."""
+def _print_console(presence_scores: dict, pca_scores: dict, path_conf: dict):
+    """Print a 3x3 grid with both presence and PCA scores to the console."""
     ts = time.strftime("%H:%M:%S")
     lines = [
         f"\n=== SAR Breathing Detection ===",
@@ -33,7 +33,7 @@ def _print_console(amp_scores: dict, pca_scores: dict, path_conf: dict):
         row_str = f"R{r} "
         for c in range(3):
             cell = f"r{r}c{c}"
-            a = amp_scores.get(cell)
+            a = presence_scores.get(cell)
             p = pca_scores.get(cell)
             a_str = f"A:{a:3.0f}%" if a is not None else "A: -- "
             p_str = f"P:{p:3.0f}%" if p is not None else "P: -- "
@@ -43,7 +43,7 @@ def _print_console(amp_scores: dict, pca_scores: dict, path_conf: dict):
     parts = []
     for k in sorted(path_conf):
         parts.append(f"S{k[0]}↔S{k[1]}={path_conf[k]*100:.0f}%")
-    lines.append(f"Path confidence (amp): {' '.join(parts)}")
+    lines.append(f"Path confidence (presence): {' '.join(parts)}")
     detected = [f"S{k[0]}↔S{k[1]}" for k, c in path_conf.items()
                 if c > BREATHING_CONFIDENCE_THRESHOLD]
     if detected:
@@ -106,7 +106,7 @@ def _run_console_loop(port: str, detector: BreathingDetector):
             if frames_since_update >= BREATHING_SLIDE_N and detector.is_ready():
                 frames_since_update = 0
                 all_scores = detector.get_all_scores()
-                _print_console(all_scores["amp"], all_scores["pca"], all_scores["path_conf"])
+                _print_console(all_scores["presence"], all_scores["pca"], all_scores["path_conf"])
     except KeyboardInterrupt:
         _log.info("Stopped.")
     finally:
@@ -153,7 +153,7 @@ def _run_pygame_loop(port, detector, fullscreen, demo):
             except queue.Empty:
                 pass
             if latest_scores:
-                display.update(latest_scores["amp_grid"], latest_scores["pca_grid"], latest_scores["path_conf"])
+                display.update(latest_scores["presence_grid"], latest_scores["pca_grid"], latest_scores["path_conf"])
             display.render()
             pygame.display.flip()
             clock.tick(PI_DISPLAY_FPS)

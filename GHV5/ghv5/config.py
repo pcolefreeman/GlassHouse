@@ -39,6 +39,8 @@ BREATHING_BAND_HZ     = (0.1, 0.5)
 BREATHING_NPAIRS      = 10
 BREATHING_CONFIDENCE_THRESHOLD = 0.05
 BREATHING_PCA_COMPONENTS = 3     # PCA components retained before FFT
+PRESENCE_VARIANCE_MIDPOINT  = 50.0   # sigmoid center (tune with --log-level DEBUG)
+PRESENCE_VARIANCE_STEEPNESS = 0.5    # sigmoid steepness
 
 # Path-to-cell mapping: which grid cells each shouter↔shouter path crosses.
 # Keys are (min_id, max_id) tuples for undirected shouter pairs.
