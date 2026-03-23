@@ -109,8 +109,7 @@ def _run_console_loop(port: str, detector: BreathingDetector):
                 for key, buf in detector._buffers.items():
                     if buf.is_full():
                         window = buf.get_window()
-                        ratio = detector._extractor.extract(window)
-                        path_conf[key] = detector._analyzer.analyze(ratio)
+                        path_conf[key] = BreathingDetector._amplitude_score(window)
                 _print_console(scores, path_conf)
     except KeyboardInterrupt:
         _log.info("Stopped.")
@@ -182,7 +181,11 @@ def main():
     parser.add_argument("--fullscreen", action="store_true",
                         help="Run pygame display in fullscreen mode")
     parser.add_argument("--layout", help="Path to JSON file overriding BREATHING_PATH_MAP")
+    parser.add_argument("--log-level", default="INFO",
+                        choices=["DEBUG", "INFO", "WARNING"],
+                        help="Logging level (default: INFO)")
     args = parser.parse_args()
+    logging.getLogger().setLevel(getattr(logging, args.log_level))
 
     if not args.port and not args.demo:
         parser.error("Provide --port for live mode or --demo for demo mode")

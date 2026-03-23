@@ -295,7 +295,7 @@ class TestBreathingDetector:
 
 class TestBreathingDetectorE2E:
     def test_synthetic_breathing_detected(self):
-        """Feed synthetic 0.25 Hz breathing via csi_snap, verify all 9 cells covered."""
+        """Feed amplitude-modulated 0.25 Hz CSI, verify all 9 cells covered."""
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
         n_time = BREATHING_WINDOW_N  # 600
@@ -303,15 +303,9 @@ class TestBreathingDetectorE2E:
         t = np.arange(n_time) / BREATHING_SNAP_HZ  # 20 Hz
 
         for step in range(n_time):
-            breathing_mod = 0.8 * np.sin(2 * np.pi * 0.25 * t[step])
-            phase_per_sc = np.array([breathing_mod * (sc / n_sub)
-                                     for sc in range(n_sub)])
-            csi = 1000.0 * np.exp(1j * phase_per_sc).astype(np.complex64)
-            csi_bytes = b''
-            for c in csi:
-                i_val = int(np.real(c))
-                q_val = int(np.imag(c))
-                csi_bytes += struct.pack('<hh', i_val, q_val)
+            # Amplitude modulated at 0.25 Hz — what CSI actually responds to
+            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
+            csi_bytes = b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
             # Feed all 6 paths
             for key in BREATHING_PATH_MAP:
                 det.feed_frame('csi_snap', {

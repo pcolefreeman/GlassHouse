@@ -198,8 +198,6 @@ class BreathingDetector:
         self._buffers: dict[tuple, CSIRingBuffer] = {
             key: CSIRingBuffer() for key in self._path_map
         }
-        self._extractor = CSIRatioExtractor()
-        self._analyzer = BreathingAnalyzer()
         self._projector = GridProjector(path_map=self._path_map)
 
     def feed_frame(self, frame_type: str, frame_dict: dict) -> None:
@@ -242,20 +240,78 @@ class BreathingDetector:
     def get_grid_scores(self) -> dict[str, float | None]:
         """Run analysis on all ready paths and project onto grid.
 
-        Confidence is purely FFT breathing-band power ratio (0.1–0.5 Hz).
-        No variance term — variance has no meaning without a calibrated
-        reference, making it unsuitable for SAR in unknown environments.
+        Uses per-subcarrier amplitude FFT. Breathing moves the dominant
+        reflector, modulating CSI amplitude at the breathing frequency.
+        No calibration required — works in any environment.
         """
         path_confidences = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
             window = buf.get_window()
-            ratio_phases = self._extractor.extract(window)
-            confidence = self._analyzer.analyze(ratio_phases)
-            _log.info("Path S%d↔S%d fft=%.3f", key[0], key[1], confidence)
+            confidence = self._amplitude_score(window)
+            _log.info("Path S%d↔S%d amp=%.3f", key[0], key[1], confidence)
             path_confidences[key] = confidence
         return self._projector.project(path_confidences)
+
+    @staticmethod
+    def _amplitude_score(window: np.ndarray) -> float:
+        """Per-subcarrier amplitude FFT, scored as breathing-band SNR.
+
+        Normalises by the noise floor in the reference band immediately above
+        the breathing band (0.5–1.0 Hz) rather than total power. Both bands
+        sit above the slow sub-0.1 Hz drift that dominates total power, so the
+        ratio is immune to that drift and self-normalising across environments.
+
+        Aggregates using the 95th-percentile subcarrier SNR: only a few of 121
+        subcarriers respond to any given breathing path; median always reflects
+        the non-responsive majority and gives near-zero discrimination.
+
+        Score mapping (log-sigmoid):
+          SNR = 1.0 (flat spectrum / no breathing) → ~5%
+          SNR = 3.0 (clear breathing peak)         → ~50%
+          SNR = 9.0 (strong signal)                → ~95%
+        """
+        n_time, n_subs = window.shape
+        freq_res = BREATHING_SNAP_HZ / n_time
+        bin_lo = max(1, int(np.ceil(BREATHING_BAND_HZ[0] / freq_res)))
+        bin_hi = min(n_time // 2, int(np.floor(BREATHING_BAND_HZ[1] / freq_res)))
+        # Reference band: same number of bins immediately above breathing band
+        n_band = bin_hi - bin_lo + 1
+        ref_lo = bin_hi + 1
+        ref_hi = min(n_time // 2, ref_lo + n_band - 1)
+
+        valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
+        amp = np.abs(window[:, valid]).astype(np.float64)  # (n_time, n_valid)
+
+        # Vectorised linear detrend
+        x = np.arange(n_time, dtype=np.float64)
+        xm = x - x.mean()
+        xvar = float(np.dot(xm, xm))
+        slopes = (xm @ amp) / xvar
+        intercepts = amp.mean(axis=0) - slopes * x.mean()
+        amp -= x[:, None] * slopes + intercepts
+
+        # Hanning taper + vectorised FFT
+        amp *= np.hanning(n_time)[:, None]
+        power = np.abs(np.fft.rfft(amp, axis=0)) ** 2      # (n_freq, n_valid)
+
+        breath = np.mean(power[bin_lo:bin_hi + 1, :], axis=0)   # (n_valid,)
+        ref = np.mean(power[ref_lo:ref_hi + 1, :], axis=0)      # (n_valid,)
+
+        mask = ref > 1e-12
+        if not np.any(mask):
+            return 0.0
+        snr = breath[mask] / ref[mask]                           # per-subcarrier SNR
+
+        # 95th-percentile captures the handful of most-responsive subcarriers
+        snr_p95 = float(np.percentile(snr, 95))
+        _log.debug("  snr_p95=%.3f", snr_p95)
+
+        # Log-sigmoid: SNR=1→5%, SNR=3→50%, SNR=9→95%
+        log_snr = np.log(max(snr_p95, 1e-6))
+        score = 1.0 / (1.0 + np.exp(-3.0 * (log_snr - np.log(3.0))))
+        return float(score)
 
 
 def reconstruct_csi_from_csv_row(row, shouter_id: int,
@@ -366,8 +422,7 @@ class BreathingThread(threading.Thread):
                     for key, buf in self._detector._buffers.items():
                         if buf.is_full():
                             window = buf.get_window()
-                            ratio = self._detector._extractor.extract(window)
-                            path_conf[key] = self._detector._analyzer.analyze(ratio)
+                            path_conf[key] = BreathingDetector._amplitude_score(window)
                     self._q.put({"type": "scores", "grid": scores, "path_conf": path_conf})
         except Exception as e:
             self._q.put({"type": "status", "msg": f"Error: {e}"})

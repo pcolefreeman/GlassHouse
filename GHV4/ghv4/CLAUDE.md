@@ -59,6 +59,8 @@ placeholder default; the user selects the actual port before connecting.
 - **Deployment constraint** — listener must be inside the room, stationary, positioned away from all shouter pair paths during scans. Operator holding the listener must stand still.
 - **`_variance_score()` removed (2026-03-24)** — variance requires a calibrated reference and cannot be used in SAR scenarios (unknown rooms, collapsed buildings). `get_grid_scores()` now returns pure FFT breathing-band confidence. Confidence is the fraction of CSI ratio phase spectral energy in 0.1–0.5 Hz band — this fires only on actual periodic breathing/heartbeat motion, not background hardware noise.
 - **`path_conf` in status bar is FFT-only** — `BreathingThread` sends `path_conf` via `_analyzer.analyze()` only, not `_variance_score()`. Cell grid colors use `combined = max(fft, var)`. These are two different values.
+- **`run_sar.py` console loop must stay in sync with `breathing.py`** — `_run_console_loop()` computes `path_conf` directly via `BreathingDetector._amplitude_score(window)`; if the scoring method changes, update that line too. Stale `_extractor`/`_analyzer` refs caused a crash in 2026-03-24 session.
+- **`run_sar.py --log-level DEBUG`** — exposes `snr_p95=` values per path per update cycle. Required for tuning sigmoid midpoint in `_amplitude_score()`. Normal runs use INFO (silent scoring).
 - **S2↔S4 and S3↔S4 have low snap rates** (~1–4/s vs 8–19/s for S1 paths) — buffers may not fill reliably for these paths in current hardware config.
 
 ## Gotchas
