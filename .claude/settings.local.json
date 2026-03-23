@@ -54,7 +54,15 @@
       "Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI -v)",
       "Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist -v)",
       "Bash(python -m pytest tests/test_breathing.py tests/test_config.py::test_breathing_constants_exist -v --tb=short)",
-      "Bash(python -m pytest tests/test_breathing.py -q)"
+      "Bash(python -m pytest tests/test_breathing.py -q)",
+      "Bash(python -m pytest tests/test_breathing.py -v --tb=no -q)",
+      "Bash(awk 'NR==1 || NR==50 || NR==100 || NR==150 || NR==200 || NR==250 || NR==300 || NR==350 || NR==400 || NR==403')",
+      "Bash(awk 'NR==1 || NR==50 || NR==100 || NR==150 || NR==200 || NR==250 || NR==300 || NR==347')",
+      "Bash(for path:*)",
+      "Bash(do echo:*)",
+      "Bash(awk 'NR<=3 || NR==int\\(NR/2\\) || NR>=NR-2')",
+      "Bash(python -m pytest tests/ -v --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py -x)",
+      "Bash(python -m pytest tests/ -v --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py -k \"not TestRunSarCLI\")"
     ]
   }
 }

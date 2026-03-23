@@ -14,19 +14,12 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 - Done: Continuous snap breathing implementation plan (2026-03-24) — reviewer approved, 10 tasks
 - Done: Empty-room baseline validated 2026-03-24 — root cause of false positives identified (listener proximity to paths)
 - Done: `_variance_score()` removed (2026-03-24) — replaced by `_amplitude_score()` (above-band SNR normalization, 95th-pct subcarrier aggregation, log-sigmoid mapping)
-- Pending: Tune sigmoid midpoint in `_amplitude_score()` based on real `snr_p95` hardware data (run with `--log-level DEBUG`)
 - Deployment constraint confirmed 2026-03-24: listener must be stationary INSIDE room during scan — moving outside behind closed door causes all paths to saturate (WiFi link degradation)
 - Pending: End-to-end firmware/serial/data-collection debugging plan
 - Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
 - Done: AMP verification testing (2026-03-25) — snap frame bug fixed, CSI breathing detection method finalized
-- Done: GHV5 project created (2026-03-23) — standalone breathing detection, 51 tests passing + 1 skipped
-- Done: SAR hardware testing (2026-03-23) — amp method broken (scores decrease with person), PCA shows signal on S2↔S3
-- Finding: `_amplitude_score()` linear detrend removes static attenuation signal — the strongest indicator of human presence
-- Finding: PCA S2↔S3 best single-path discriminator (empty 0.061 → person 0.167, Cohen d = 1.36)
-- Done: Presence detector design + plan (2026-03-23) — spec at GHV5/docs/superpowers/specs/2026-03-23-presence-detector-design.md, plan at GHV5/docs/superpowers/plans/2026-03-23-presence-detector.md
-- Done: Tasks 1-4 of presence detector plan (2026-03-23) — config constants added, TestPresenceScore written, _presence_score() implemented, get_all_scores()/get_grid_scores() updated to two-pass
-- Pending: Tasks 5-11 of presence detector plan — update TestGetAllScores keys, remove dead code, remove dead tests, update thread/display keys, update run_sar.py, final verify
-- Current GHV5 test state: 55 passing + 4 failing (TestGetAllScores still reference old "amp" key, fixed in Task 5) + 1 skipped
+- Known bad: SAR (run_sar.py) — not yet usable
+- Next session: Write GHV5 implementation plan; begin GHV5 project scaffold
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.

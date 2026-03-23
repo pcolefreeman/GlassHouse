@@ -294,30 +294,54 @@ class TestBreathingDetector:
 
 
 class TestBreathingDetectorE2E:
-    def test_synthetic_breathing_detected(self):
-        """Feed amplitude-modulated 0.25 Hz CSI, verify all 9 cells covered."""
+    def test_synthetic_breathing_one_hot_path(self):
+        """Feed breathing on one path, static on others — hot path cells detected."""
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
-        n_time = BREATHING_WINDOW_N  # 600
+        n_time = BREATHING_WINDOW_N
         n_sub = 128
-        t = np.arange(n_time) / BREATHING_SNAP_HZ  # 20 Hz
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        hot_path = (1, 3)  # BL→TR diagonal: r2c0, r1c1, r0c2
+        static_csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(n_sub))
 
         for step in range(n_time):
-            # Amplitude modulated at 0.25 Hz — what CSI actually responds to
+            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
+            breath_csi = b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+            for key in BREATHING_PATH_MAP:
+                csi = breath_csi if key == hot_path else static_csi
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
+
+        scores = det.get_grid_scores()
+        # Hot path covers r2c0, r1c1, r0c2
+        assert scores["r1c1"] is not None and scores["r1c1"] > 20.0, \
+            f"Center cell should detect breathing, got {scores['r1c1']}"
+
+    def test_all_paths_uniform_no_detection(self):
+        """All paths with identical breathing → contrast ≈ 1 → no localized detection."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        n_sub = 128
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        for step in range(n_time):
             amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
             csi_bytes = b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
-            # Feed all 6 paths
             for key in BREATHING_PATH_MAP:
                 det.feed_frame('csi_snap', {
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
                 })
 
         scores = det.get_grid_scores()
-        # All 9 cells should be covered
+        # Uniform breathing on all paths: contrast ≈ 1 for all → low/no confidence
+        # (correct: indistinguishable from environmental noise affecting all paths)
         for cell in CELL_LABELS:
-            assert scores[cell] is not None, f"Cell {cell} should be covered"
-        # Center cell (crossed by diagonals) should show confident detection
-        assert scores["r1c1"] is not None and scores["r1c1"] > 30.0
+            if scores[cell] is not None:
+                assert scores[cell] < 50.0, \
+                    f"Uniform paths should not trigger high confidence: {cell}={scores[cell]}"
 
     def test_static_signal_no_detection(self):
         """Feed constant CSI via csi_snap, verify low/no confidence."""
@@ -334,6 +358,111 @@ class TestBreathingDetectorE2E:
         for cell, score in scores.items():
             if score is not None:
                 assert score < 30.0, f"Cell {cell} had {score}% with static signal"
+
+    def test_raw_amplitude_energy_coherent_beats_incoherent(self):
+        """PCA snr_eig: coherent multi-subcarrier breathing has higher snr_eig than noise."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, SUBCARRIERS
+        from ghv4.breathing import BreathingDetector
+
+        n_time = BREATHING_WINDOW_N
+        n_sub = SUBCARRIERS
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+        rng = np.random.default_rng(42)
+
+        base_amp = 1000.0
+        breath_amp = 800.0
+        breathing_signal = breath_amp * np.sin(2 * np.pi * 0.25 * t)
+        coherent_real = np.full((n_time, n_sub), base_amp, dtype=np.float32)
+        coherent_real[:, :10] += breathing_signal[:, None].astype(np.float32)
+        coherent_window = coherent_real.astype(np.complex64)
+
+        noise_real = (rng.standard_normal((n_time, n_sub)) * base_amp).astype(np.float32)
+        noise_window = noise_real.astype(np.complex64)
+
+        coherent_snr = BreathingDetector._raw_amplitude_energy(coherent_window)
+        noise_snr = BreathingDetector._raw_amplitude_energy(noise_window)
+
+        assert coherent_snr > noise_snr, (
+            f"Coherent snr_eig {coherent_snr:.3f} should exceed noise {noise_snr:.3f}"
+        )
+        assert coherent_snr > 1.0, "Coherent 0.25 Hz signal should have snr_eig > 1"
+
+    def test_phase_score_detects_breathing(self):
+        """Phase-based CSI ratio (Approach C) detects 0.25 Hz phase modulation."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, SUBCARRIERS
+
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        n_sub = SUBCARRIERS
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        # Phase-modulated CSI: different subcarriers get differential phase shift
+        # simulating path-length change from breathing
+        window = np.ones((n_time, n_sub), dtype=np.complex64)
+        for sc in range(n_sub):
+            # Differential phase modulation: amplitude scales with subcarrier index
+            phase_mod = 0.3 * np.sin(2 * np.pi * 0.25 * t) * (sc / n_sub)
+            window[:, sc] = np.exp(1j * phase_mod)
+
+        score = det._phase_score(window)
+        assert score > 0.3, f"Phase score {score:.3f} should detect 0.25 Hz phase modulation"
+
+    def test_phase_score_low_for_static(self):
+        """Static CSI (no phase modulation) yields low phase score."""
+        from ghv4.config import BREATHING_WINDOW_N, SUBCARRIERS
+
+        det = BreathingDetector()
+        window = np.ones((BREATHING_WINDOW_N, SUBCARRIERS), dtype=np.complex64)
+        score = det._phase_score(window)
+        assert score < 0.1, f"Static signal phase score {score:.3f} should be near zero"
+
+    def test_contrast_normalization_isolates_hot_path(self):
+        """Inter-path contrast (Approach A): one elevated path detected, others suppressed."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, SUBCARRIERS
+
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        n_sub = SUBCARRIERS
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        # Fill all 6 paths: 5 with static signal, 1 with strong breathing
+        static_csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(n_sub))
+        breath_csi_frames = []
+        for step in range(n_time):
+            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
+            breath_csi_frames.append(
+                b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+            )
+
+        path_keys = list(BREATHING_PATH_MAP.keys())
+        hot_path = path_keys[0]  # (1, 2)
+
+        for step in range(n_time):
+            for key in path_keys:
+                if key == hot_path:
+                    csi = breath_csi_frames[step]
+                else:
+                    csi = static_csi
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
+
+        scores = det.get_grid_scores()
+        # Hot path (1,2) covers r2c0, r1c0, r0c0 — these should be elevated
+        hot_cells = set(BREATHING_PATH_MAP[hot_path])
+        cold_cells = set(CELL_LABELS) - hot_cells
+
+        for cell in hot_cells:
+            assert scores[cell] is not None and scores[cell] > 20.0, \
+                f"Hot cell {cell} should be elevated, got {scores[cell]}"
+
+        for cell in cold_cells:
+            # Cold cells may still have some score from overlapping paths
+            # but should be much lower than hot cells
+            if scores[cell] is not None:
+                hot_min = min(scores[c] for c in hot_cells if scores[c] is not None)
+                assert scores[cell] < hot_min, \
+                    f"Cold cell {cell}={scores[cell]} should be below hot min {hot_min}"
 
 
 

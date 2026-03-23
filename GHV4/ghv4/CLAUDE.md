@@ -1,5 +1,5 @@
 # ghv4 Python Package — Conventions & Gotchas
-<!-- last verified: 2026-03-24 -->
+<!-- last verified: 2026-03-25 -->
 
 ## Constants Rule
 All cross-module constants live in `ghv4/config.py` — the single source of truth.
@@ -57,11 +57,17 @@ placeholder default; the user selects the actual port before connecting.
 - **Listener must stay inside the room** — moving listener outside behind a closed door causes ALL paths to show high variance simultaneously (empty room, no people). Likely cause: wall/door degrades WiFi AP signal to shouters, making CSI measurements unstable across all paths. Confirmed 2026-03-24.
 - **Listener proximity to a path saturates `var_conf`** — when listener is inside but physically near a shouter pair path, its WiFi AP beacons act as a static RF scatterer on that path, driving `var_conf` to 0.99+. S1↔S4 was consistently saturated with listener near that wall. Not a board defect.
 - **Deployment constraint** — listener must be inside the room, stationary, positioned away from all shouter pair paths during scans. Operator holding the listener must stand still.
-- **`_variance_score()` removed (2026-03-24)** — variance requires a calibrated reference and cannot be used in SAR scenarios (unknown rooms, collapsed buildings). `get_grid_scores()` now returns pure FFT breathing-band confidence. Confidence is the fraction of CSI ratio phase spectral energy in 0.1–0.5 Hz band — this fires only on actual periodic breathing/heartbeat motion, not background hardware noise.
-- **`path_conf` in status bar is FFT-only** — `BreathingThread` sends `path_conf` via `_analyzer.analyze()` only, not `_variance_score()`. Cell grid colors use `combined = max(fft, var)`. These are two different values.
-- **`run_sar.py` console loop must stay in sync with `breathing.py`** — `_run_console_loop()` computes `path_conf` directly via `BreathingDetector._amplitude_score(window)`; if the scoring method changes, update that line too. Stale `_extractor`/`_analyzer` refs caused a crash in 2026-03-24 session.
-- **`run_sar.py --log-level DEBUG`** — exposes `snr_p95=` values per path per update cycle. Required for tuning sigmoid midpoint in `_amplitude_score()`. Normal runs use INFO (silent scoring).
-- **S2↔S4 and S3↔S4 have low snap rates** (~1–4/s vs 8–19/s for S1 paths) — buffers may not fill reliably for these paths in current hardware config.
+- **A+C scoring implemented 2026-03-26** — replaces PCA Approach B (absolute gate + sigmoid). Two zero-calibration signals combined:
+  - **(A) Inter-path contrast**: `_raw_amplitude_energy(window)` returns raw `snr_eig` (PCA eigenvalue ratio, no gate). `get_grid_scores()` normalises each path by `median(all_snr_eig)`. Contrast > 1 means path is elevated above group. `BREATHING_CONTRAST_CEILING=3.0` maps contrast to 0–1. Requires `BREATHING_MIN_PATHS_FOR_CONTRAST=3` ready paths; fewer → falls back to phase only.
+  - **(C) Phase-based CSI ratio**: `_phase_score(window)` wires `CSIRatioExtractor` + `BreathingAnalyzer` (conjugate-multiply subcarrier pairs → FFT → breathing-band fraction). Returns 0–1 confidence. Phase is physically specific to path-length oscillation (breathing).
+  - **Combined**: `confidence = max(contrast_score, phase_score)` per path. Either strong contrast OR strong phase triggers detection.
+- **Why A+C works across rooms** — empty room: all paths have similar snr_eig (contrast ≈ 1 → 0 confidence). Person: nearby paths elevated 2–20× above others → high contrast. Different rooms: baseline may differ but ratio self-normalises. No absolute gate, no room calibration.
+- **`BREATHING_SNR_GATE` removed** — replaced by inter-path contrast. No absolute thresholds remain in the scoring pipeline.
+- **`_amplitude_score()` removed** — split into `_raw_amplitude_energy()` (returns raw snr_eig) and `_phase_score()` (returns CSI ratio phase confidence). `get_grid_scores()` combines both.
+- **`run_sar.py --log-level DEBUG`** — now shows `snr_eig=`, `contrast=`, `phase=` per path per update cycle. Use to validate A+C behaviour on new hardware.
+- **`_last_path_conf` cache** — `BreathingDetector` stores path confidences from last `get_grid_scores()` call. `BreathingThread` and console loop read this instead of recomputing.
+- **S2↔S4 and S3↔S4 have low snap rates** (~1–4/s vs 8–19/s for S1 paths) — buffers may not fill reliably for these paths in current hardware config. With `BREATHING_MIN_PATHS_FOR_CONTRAST=3`, contrast scoring activates even if only 3 of 6 paths are ready.
+- **Deployment constraint** — listener must be inside the room, stationary, positioned away from all shouter pair paths during scans. Operator holding the listener must stand still.
 
 ## Gotchas
 

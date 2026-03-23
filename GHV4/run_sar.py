@@ -7,7 +7,7 @@ import sys
 import threading
 import time
 
-from ghv4.breathing import BreathingDetector, GridProjector
+from ghv4.breathing import BreathingDetector
 from ghv4.config import (
     BAUD_RATE,
     BREATHING_SLIDE_N,
@@ -105,11 +105,7 @@ def _run_console_loop(port: str, detector: BreathingDetector):
             if frames_since_update >= BREATHING_SLIDE_N and detector.is_ready():
                 frames_since_update = 0
                 scores = detector.get_grid_scores()
-                path_conf = {}
-                for key, buf in detector._buffers.items():
-                    if buf.is_full():
-                        window = buf.get_window()
-                        path_conf[key] = BreathingDetector._amplitude_score(window)
+                path_conf = detector._last_path_conf
                 _print_console(scores, path_conf)
     except KeyboardInterrupt:
         _log.info("Stopped.")
