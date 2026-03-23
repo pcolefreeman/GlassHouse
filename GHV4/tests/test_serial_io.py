@@ -9,6 +9,11 @@ import time
 import pytest
 
 
+class _BytesIOWithTimeout(io.BytesIO):
+    """BytesIO subclass with a timeout attribute, required by SerialReader._read_one_frame."""
+    timeout = 1.0
+
+
 class _FakeSerial:
     """Minimal serial.Serial stub backed by a BytesIO buffer."""
     def __init__(self, data: bytes):
@@ -91,3 +96,31 @@ def test_snap_callback_receives_parsed_frame():
     assert received[0][0] == 1   # reporter_id
     assert received[0][1] == 2   # peer_id
     assert received[0][2] == 10  # snap_seq
+
+
+class TestSerialReader:
+    """Class-based tests for SerialReader behaviour."""
+
+    def test_snap_frame_enqueued_to_frame_queue(self):
+        """Parsed snap frames should be enqueued as ('csi_snap', frame) to frame_queue."""
+        from ghv4.serial_io import SerialReader
+
+        reporter_id = 2
+        peer_id = 1
+        snap_seq = 5
+        csi_len = 8  # 2 subcarriers × 4 bytes each (int16 I + int16 Q)
+        # header: ver(1B) + reporter_id(1B) + peer_id(1B) + snap_seq(1B) + csi_len(2B LE)
+        header = struct.pack('<BBBBH', 1, reporter_id, peer_id, snap_seq, csi_len)
+        csi_payload = struct.pack('<hh', 100, 50) * 2  # 2 subcarriers
+        raw = b'\xEE\xFF' + header + csi_payload
+
+        fq = queue.Queue()
+        sio = _BytesIOWithTimeout(raw)
+        reader = SerialReader(sio, fq)
+        reader._read_one_frame()
+
+        assert not fq.empty(), "Expected snap frame to be enqueued"
+        ftype, frame = fq.get()
+        assert ftype == 'csi_snap'
+        assert frame['reporter_id'] == reporter_id
+        assert frame['peer_id'] == peer_id

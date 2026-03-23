@@ -14,7 +14,7 @@ from ghv4.config import (
     BREATHING_NPAIRS,
     BREATHING_CONFIDENCE_THRESHOLD,
     BREATHING_PATH_MAP,
-    BUCKET_MS,
+    BREATHING_SNAP_HZ,
     CELL_LABELS,
 )
 from ghv4.csi_parser import parse_csi_bytes
@@ -104,7 +104,7 @@ class BreathingAnalyzer:
     energy in the breathing band vs total energy.
     """
 
-    def __init__(self, sample_rate_hz: float = 1000.0 / BUCKET_MS,
+    def __init__(self, sample_rate_hz: float = BREATHING_SNAP_HZ,
                  band_hz: tuple = BREATHING_BAND_HZ):
         self._fs = sample_rate_hz
         self._band_hz = band_hz
@@ -180,19 +180,19 @@ class GridProjector:
 
 
 class BreathingDetector:
-    """Orchestrator: feeds frames into ring buffers, runs analysis pipeline.
+    """Orchestrator: feeds csi_snap frames into ring buffers, runs analysis pipeline.
 
     Usage:
         det = BreathingDetector()
-        det.feed_frame(frame_type, frame_dict)  # call for each serial frame
+        det.feed_frame('csi_snap', frame_dict)  # call for each serial frame
         if det.is_ready():
             scores = det.get_grid_scores()       # {cell_label: 0-100 or None}
     """
 
     def __init__(self, path_map: dict | None = None):
         self._path_map = path_map if path_map is not None else BREATHING_PATH_MAP
-        self._buffers: dict[int, CSIRingBuffer] = {
-            sid: CSIRingBuffer() for sid in self._path_map
+        self._buffers: dict[tuple, CSIRingBuffer] = {
+            key: CSIRingBuffer() for key in self._path_map
         }
         self._extractor = CSIRatioExtractor()
         self._analyzer = BreathingAnalyzer()
@@ -202,47 +202,47 @@ class BreathingDetector:
         """Feed a parsed frame into the detector.
 
         Args:
-            frame_type: 'listener' or 'shouter'
-            frame_dict: parsed frame dict from csi_parser
+            frame_type: 'csi_snap' (other types are ignored)
+            frame_dict: parsed frame dict with 'reporter_id', 'peer_id', 'csi'
         """
-        if frame_type != 'shouter':
+        if frame_type != 'csi_snap':
             return
-        sid = frame_dict.get('shouter_id')
-        if sid not in self._buffers:
+        reporter = frame_dict.get('reporter_id')
+        peer = frame_dict.get('peer_id')
+        if reporter is None or peer is None:
             return
-        csi_bytes = frame_dict.get('csi_bytes', b'')
-        if not csi_bytes:
+        key = (min(reporter, peer), max(reporter, peer))
+        if key not in self._buffers:
             return
-        csi_complex = parse_csi_bytes(csi_bytes)
+        csi_raw = frame_dict.get('csi', b'')
+        if not csi_raw:
+            return
+        csi_complex = parse_csi_bytes(csi_raw)
         csi_array = np.array(csi_complex, dtype=np.complex64)
         # Pad/truncate to SUBCARRIERS
         if len(csi_array) < SUBCARRIERS:
             csi_array = np.pad(csi_array, (0, SUBCARRIERS - len(csi_array)))
         else:
             csi_array = csi_array[:SUBCARRIERS]
-        self._buffers[sid].push(csi_array)
+        self._buffers[key].push(csi_array)
 
     def is_ready(self) -> bool:
         """True if at least one path has a full buffer."""
         return any(buf.is_full() for buf in self._buffers.values())
 
     def get_grid_scores(self) -> dict[str, float | None]:
-        """Run analysis on all ready paths and project onto grid.
-
-        Returns:
-            {cell_label: confidence_0_to_100_or_None} for all 9 cells.
-        """
+        """Run analysis on all ready paths and project onto grid."""
         path_confidences = {}
-        for sid, buf in self._buffers.items():
+        for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
             window = buf.get_window()
             ratio_phases = self._extractor.extract(window)
             confidence = self._analyzer.analyze(ratio_phases)
             if confidence >= BREATHING_CONFIDENCE_THRESHOLD:
-                path_confidences[sid] = confidence
+                path_confidences[key] = confidence
             else:
-                path_confidences[sid] = 0.0
+                path_confidences[key] = 0.0
         return self._projector.project(path_confidences)
 
 
@@ -269,3 +269,272 @@ def reconstruct_csi_from_csv_row(row, shouter_id: int,
             continue
         csi[sc] = amp * np.exp(1j * phase)
     return csi
+
+
+# ---------------------------------------------------------------------------
+# SAR breathing threads (for run_sar.py)
+# ---------------------------------------------------------------------------
+import threading
+import queue as _queue
+import time as _time
+
+
+class BreathingThread(threading.Thread):
+    """Daemon thread: serial → feed_frame() → periodic get_grid_scores() → result queue."""
+
+    def __init__(self, port, baud, detector, result_queue, stop_event):
+        super().__init__(daemon=True)
+        self._port = port
+        self._baud = baud
+        self._detector = detector
+        self._q = result_queue
+        self._stop = stop_event
+
+    def run(self):
+        import serial as pyserial
+        from ghv4.serial_io import SerialReader
+        from ghv4.config import BREATHING_SLIDE_N
+
+        frame_queue = _queue.Queue()
+        ser = pyserial.Serial(self._port, self._baud, timeout=1.0)
+        reader = SerialReader(ser, frame_queue)
+        reader.start()
+        self._q.put({"type": "status", "msg": f"Connected: {self._port}"})
+
+        frames_since_update = 0
+        try:
+            while not self._stop.is_set():
+                try:
+                    item = frame_queue.get(timeout=0.5)
+                except _queue.Empty:
+                    continue
+                frame_type, frame_dict = item
+                self._detector.feed_frame(frame_type, frame_dict)
+                if frame_type == 'csi_snap':
+                    frames_since_update += 1
+                if frames_since_update >= BREATHING_SLIDE_N and self._detector.is_ready():
+                    frames_since_update = 0
+                    scores = self._detector.get_grid_scores()
+                    path_conf = {}
+                    for key, buf in self._detector._buffers.items():
+                        if buf.is_full():
+                            window = buf.get_window()
+                            ratio = self._detector._extractor.extract(window)
+                            path_conf[key] = self._detector._analyzer.analyze(ratio)
+                    self._q.put({"type": "scores", "grid": scores, "path_conf": path_conf})
+        except Exception as e:
+            self._q.put({"type": "status", "msg": f"Error: {e}"})
+        finally:
+            reader.stop()
+            ser.close()
+
+
+class SARDemoThread(threading.Thread):
+    """Synthetic 0.25 Hz breathing signal cycling across paths for --demo mode."""
+
+    def __init__(self, result_queue, stop_event):
+        super().__init__(daemon=True)
+        self._q = result_queue
+        self._stop = stop_event
+
+    def run(self):
+        self._q.put({"type": "status", "msg": "Demo mode — synthetic breathing"})
+        path_keys = list(BREATHING_PATH_MAP.keys())
+        projector = GridProjector()
+        step = 0
+        while not self._stop.is_set():
+            # Rotate which path has highest confidence
+            path_conf = {}
+            for i, key in enumerate(path_keys):
+                # Sinusoidal confidence cycling with phase offset per path
+                t = step * 0.05
+                phase_offset = i * (2 * np.pi / len(path_keys))
+                conf = 0.5 + 0.4 * np.sin(2 * np.pi * 0.25 * t + phase_offset)
+                path_conf[key] = float(conf)
+            grid = projector.project(path_conf)
+            self._q.put({"type": "scores", "grid": grid, "path_conf": path_conf})
+            step += 1
+            # ~1 Hz update rate
+            for _ in range(10):
+                if self._stop.is_set():
+                    return
+                _time.sleep(0.1)
+
+
+# ---------------------------------------------------------------------------
+# Pygame heatmap display (lazy import — pygame may not be installed)
+# ---------------------------------------------------------------------------
+try:
+    import pygame as _pygame
+
+    class BreathingDisplay:
+        """Pygame heatmap display for SAR breathing detection."""
+
+        TITLE_H = 44
+        STATUS_H = 40
+        GRID_PAD = 24
+        CELL_GAP = 4
+
+        def __init__(self, screen_size=None, fullscreen=False):
+            from ghv4.config import PI_SCREEN_SIZE
+            self._screen_size = screen_size or PI_SCREEN_SIZE
+            self._fullscreen = fullscreen
+            self._grid_scores = {cell: None for cell in CELL_LABELS}
+            self._path_conf = {}
+            self._status_msg = "Waiting..."
+            self._cell_rects = {}
+            self._shouter_positions = {}
+
+            self._init_pygame()
+            self._compute_layout()
+
+        def _init_pygame(self):
+            _pygame.init()
+            flags = _pygame.FULLSCREEN if self._fullscreen else 0
+            self._screen = _pygame.display.set_mode(self._screen_size, flags)
+            _pygame.display.set_caption("GlassHouse V4 — SAR Breathing Detection")
+            try:
+                self._font_cell = _pygame.font.SysFont("monospace", 28, bold=True)
+                self._font_conf = _pygame.font.SysFont("monospace", 20)
+                self._font_title = _pygame.font.SysFont("monospace", 24, bold=True)
+                self._font_status = _pygame.font.SysFont("monospace", 16)
+                self._font_shouter = _pygame.font.SysFont("monospace", 14, bold=True)
+            except Exception:
+                self._font_cell = _pygame.font.Font(None, 32)
+                self._font_conf = _pygame.font.Font(None, 24)
+                self._font_title = _pygame.font.Font(None, 28)
+                self._font_status = _pygame.font.Font(None, 20)
+                self._font_shouter = _pygame.font.Font(None, 18)
+
+        def _compute_layout(self):
+            from ghv4.config import PI_CELL_BORDER
+            w, h = self._screen_size
+            grid_top = self.TITLE_H + self.GRID_PAD
+            grid_bottom = h - self.STATUS_H - self.GRID_PAD
+            grid_h = grid_bottom - grid_top
+            grid_w = min(grid_h, w - 2 * self.GRID_PAD)
+            grid_left = (w - grid_w) // 2
+
+            cell_w = (grid_w - 2 * self.CELL_GAP) // 3
+            cell_h = (grid_h - 2 * self.CELL_GAP) // 3
+
+            for row in range(3):
+                for col in range(3):
+                    x = grid_left + col * (cell_w + self.CELL_GAP)
+                    y = grid_top + row * (cell_h + self.CELL_GAP)
+                    self._cell_rects[(row, col)] = _pygame.Rect(x, y, cell_w, cell_h)
+
+            margin = 14
+            self._shouter_positions = {
+                2: (grid_left - margin, grid_top - margin),
+                3: (grid_left + grid_w + margin, grid_top - margin),
+                1: (grid_left - margin, grid_top + grid_h + margin),
+                4: (grid_left + grid_w + margin, grid_top + grid_h + margin),
+            }
+            self._grid_rect = _pygame.Rect(grid_left, grid_top, grid_w, grid_h)
+
+        @staticmethod
+        def _cell_color(score):
+            """Interpolate PI_CELL_INACTIVE -> PI_CELL_ACTIVE by score (0-100)."""
+            from ghv4.config import PI_CELL_INACTIVE, PI_CELL_ACTIVE
+            t = max(0.0, min(1.0, score / 100.0))
+            return tuple(int(lo + t * (hi - lo))
+                         for lo, hi in zip(PI_CELL_INACTIVE, PI_CELL_ACTIVE))
+
+        def update(self, grid_scores, path_conf):
+            self._grid_scores = grid_scores
+            self._path_conf = path_conf
+
+        def set_status(self, msg):
+            self._status_msg = msg
+
+        def render(self):
+            from ghv4.config import (
+                PI_DISPLAY_BG, PI_CELL_BORDER, PI_CELL_INACTIVE,
+                PI_TEXT_ACTIVE, PI_TEXT_INACTIVE,
+            )
+            self._screen.fill(PI_DISPLAY_BG)
+
+            # Title
+            w = self._screen_size[0]
+            title = self._font_title.render(
+                "GlassHouse V4 — SAR Breathing Detection", True, PI_TEXT_ACTIVE)
+            self._screen.blit(title, title.get_rect(center=(w // 2, self.TITLE_H // 2)))
+            _pygame.draw.line(self._screen, PI_CELL_BORDER,
+                              (0, self.TITLE_H - 1), (w, self.TITLE_H - 1))
+
+            # Grid cells
+            for (row, col), rect in self._cell_rects.items():
+                label = f"r{row}c{col}"
+                score = self._grid_scores.get(label)
+                if score is not None:
+                    fill = self._cell_color(score)
+                    text_color = PI_TEXT_ACTIVE
+                    score_text = f"{score:.0f}%"
+                else:
+                    fill = PI_CELL_INACTIVE
+                    text_color = PI_TEXT_INACTIVE
+                    score_text = "--"
+                _pygame.draw.rect(self._screen, fill, rect, border_radius=6)
+                _pygame.draw.rect(self._screen, PI_CELL_BORDER, rect, width=2,
+                                  border_radius=6)
+                # Label
+                lbl = self._font_cell.render(label, True, text_color)
+                self._screen.blit(lbl, lbl.get_rect(
+                    center=(rect.centerx, rect.centery - 12)))
+                # Score
+                sc = self._font_conf.render(score_text, True, text_color)
+                self._screen.blit(sc, sc.get_rect(
+                    center=(rect.centerx, rect.centery + 16)))
+
+            # Shouter markers + path lines
+            cyan = (0, 200, 200)
+            for sid, (x, y) in self._shouter_positions.items():
+                _pygame.draw.circle(self._screen, cyan, (x, y), 8)
+                lbl = self._font_shouter.render(f"S{sid}", True, cyan)
+                self._screen.blit(lbl, lbl.get_rect(center=(x, y - 16)))
+
+            # Path lines between shouter pairs
+            for key, conf in self._path_conf.items():
+                s1_pos = self._shouter_positions.get(key[0])
+                s2_pos = self._shouter_positions.get(key[1])
+                if s1_pos and s2_pos:
+                    alpha = max(0.2, min(1.0, conf))
+                    color = tuple(int(c * alpha) for c in cyan)
+                    _pygame.draw.line(self._screen, color, s1_pos, s2_pos, 2)
+
+            # Status bar
+            h = self._screen_size[1]
+            bar_y = h - self.STATUS_H
+            _pygame.draw.line(self._screen, PI_CELL_BORDER, (0, bar_y), (w, bar_y))
+
+            parts = [self._status_msg]
+            if self._path_conf:
+                conf_strs = [f"S{k[0]}↔S{k[1]}={v*100:.0f}%"
+                             for k, v in sorted(self._path_conf.items())]
+                parts.append(" ".join(conf_strs))
+            detected = [f"S{k[0]}↔S{k[1]}"
+                        for k, v in self._path_conf.items() if v > 0.3]
+            if detected:
+                parts.append(f"DETECTED ({', '.join(detected)})")
+            else:
+                parts.append("No breathing detected")
+
+            status = self._font_status.render("  |  ".join(parts), True, PI_TEXT_INACTIVE)
+            self._screen.blit(status, status.get_rect(
+                midleft=(12, bar_y + self.STATUS_H // 2)))
+
+        def handle_events(self):
+            for event in _pygame.event.get():
+                if event.type == _pygame.QUIT:
+                    return False
+                if event.type == _pygame.KEYDOWN:
+                    if event.key in (_pygame.K_ESCAPE, _pygame.K_q):
+                        return False
+            return True
+
+        def cleanup(self):
+            _pygame.quit()
+
+except ImportError:
+    BreathingDisplay = None  # pygame not installed

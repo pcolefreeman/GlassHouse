@@ -133,10 +133,11 @@ def test_distance_feature_count():
 def test_breathing_constants_exist():
     from ghv4 import config
     assert config.BREATHING_WINDOW_S == 30
-    assert config.BREATHING_WINDOW_N == 150
-    assert config.BREATHING_SLIDE_N == 10
+    assert config.BREATHING_SNAP_HZ == 20
+    assert config.BREATHING_WINDOW_N == 600
+    assert config.BREATHING_SLIDE_N == 20
     assert config.BREATHING_BAND_HZ == (0.1, 0.5)
     assert config.BREATHING_NPAIRS == 10
     assert config.BREATHING_CONFIDENCE_THRESHOLD == 0.3
     assert isinstance(config.BREATHING_PATH_MAP, dict)
-    assert set(config.BREATHING_PATH_MAP.keys()) == {1, 2, 3, 4}
+    assert set(config.BREATHING_PATH_MAP.keys()) == {(1,2), (1,3), (1,4), (2,3), (2,4), (3,4)}

@@ -1,5 +1,8 @@
 """Tests for ghv4.breathing — CSI breathing detection pipeline."""
+import queue
 import struct
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -152,50 +155,63 @@ class TestBreathingAnalyzer:
         result = analyzer.analyze(phases)
         assert isinstance(result, float)
 
+    def test_default_sample_rate_is_snap_hz(self):
+        """Default sample rate should be BREATHING_SNAP_HZ (20), not BUCKET_MS-derived (5)."""
+        from ghv4.config import BREATHING_SNAP_HZ
+        analyzer = BreathingAnalyzer()
+        assert analyzer._fs == BREATHING_SNAP_HZ
+
+    def test_synthetic_breathing_default_rate(self):
+        """0.25 Hz breathing at default 20 Hz sample rate, 600-frame window."""
+        analyzer = BreathingAnalyzer()  # default: 20 Hz
+        n_time = 600
+        n_pairs = 10
+        t = np.arange(n_time) / 20.0
+        phases = np.column_stack([np.sin(2 * np.pi * 0.25 * t)] * n_pairs).astype(np.float32)
+        confidence = analyzer.analyze(phases)
+        assert confidence > 0.5, f"Expected high confidence, got {confidence}"
+
 
 class TestGridProjector:
     def test_default_path_map(self):
         proj = GridProjector()
         assert proj.path_map == BREATHING_PATH_MAP
 
-    def test_all_paths_high_yields_all_cells_high(self):
+    def test_all_paths_high_yields_all_9_cells(self):
+        """All 6 paths active should cover all 9 cells."""
         proj = GridProjector()
-        confidences = {1: 0.9, 2: 0.8, 3: 0.7, 4: 0.6}
+        confidences = {
+            (1, 2): 0.9, (1, 3): 0.8, (1, 4): 0.7,
+            (2, 3): 0.6, (2, 4): 0.5, (3, 4): 0.4,
+        }
         scores = proj.project(confidences)
-        # All mapped cells should have scores > 0
-        for cell in ["r0c0", "r0c2", "r1c1", "r2c0", "r2c2"]:
-            assert scores[cell] is not None and scores[cell] > 0
+        for cell in CELL_LABELS:
+            assert scores[cell] is not None and scores[cell] > 0, \
+                f"Cell {cell} should be covered but got {scores[cell]}"
 
-    def test_unmapped_cells_are_none(self):
-        """Cells not crossed by any path should be None."""
+    def test_single_path_covers_three_cells(self):
+        """Path (1,2) = left edge covers r2c0, r1c0, r0c0 only."""
         proj = GridProjector()
-        confidences = {1: 0.9, 2: 0.8, 3: 0.7, 4: 0.6}
+        confidences = {(1, 2): 0.8}
         scores = proj.project(confidences)
-        # r0c1, r1c0, r1c2, r2c1 are not in default path map
-        for cell in ["r0c1", "r1c0", "r1c2", "r2c1"]:
-            assert scores[cell] is None
+        assert scores["r2c0"] == pytest.approx(80.0)
+        assert scores["r1c0"] == pytest.approx(80.0)
+        assert scores["r0c0"] == pytest.approx(80.0)
+        # Other cells should be None
+        assert scores["r0c1"] is None
+        assert scores["r1c1"] is None
 
-    def test_center_cell_gets_max_of_all_paths(self):
-        """r1c1 is crossed by all 4 paths; should get max confidence."""
+    def test_center_cell_max_of_crossing_paths(self):
+        """r1c1 is crossed by (1,3) and (2,4); should get max."""
         proj = GridProjector()
-        confidences = {1: 0.3, 2: 0.9, 3: 0.5, 4: 0.1}
+        confidences = {(1, 3): 0.3, (2, 4): 0.9}
         scores = proj.project(confidences)
-        assert scores["r1c1"] == pytest.approx(90.0)  # 0.9 * 100
-
-    def test_single_path_active(self):
-        """Only paths present in confidences dict contribute."""
-        proj = GridProjector()
-        confidences = {2: 0.8}
-        scores = proj.project(confidences)
-        assert scores["r0c2"] == pytest.approx(80.0)
-        assert scores["r1c1"] == pytest.approx(80.0)
-        # Cells only covered by other paths should be None
-        assert scores["r0c0"] is None
+        assert scores["r1c1"] == pytest.approx(90.0)
 
     def test_custom_path_map(self):
-        custom = {1: ["r0c0", "r0c1"], 2: ["r0c1", "r0c2"]}
+        custom = {(1, 2): ["r0c0", "r0c1"], (2, 3): ["r0c1", "r0c2"]}
         proj = GridProjector(path_map=custom)
-        confidences = {1: 0.5, 2: 0.7}
+        confidences = {(1, 2): 0.5, (2, 3): 0.7}
         scores = proj.project(confidences)
         assert scores["r0c0"] == pytest.approx(50.0)
         assert scores["r0c1"] == pytest.approx(70.0)  # max(0.5, 0.7) * 100
@@ -212,93 +228,119 @@ class TestBreathingDetector:
         det = BreathingDetector()
         assert not det.is_ready()
 
-    def test_feed_shouter_frame(self):
+    def test_feed_csi_snap_frame(self):
+        """csi_snap frames should route to the canonical (min,max) buffer."""
+        det = BreathingDetector()
+        frame = {'reporter_id': 1, 'peer_id': 2, 'csi': self._make_csi_bytes()}
+        det.feed_frame('csi_snap', frame)
+        assert det._buffers[(1, 2)].count == 1
+
+    def test_canonical_key_normalization(self):
+        """Feeding (reporter=2, peer=1) should route to (1,2) buffer."""
+        det = BreathingDetector()
+        frame = {'reporter_id': 2, 'peer_id': 1, 'csi': self._make_csi_bytes()}
+        det.feed_frame('csi_snap', frame)
+        assert det._buffers[(1, 2)].count == 1
+
+    def test_ignores_shouter_frames(self):
+        """Old shouter frame type should be ignored."""
         det = BreathingDetector()
         frame = {'shouter_id': 1, 'csi_bytes': self._make_csi_bytes()}
         det.feed_frame('shouter', frame)
-        # Should have pushed one frame for path 1
-        assert det._buffers[1].count == 1
+        assert all(buf.count == 0 for buf in det._buffers.values())
 
     def test_ignores_listener_frames(self):
         det = BreathingDetector()
-        frame = {'rssi': -55, 'csi_bytes': self._make_csi_bytes()}
+        frame = {'rssi': -55, 'csi': self._make_csi_bytes()}
         det.feed_frame('listener', frame)
-        # No buffers should have data
         assert all(buf.count == 0 for buf in det._buffers.values())
 
-    def test_ignores_unknown_shouter_ids(self):
+    def test_ignores_unknown_pair(self):
+        """Pair (1,5) not in path map should be silently ignored."""
         det = BreathingDetector()
-        frame = {'shouter_id': 99, 'csi_bytes': self._make_csi_bytes()}
-        det.feed_frame('shouter', frame)
-        assert 99 not in det._buffers
+        frame = {'reporter_id': 1, 'peer_id': 5, 'csi': self._make_csi_bytes()}
+        det.feed_frame('csi_snap', frame)
+        assert (1, 5) not in det._buffers
+
+    def test_ignores_missing_csi_key(self):
+        """Frame without 'csi' key should be silently ignored."""
+        det = BreathingDetector()
+        frame = {'reporter_id': 1, 'peer_id': 2}
+        det.feed_frame('csi_snap', frame)
+        assert det._buffers[(1, 2)].count == 0
 
     def test_ready_after_full_window(self):
+        from ghv4.config import BREATHING_WINDOW_N
         det = BreathingDetector()
         csi = self._make_csi_bytes()
-        for _ in range(150):
-            det.feed_frame('shouter', {'shouter_id': 1, 'csi_bytes': csi})
+        for _ in range(BREATHING_WINDOW_N):
+            det.feed_frame('csi_snap', {'reporter_id': 1, 'peer_id': 2, 'csi': csi})
         assert det.is_ready()
 
     def test_get_grid_scores_returns_dict(self):
+        from ghv4.config import BREATHING_WINDOW_N
         det = BreathingDetector()
         csi = self._make_csi_bytes()
-        for _ in range(150):
-            for sid in [1, 2, 3, 4]:
-                det.feed_frame('shouter', {'shouter_id': sid, 'csi_bytes': csi})
+        for _ in range(BREATHING_WINDOW_N):
+            for key in BREATHING_PATH_MAP:
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
         scores = det.get_grid_scores()
         assert isinstance(scores, dict)
-        assert "r0c0" in scores
-        assert "r1c1" in scores
+        # All 9 cells should be present
+        for cell in CELL_LABELS:
+            assert cell in scores
 
 
 class TestBreathingDetectorE2E:
     def test_synthetic_breathing_detected(self):
-        """Feed synthetic 0.25 Hz breathing signal with differential phase, verify detection."""
+        """Feed synthetic 0.25 Hz breathing via csi_snap, verify all 9 cells covered."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
-        n_time = 150
+        n_time = BREATHING_WINDOW_N  # 600
         n_sub = 128
-        t = np.arange(n_time) / 5.0  # 5 Hz
+        t = np.arange(n_time) / BREATHING_SNAP_HZ  # 20 Hz
 
         for step in range(n_time):
-            # Breathing modulates phase with a linear gradient across subcarriers.
-            # This ensures EVERY adjacent pair sees differential phase oscillation,
-            # matching real multipath CSI behavior where path-length changes affect
-            # subcarriers proportionally to frequency.
             breathing_mod = 0.8 * np.sin(2 * np.pi * 0.25 * t[step])
             phase_per_sc = np.array([breathing_mod * (sc / n_sub)
                                      for sc in range(n_sub)])
             csi = 1000.0 * np.exp(1j * phase_per_sc).astype(np.complex64)
-            # Convert to bytes (int16 I/Q pairs)
             csi_bytes = b''
             for c in csi:
                 i_val = int(np.real(c))
                 q_val = int(np.imag(c))
                 csi_bytes += struct.pack('<hh', i_val, q_val)
-            for sid in [1, 2, 3, 4]:
-                det.feed_frame('shouter', {'shouter_id': sid, 'csi_bytes': csi_bytes})
+            # Feed all 6 paths
+            for key in BREATHING_PATH_MAP:
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
+                })
 
         scores = det.get_grid_scores()
-        # Center cell (crossed by all paths) should show confident detection
+        # All 9 cells should be covered
+        for cell in CELL_LABELS:
+            assert scores[cell] is not None, f"Cell {cell} should be covered"
+        # Center cell (crossed by diagonals) should show confident detection
         assert scores["r1c1"] is not None and scores["r1c1"] > 30.0
 
     def test_static_signal_no_detection(self):
-        """Feed constant CSI, verify low/no confidence."""
+        """Feed constant CSI via csi_snap, verify low/no confidence."""
+        from ghv4.config import BREATHING_WINDOW_N
         det = BreathingDetector()
-        # Static CSI: constant I=1000, Q=0
         csi_bytes = b''.join(struct.pack('<hh', 1000, 0) for _ in range(128))
-        for _ in range(150):
-            for sid in [1, 2, 3, 4]:
-                det.feed_frame('shouter', {'shouter_id': sid, 'csi_bytes': csi_bytes})
+        for _ in range(BREATHING_WINDOW_N):
+            for key in BREATHING_PATH_MAP:
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
+                })
 
         scores = det.get_grid_scores()
-        # With constant signal, confidence should be low
         for cell, score in scores.items():
             if score is not None:
                 assert score < 30.0, f"Cell {cell} had {score}% with static signal"
 
-
-import subprocess
-import sys
 
 
 class TestRunSarCLI:
@@ -310,10 +352,22 @@ class TestRunSarCLI:
         )
         assert result.returncode == 0
         assert "--port" in result.stdout
-        assert "--replay" in result.stdout
+        assert "--demo" in result.stdout
+
+    def test_help_shows_demo_and_fullscreen(self):
+        """run_sar.py --help should show --demo and --fullscreen flags."""
+        result = subprocess.run(
+            [sys.executable, "run_sar.py", "--help"],
+            capture_output=True, text=True, timeout=10
+        )
+        assert result.returncode == 0
+        assert "--demo" in result.stdout
+        assert "--fullscreen" in result.stdout
 
 
 class TestCSVReplay:
+    """Tests for CSV reconstruction utility (legacy — replay removed from run_sar.py)."""
+
     def test_replay_reconstruction_round_trip(self):
         """Verify amp+phase -> complex CSI reconstruction."""
         # Create a minimal CSV with amp_norm and phase columns for shouter 1
@@ -362,3 +416,43 @@ class TestCSVReplay:
                     assert np.angle(recon) == pytest.approx(np.angle(orig), abs=1e-5)
         finally:
             os.unlink(tmppath)
+
+
+class TestBreathingDisplay:
+    def test_import_guarded(self):
+        """BreathingDisplay should be importable when pygame is available."""
+        pygame = pytest.importorskip("pygame")
+        from ghv4.breathing import BreathingDisplay
+        assert BreathingDisplay is not None
+
+
+class TestDemoThread:
+    def test_produces_valid_grid_scores(self):
+        """DemoThread should put dicts with 'type'='scores' and valid grid data."""
+        import threading
+        from ghv4.breathing import SARDemoThread
+        result_queue = queue.Queue()
+        stop_event = threading.Event()
+        thread = SARDemoThread(result_queue, stop_event)
+        thread.start()
+        # Wait for a 'scores' item (first item may be a 'status' message)
+        item = None
+        try:
+            import time
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                try:
+                    candidate = result_queue.get(timeout=1.0)
+                except queue.Empty:
+                    continue
+                if candidate["type"] == "scores":
+                    item = candidate
+                    break
+        finally:
+            stop_event.set()
+            thread.join(timeout=2.0)
+        assert item is not None, "No 'scores' item received within timeout"
+        assert item["type"] == "scores"
+        assert "grid" in item
+        assert "r0c0" in item["grid"]
+        assert "path_conf" in item

@@ -10,7 +10,9 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 - Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix + Pi LCD display + META_COLS activity fix + breathing detection + --skip-cv training + continuous shouter beacons firmware
 - Active branch: main
 - Done: Continuous shouter beacons firmware (2026-03-24) — ranging disabled, 10 Hz beacons added
-- Pending: Python SAR breathing detector — update to consume continuous snap frames (firmware ready)
+- Done: Continuous snap breathing detection spec (2026-03-24) — design approved, spec reviewed
+- Done: Continuous snap breathing implementation plan (2026-03-24) — reviewer approved, 10 tasks
+- Pending: Python SAR breathing detector — plan written, execute via subagent-driven-development
 - Pending: Hardware test of continuous shouter beacons (need ESP32 boards)
 - Pending: End-to-end firmware/serial/data-collection debugging plan
 - Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)

@@ -1,5 +1,5 @@
 # ghv4 Python Package — Conventions & Gotchas
-<!-- last verified: 2026-03-22 -->
+<!-- last verified: 2026-03-24 -->
 
 ## Constants Rule
 All cross-module constants live in `ghv4/config.py` — the single source of truth.
@@ -39,14 +39,21 @@ placeholder default; the user selects the actual port before connecting.
 - Colors match `viz.py` confidence mode (#FF6B35 rescue orange, #0d0d0d dark bg)
 - Pi deployment: `pip install pygame>=2.5.0`; for headless use `SDL_VIDEODRIVER=kmsdrm`
 
-## CSI Breathing Detection (implemented 2026-03-23)
-- Spec: `docs/superpowers/specs/2026-03-23-csi-breathing-detection-design.md`
-- Plan: `docs/superpowers/plans/2026-03-23-csi-breathing-detection.md` (9 tasks, 34 tests)
+## CSI Breathing Detection (implemented 2026-03-23, updated 2026-03-24)
+- Spec: `docs/superpowers/specs/2026-03-24-continuous-snap-breathing-design.md`
+- Plan: `docs/superpowers/plans/2026-03-24-continuous-snap-breathing.md` (10 tasks)
 - Files: `ghv4/breathing.py`, `run_sar.py`, `tests/test_breathing.py`
 - `_parse_csi_bytes` renamed to `parse_csi_bytes` (public API)
 - Pure signal processing (no ML) — CSI ratio + FFT for zero-calibration human presence detection
-- Console display only (`--display console`); `--display pygame` accepted but not implemented
-- **Next step**: switch from shouter→listener paths to shouter↔shouter paths (CSI_SNAP `[0xEE][0xFF]` frames) for full 9-cell coverage with listener outside zone
+- Uses shouter↔shouter CSI_SNAP frames (`[0xEE][0xFF]`), 6 paths covering all 9 grid cells
+- `BREATHING_PATH_MAP` uses `(min_id, max_id)` tuple keys for undirected shouter pairs
+- `BREATHING_SNAP_HZ=20`, `BREATHING_WINDOW_N=600` (20 Hz × 30s), `BREATHING_SLIDE_N=20`
+- `SerialReader` enqueues snap frames as `('csi_snap', frame)` to `frame_queue`
+- `BreathingDetector.feed_frame('csi_snap', frame)` with canonical `(min,max)` key routing
+- Pygame heatmap display via `BreathingDisplay` + `BreathingThread`/`SARDemoThread`
+- `run_sar.py` supports `--demo`, `--fullscreen`, `--display pygame|console`
+- Snap frame dict key is `'csi'` (raw bytes), NOT `'csi_bytes'` (shouter frame key) — easy to confuse
+- CSV replay removed from `run_sar.py` (ML CSVs lack raw CSI snap data)
 
 ## Gotchas
 
@@ -83,14 +90,8 @@ placeholder default; the user selects the actual port before connecting.
   the loader does not recurse into subdirectories
 - **Training is slow with large feature sets** — 35K rows × 2,900 features: SVM takes 5-20 min,
   stacking even longer. Use `--model rf --skip-cv` to skip CV entirely, or `--model rf --fast` for quick iteration
-- **Breathing replay requires raw CSI** — ML training CSVs store normalized `amp_norm`, destroying
-  amplitude relationships needed for breathing FFT. Use `--port` (live serial) for real testing.
-- **Breathing path map needs shouter-to-shouter CSI** — current `BREATHING_PATH_MAP` uses only
-  shouter→listener paths (4 paths, 5 cells). Shouter↔shouter CSI already in firmware (`[0xEE][0xFF]`
-  snap frames) but Python doesn't consume them yet. `SerialReader` parses snap frames but
-  routes them only to `_music_estimator`/`_snap_callback`, NOT to `frame_queue`. Switching
-  to 6 S↔S paths covers all 9 cells. Listener should be placed outside the grid zone.
-  Firmware change required first: continuous beacons (spec written 2026-03-23).
+- **Breathing requires raw CSI snap data** — ML training CSVs store normalized `amp_norm`, destroying
+  amplitude relationships needed for breathing FFT. Use `--port` (live serial) or `--demo` mode.
 - **debug_tab text parsing must match firmware text** — `ListenerDebugThread._read_one`
   parses `[LST]` text with regex (`_HELLO_RE`) and string matching (`'starting ranging'`).
   When firmware `Serial.printf` format changes, update `debug_tab.py` to match. Fixed 2026-03-22:

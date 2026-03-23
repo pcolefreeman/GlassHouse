@@ -44,7 +44,16 @@
       "Bash(python run_sar.py --help)",
       "Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102/\"*.csv)",
       "Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102\"/*.csv)",
-      "Bash(python generate_poster_images.py)"
+      "Bash(python generate_poster_images.py)",
+      "Bash(python -m pytest tests/test_serial_io.py::TestSerialReader::test_snap_frame_enqueued_to_frame_queue -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestBreathingAnalyzer -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestBreathingDetector -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestGridProjector -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestBreathingDetectorE2E -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestDemoThread tests/test_breathing.py::TestBreathingDisplay -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI -v)",
+      "Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist -v)",
+      "Bash(python -m pytest tests/test_breathing.py tests/test_config.py::test_breathing_constants_exist -v --tb=short)"
     ]
   }
 }

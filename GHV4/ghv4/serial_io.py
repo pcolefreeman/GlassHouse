@@ -117,6 +117,7 @@ class SerialReader(threading.Thread):
                         frame['snap_seq'],
                         frame['csi'],
                     )
+                self._queue.put(('csi_snap', frame))
                 self._snap_parsed += 1
             elif frame is None:
                 self._snap_failed += 1
