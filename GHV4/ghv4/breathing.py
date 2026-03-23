@@ -4,6 +4,8 @@ Zero-calibration human presence detection using WiFi CSI signals.
 Uses CSI Ratio (conjugate multiply between subcarrier pairs) to cancel
 CFO/clock drift, then FFT to detect breathing-band (0.1-0.5 Hz) power.
 """
+import logging
+
 import numpy as np
 
 from ghv4.config import (
@@ -18,6 +20,8 @@ from ghv4.config import (
     CELL_LABELS,
 )
 from ghv4.csi_parser import parse_csi_bytes
+
+_log = logging.getLogger(__name__)
 
 
 class CSIRingBuffer:
@@ -230,8 +234,18 @@ class BreathingDetector:
         """True if at least one path has a full buffer."""
         return any(buf.is_full() for buf in self._buffers.values())
 
+    def get_buffer_fill(self) -> dict[tuple, float]:
+        """Return fill fraction (0.0-1.0) for each path buffer."""
+        return {key: buf.count / BREATHING_WINDOW_N
+                for key, buf in self._buffers.items()}
+
     def get_grid_scores(self) -> dict[str, float | None]:
-        """Run analysis on all ready paths and project onto grid."""
+        """Run analysis on all ready paths and project onto grid.
+
+        Confidence is purely FFT breathing-band power ratio (0.1–0.5 Hz).
+        No variance term — variance has no meaning without a calibrated
+        reference, making it unsuitable for SAR in unknown environments.
+        """
         path_confidences = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
@@ -239,10 +253,8 @@ class BreathingDetector:
             window = buf.get_window()
             ratio_phases = self._extractor.extract(window)
             confidence = self._analyzer.analyze(ratio_phases)
-            if confidence >= BREATHING_CONFIDENCE_THRESHOLD:
-                path_confidences[key] = confidence
-            else:
-                path_confidences[key] = 0.0
+            _log.info("Path S%d↔S%d fft=%.3f", key[0], key[1], confidence)
+            path_confidences[key] = confidence
         return self._projector.project(path_confidences)
 
 
@@ -274,8 +286,8 @@ def reconstruct_csi_from_csv_row(row, shouter_id: int,
 # ---------------------------------------------------------------------------
 # SAR breathing threads (for run_sar.py)
 # ---------------------------------------------------------------------------
-import threading
 import queue as _queue
+import threading
 import time as _time
 
 
@@ -302,16 +314,51 @@ class BreathingThread(threading.Thread):
         self._q.put({"type": "status", "msg": f"Connected: {self._port}"})
 
         frames_since_update = 0
+        last_fill_report = _time.time()
+        snap_count_by_path = {}  # track per-path frame rate
+        last_rate_time = _time.time()
         try:
             while not self._stop.is_set():
                 try:
                     item = frame_queue.get(timeout=0.5)
                 except _queue.Empty:
+                    # Even on empty, send fill status every 2s so display updates
+                    now = _time.time()
+                    if now - last_fill_report >= 2.0:
+                        last_fill_report = now
+                        fill = self._detector.get_buffer_fill()
+                        self._q.put({"type": "fill", "fill": fill})
                     continue
                 frame_type, frame_dict = item
                 self._detector.feed_frame(frame_type, frame_dict)
                 if frame_type == 'csi_snap':
                     frames_since_update += 1
+                    # Track per-path counts for rate logging
+                    r = frame_dict.get('reporter_id')
+                    p = frame_dict.get('peer_id')
+                    if r is not None and p is not None:
+                        key = (min(r, p), max(r, p))
+                        snap_count_by_path[key] = snap_count_by_path.get(key, 0) + 1
+
+                # Log per-path rates every 5s
+                now = _time.time()
+                if now - last_rate_time >= 5.0:
+                    elapsed = now - last_rate_time
+                    parts = []
+                    for k in sorted(snap_count_by_path):
+                        rate = snap_count_by_path[k] / elapsed
+                        parts.append(f"S{k[0]}↔S{k[1]}={rate:.1f}/s")
+                    if parts:
+                        _log.info("Snap rates: %s", " ".join(parts))
+                    snap_count_by_path.clear()
+                    last_rate_time = now
+
+                # Send fill status every 2s
+                if now - last_fill_report >= 2.0:
+                    last_fill_report = now
+                    fill = self._detector.get_buffer_fill()
+                    self._q.put({"type": "fill", "fill": fill})
+
                 if frames_since_update >= BREATHING_SLIDE_N and self._detector.is_ready():
                     frames_since_update = 0
                     scores = self._detector.get_grid_scores()
@@ -381,6 +428,7 @@ try:
             self._fullscreen = fullscreen
             self._grid_scores = {cell: None for cell in CELL_LABELS}
             self._path_conf = {}
+            self._path_fill = {}
             self._status_msg = "Waiting..."
             self._cell_rects = {}
             self._shouter_positions = {}
@@ -445,6 +493,10 @@ try:
             self._grid_scores = grid_scores
             self._path_conf = path_conf
 
+        def update_fill(self, fill):
+            """Update per-path buffer fill fractions {(s1,s2): 0.0-1.0}."""
+            self._path_fill = fill
+
         def set_status(self, msg):
             self._status_msg = msg
 
@@ -463,19 +515,33 @@ try:
             _pygame.draw.line(self._screen, PI_CELL_BORDER,
                               (0, self.TITLE_H - 1), (w, self.TITLE_H - 1))
 
+            # Compute per-cell max fill fraction from path_fill
+            cell_fill = {}
+            if self._path_fill:
+                for path_key, frac in self._path_fill.items():
+                    if path_key in BREATHING_PATH_MAP:
+                        for cell in BREATHING_PATH_MAP[path_key]:
+                            if cell not in cell_fill or frac > cell_fill[cell]:
+                                cell_fill[cell] = frac
+
             # Grid cells
             for (row, col), rect in self._cell_rects.items():
                 label = f"r{row}c{col}"
                 score = self._grid_scores.get(label)
                 if score is not None:
-                    fill = self._cell_color(score)
+                    bg = self._cell_color(score)
                     text_color = PI_TEXT_ACTIVE
                     score_text = f"{score:.0f}%"
                 else:
-                    fill = PI_CELL_INACTIVE
+                    bg = PI_CELL_INACTIVE
                     text_color = PI_TEXT_INACTIVE
-                    score_text = "--"
-                _pygame.draw.rect(self._screen, fill, rect, border_radius=6)
+                    # Show fill progress instead of bare "--"
+                    cfill = cell_fill.get(label, 0.0)
+                    if cfill > 0:
+                        score_text = f"fill {cfill*100:.0f}%"
+                    else:
+                        score_text = "--"
+                _pygame.draw.rect(self._screen, bg, rect, border_radius=6)
                 _pygame.draw.rect(self._screen, PI_CELL_BORDER, rect, width=2,
                                   border_radius=6)
                 # Label
@@ -513,8 +579,15 @@ try:
                 conf_strs = [f"S{k[0]}↔S{k[1]}={v*100:.0f}%"
                              for k, v in sorted(self._path_conf.items())]
                 parts.append(" ".join(conf_strs))
+            elif self._path_fill:
+                # Show fill progress while buffers are filling
+                fill_strs = [f"S{k[0]}↔S{k[1]}={v*100:.0f}%"
+                             for k, v in sorted(self._path_fill.items()) if v > 0]
+                if fill_strs:
+                    parts.append("Fill: " + " ".join(fill_strs))
             detected = [f"S{k[0]}↔S{k[1]}"
-                        for k, v in self._path_conf.items() if v > 0.3]
+                        for k, v in self._path_conf.items()
+                        if v > BREATHING_CONFIDENCE_THRESHOLD]
             if detected:
                 parts.append(f"DETECTED ({', '.join(detected)})")
             else:

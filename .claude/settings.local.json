@@ -53,7 +53,8 @@
       "Bash(python -m pytest tests/test_breathing.py::TestDemoThread tests/test_breathing.py::TestBreathingDisplay -v)",
       "Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI -v)",
       "Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist -v)",
-      "Bash(python -m pytest tests/test_breathing.py tests/test_config.py::test_breathing_constants_exist -v --tb=short)"
+      "Bash(python -m pytest tests/test_breathing.py tests/test_config.py::test_breathing_constants_exist -v --tb=short)",
+      "Bash(python -m pytest tests/test_breathing.py -q)"
     ]
   }
 }

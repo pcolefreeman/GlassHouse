@@ -13,6 +13,7 @@ from ghv4.config import (
     BREATHING_SLIDE_N,
     BREATHING_WINDOW_S,
     BREATHING_PATH_MAP,
+    BREATHING_CONFIDENCE_THRESHOLD,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
@@ -43,7 +44,7 @@ def _print_console(scores: dict, path_conf: dict):
     for k in sorted(path_conf):
         parts.append(f"S{k[0]}↔S{k[1]}={path_conf[k]*100:.0f}%")
     lines.append(f"Path confidence: {' '.join(parts)}")
-    detected = [f"S{k[0]}↔S{k[1]}" for k, c in path_conf.items() if c > 0.3]
+    detected = [f"S{k[0]}↔S{k[1]}" for k, c in path_conf.items() if c > BREATHING_CONFIDENCE_THRESHOLD]
     if detected:
         lines.append(f"Status: BREATHING DETECTED ({', '.join(detected)})")
     else:
@@ -73,15 +74,34 @@ def _run_console_loop(port: str, detector: BreathingDetector):
     _log.info("Live console mode on %s — waiting for %d frames...", port, BREATHING_WINDOW_N)
 
     frames_since_update = 0
+    last_fill_log = time.time()
     try:
         while True:
             try:
                 frame_type, frame_dict = frame_queue.get(timeout=1.0)
             except (queue.Empty, ValueError):
+                # Log fill status periodically even with no data
+                now = time.time()
+                if now - last_fill_log >= 5.0:
+                    last_fill_log = now
+                    fill = detector.get_buffer_fill()
+                    parts = [f"S{k[0]}↔S{k[1]}={v*100:.0f}%"
+                             for k, v in sorted(fill.items())]
+                    _log.info("Buffer fill: %s", " ".join(parts))
                 continue
             detector.feed_frame(frame_type, frame_dict)
             if frame_type == 'csi_snap':
                 frames_since_update += 1
+
+            # Log fill status every 5s
+            now = time.time()
+            if now - last_fill_log >= 5.0:
+                last_fill_log = now
+                fill = detector.get_buffer_fill()
+                parts = [f"S{k[0]}↔S{k[1]}={v*100:.0f}%"
+                         for k, v in sorted(fill.items())]
+                _log.info("Buffer fill: %s", " ".join(parts))
+
             if frames_since_update >= BREATHING_SLIDE_N and detector.is_ready():
                 frames_since_update = 0
                 scores = detector.get_grid_scores()
@@ -133,6 +153,8 @@ def _run_pygame_loop(port, detector, fullscreen, demo):
                         latest_scores = item
                     elif item.get("type") == "status":
                         display.set_status(item["msg"])
+                    elif item.get("type") == "fill":
+                        display.update_fill(item["fill"])
             except queue.Empty:
                 pass
             if latest_scores:

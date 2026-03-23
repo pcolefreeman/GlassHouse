@@ -54,6 +54,12 @@ placeholder default; the user selects the actual port before connecting.
 - `run_sar.py` supports `--demo`, `--fullscreen`, `--display pygame|console`
 - Snap frame dict key is `'csi'` (raw bytes), NOT `'csi_bytes'` (shouter frame key) — easy to confuse
 - CSV replay removed from `run_sar.py` (ML CSVs lack raw CSI snap data)
+- **Listener must stay inside the room** — moving listener outside behind a closed door causes ALL paths to show high variance simultaneously (empty room, no people). Likely cause: wall/door degrades WiFi AP signal to shouters, making CSI measurements unstable across all paths. Confirmed 2026-03-24.
+- **Listener proximity to a path saturates `var_conf`** — when listener is inside but physically near a shouter pair path, its WiFi AP beacons act as a static RF scatterer on that path, driving `var_conf` to 0.99+. S1↔S4 was consistently saturated with listener near that wall. Not a board defect.
+- **Deployment constraint** — listener must be inside the room, stationary, positioned away from all shouter pair paths during scans. Operator holding the listener must stand still.
+- **`_variance_score()` removed (2026-03-24)** — variance requires a calibrated reference and cannot be used in SAR scenarios (unknown rooms, collapsed buildings). `get_grid_scores()` now returns pure FFT breathing-band confidence. Confidence is the fraction of CSI ratio phase spectral energy in 0.1–0.5 Hz band — this fires only on actual periodic breathing/heartbeat motion, not background hardware noise.
+- **`path_conf` in status bar is FFT-only** — `BreathingThread` sends `path_conf` via `_analyzer.analyze()` only, not `_variance_score()`. Cell grid colors use `combined = max(fft, var)`. These are two different values.
+- **S2↔S4 and S3↔S4 have low snap rates** (~1–4/s vs 8–19/s for S1 paths) — buffers may not fill reliably for these paths in current hardware config.
 
 ## Gotchas
 
@@ -90,6 +96,7 @@ placeholder default; the user selects the actual port before connecting.
   the loader does not recurse into subdirectories
 - **Training is slow with large feature sets** — 35K rows × 2,900 features: SVM takes 5-20 min,
   stacking even longer. Use `--model rf --skip-cv` to skip CV entirely, or `--model rf --fast` for quick iteration
+- **S1↔S4 and S2↔S3 have high background variance even in empty rooms** — confirmed 2026-03-24 with listener outside room. Cause unknown (may be hardware noise, multipath from walls, or listener AP signal attenuation through wall). These paths cannot be discriminated by variance alone. FFT-only detection is immune to this — steady-state noise has no 0.1–0.5 Hz periodicity. S3↔S4 path physically blocked by rubble — low snap rate expected.
 - **Breathing requires raw CSI snap data** — ML training CSVs store normalized `amp_norm`, destroying
   amplitude relationships needed for breathing FFT. Use `--port` (live serial) or `--demo` mode.
 - **debug_tab text parsing must match firmware text** — `ListenerDebugThread._read_one`

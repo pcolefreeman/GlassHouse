@@ -3,7 +3,9 @@
     "allow": [
       "Bash(mv /c/GlassHouse/GHV4/GHV3_Distro /c/GlassHouse/GHV4/GHV4_Distro)",
       "Bash(mv /c/GlassHouse/GHV4/GHV3_Collector.spec /c/GlassHouse/GHV4/GHV4_Collector.spec)",
-      "Bash(python -m pytest tests/ -v --tb=short)"
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -c \"from ghv4.breathing import BreathingDetector, BreathingDisplay, BreathingThread; print\\(''OK''\\)\")",
+      "Bash(python -c \"from ghv4.breathing import BreathingDetector, BreathingDisplay, BreathingThread; d = BreathingDetector\\(\\); print\\(''OK''\\)\")"
     ]
   }
 }

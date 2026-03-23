@@ -87,7 +87,7 @@ BREATHING_WINDOW_N    = int(BREATHING_WINDOW_S * BREATHING_SNAP_HZ)  # 600 frame
 BREATHING_SLIDE_N     = 20        # 20 frames at 20 Hz = 1s between updates
 BREATHING_BAND_HZ     = (0.1, 0.5)
 BREATHING_NPAIRS      = 10
-BREATHING_CONFIDENCE_THRESHOLD = 0.3
+BREATHING_CONFIDENCE_THRESHOLD = 0.05
 
 # Path-to-cell mapping: which grid cells each shouter↔shouter path crosses.
 # Keys are (min_id, max_id) tuples for undirected shouter pairs.
