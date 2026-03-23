@@ -19,6 +19,7 @@ from ghv4.config import (
     BREATHING_SNAP_HZ,
     BREATHING_CONTRAST_CEILING,
     BREATHING_MIN_PATHS_FOR_CONTRAST,
+    BREATHING_MIN_PATHS_TOTAL,
     CELL_LABELS,
 )
 from ghv4.csi_parser import parse_csi_bytes
@@ -673,13 +674,21 @@ try:
                              for k, v in sorted(self._path_fill.items()) if v > 0]
                 if fill_strs:
                     parts.append("Fill: " + " ".join(fill_strs))
-            detected = [f"S{k[0]}↔S{k[1]}"
-                        for k, v in self._path_conf.items()
-                        if v > BREATHING_CONFIDENCE_THRESHOLD]
-            if detected:
-                parts.append(f"DETECTED ({', '.join(detected)})")
+            # Check how many paths are currently active/reporting
+            active_paths = len(self._path_conf)
+            
+            if active_paths < BREATHING_MIN_PATHS_TOTAL:
+                # Refuse to guess if we are below the minimum safety threshold
+                parts.append(f"WARNING: Insufficient paths ({active_paths}/{BREATHING_MIN_PATHS_TOTAL})")
             else:
-                parts.append("No breathing detected")
+                # We have enough paths, proceed with detection guesses
+                detected = [f"S{k[0]}↔S{k[1]}"
+                            for k, v in self._path_conf.items()
+                            if v > BREATHING_CONFIDENCE_THRESHOLD]
+                if detected:
+                    parts.append(f"DETECTED ({', '.join(detected)})")
+                else:
+                    parts.append("No breathing detected")
 
             status = self._font_status.render("  |  ".join(parts), True, PI_TEXT_INACTIVE)
             self._screen.blit(status, status.get_rect(
