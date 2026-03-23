@@ -12,6 +12,8 @@ if __name__ == "__main__":
                              "logreg | knn | svm | gbt | rf | voting | stacking")
     parser.add_argument("--fast", action="store_true",
                         help="Reduce tree counts for slower hardware (Pi 4B)")
+    parser.add_argument("--skip-cv", action="store_true",
+                        help="Skip CV comparison, train --model directly (much faster)")
     args = parser.parse_args()
     run(args.processed_dir, args.out_dir,
-        force_model=args.model, fast=args.fast)
+        force_model=args.model, fast=args.fast, skip_cv=args.skip_cv)

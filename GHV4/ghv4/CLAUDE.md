@@ -10,6 +10,7 @@ This pattern MUST be maintained for all future GlassHouse work.
 ## Data & Labels
 - Bucket size: 200 ms (`ghv4.config.BUCKET_MS`)
 - 9 class labels: `r0c0` … `r2c2` (row-major, `ghv4.config.CELL_LABELS`)
+- Multi-cell labels supported: `r0c0+r2c2` etc. → multiple hot columns in y matrix
 - `y` is an (N, 9) binary matrix from `ghv4.eda_utils.parse_label()`
 - `spacing.json` format: `{"pairs": {"1-2": {"distance_m": 1.5}, ...}}`; 6 pairs
 
@@ -37,6 +38,15 @@ placeholder default; the user selects the actual port before connecting.
 - DemoThread cycles cells without hardware for testing
 - Colors match `viz.py` confidence mode (#FF6B35 rescue orange, #0d0d0d dark bg)
 - Pi deployment: `pip install pygame>=2.5.0`; for headless use `SDL_VIDEODRIVER=kmsdrm`
+
+## CSI Breathing Detection (implemented 2026-03-23)
+- Spec: `docs/superpowers/specs/2026-03-23-csi-breathing-detection-design.md`
+- Plan: `docs/superpowers/plans/2026-03-23-csi-breathing-detection.md` (9 tasks, 34 tests)
+- Files: `ghv4/breathing.py`, `run_sar.py`, `tests/test_breathing.py`
+- `_parse_csi_bytes` renamed to `parse_csi_bytes` (public API)
+- Pure signal processing (no ML) — CSI ratio + FFT for zero-calibration human presence detection
+- Console display only (`--display console`); `--display pygame` accepted but not implemented
+- **Next step**: switch from shouter→listener paths to shouter↔shouter paths (CSI_SNAP `[0xEE][0xFF]` frames) for full 9-cell coverage with listener outside zone
 
 ## Gotchas
 
@@ -66,6 +76,21 @@ placeholder default; the user selects the actual port before connecting.
 - **StandardScaler for distance models fits on 242 amp columns** — indices `[0:121]` (fwd
   amp_norm) + `[242:363]` (rev amp_norm) out of 484 total features. Test fixtures must
   match this shape or scaler transform will raise.
+- **`META_COLS` must include all non-feature columns** — any new metadata column in CSVs
+  (e.g. `activity`) must be added to `META_COLS` in `config.py` or preprocessing crashes
+  with `ValueError: could not convert string to float`
+- **`--raw-dir` must point to room subdirectory** — e.g. `test_coll_1/room2102/`, not `test_coll_1/`;
+  the loader does not recurse into subdirectories
+- **Training is slow with large feature sets** — 35K rows × 2,900 features: SVM takes 5-20 min,
+  stacking even longer. Use `--model rf --skip-cv` to skip CV entirely, or `--model rf --fast` for quick iteration
+- **Breathing replay requires raw CSI** — ML training CSVs store normalized `amp_norm`, destroying
+  amplitude relationships needed for breathing FFT. Use `--port` (live serial) for real testing.
+- **Breathing path map needs shouter-to-shouter CSI** — current `BREATHING_PATH_MAP` uses only
+  shouter→listener paths (4 paths, 5 cells). Shouter↔shouter CSI already in firmware (`[0xEE][0xFF]`
+  snap frames) but Python doesn't consume them yet. `SerialReader` parses snap frames but
+  routes them only to `_music_estimator`/`_snap_callback`, NOT to `frame_queue`. Switching
+  to 6 S↔S paths covers all 9 cells. Listener should be placed outside the grid zone.
+  Firmware change required first: continuous beacons (spec written 2026-03-23).
 - **debug_tab text parsing must match firmware text** — `ListenerDebugThread._read_one`
   parses `[LST]` text with regex (`_HELLO_RE`) and string matching (`'starting ranging'`).
   When firmware `Serial.printf` format changes, update `debug_tab.py` to match. Fixed 2026-03-22:

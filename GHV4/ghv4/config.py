@@ -63,7 +63,7 @@ PI_TEXT_INACTIVE       = (102, 102, 102)     # #666666
 PI_SCREEN_SIZE         = (800, 480)          # Standard Pi 7" DSI LCD
 
 # ── EDA constants ──────────────────────────────────────────────
-META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
+META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col", "activity"]
 EXPECTED_COLS = 5134
 
 # ---------------------------------------------------------------------------
@@ -79,3 +79,21 @@ CALIBRATION_MIN_PAIRS  = 10       # min matched fwd/rev pairs per shouter pair
 
 DISTANCE_MODEL_DIR     = "distance_models"
 DISTANCE_MAX_TREES     = 200      # max estimators per GB/RF model (Pi memory budget)
+
+# ── Breathing detection ───────────────────────────────────────
+BREATHING_WINDOW_S    = 30
+BREATHING_WINDOW_N    = int(BREATHING_WINDOW_S / (BUCKET_MS / 1000))  # 150 frames
+BREATHING_SLIDE_N     = 10        # 10 frames × BUCKET_MS = 2000 ms between updates
+BREATHING_BAND_HZ     = (0.1, 0.5)
+BREATHING_NPAIRS      = 10
+BREATHING_CONFIDENCE_THRESHOLD = 0.3
+
+# Path-to-cell mapping: which grid cells each shouter path crosses.
+# Keys are shouter IDs (1-4), values are lists of cell labels.
+# Default assumes shouters at 4 corners, listener roughly central.
+BREATHING_PATH_MAP = {
+    1: ["r0c0", "r1c1"],   # top-left corner
+    2: ["r0c2", "r1c1"],   # top-right corner
+    3: ["r2c0", "r1c1"],   # bottom-left corner
+    4: ["r2c2", "r1c1"],   # bottom-right corner
+}

@@ -172,7 +172,7 @@ void on_esp_now_recv(const esp_now_recv_info_t *recv_info,
         portEXIT_CRITICAL(&snap_mux);
         // Print OUTSIDE critical section — Serial.printf is blocking I/O
         // and will trigger watchdog timeout if called with interrupts disabled.
-        if (stored) {
+        if (stored && (idx % 10 == 0)) {
             Serial.printf("[SHT] snap peer=%d seq=%d len=%d\n", sid, idx, snap.len);
         }
     } else {
@@ -321,7 +321,7 @@ void send_poll_response(poll_pkt_t *poll) {
             udp.write((uint8_t*)&pkt,
                       (uint16_t)(offsetof(csi_snap_pkt_t, csi) + pkt.csi_len));
             udp.endPacket();
-            delay(15);
+            delay(2);  // was delay(15) — only ~6 snaps between polls now (vs 105 during ranging)
         }
     }
 }
@@ -351,6 +351,22 @@ void loop() {
         Serial.printf("[SHT] WARN no polls for %lu ms — listener may be down\n",
             (unsigned long)(millis() - last_poll_rx_ms));
         listener_warning_sent = true;
+    }
+
+    // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (10 Hz)
+    static uint32_t last_beacon_ms = 0;
+    static uint32_t cont_bcn_seq = 0;
+    if (my_id > 0 && millis() - last_beacon_ms >= 100) {
+        last_beacon_ms = millis();
+        range_bcn_pkt_t bcn;
+        bcn.magic[0]   = RANGE_BCN_MAGIC_0;
+        bcn.magic[1]   = RANGE_BCN_MAGIC_1;
+        bcn.ver        = 1;
+        bcn.shouter_id = my_id;
+        bcn.bcn_seq    = (uint8_t)(cont_bcn_seq & 0xFE);  // 0-254 even; never 0xFF
+        cont_bcn_seq++;
+        static const uint8_t ESPNOW_BROADCAST[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+        esp_now_send(ESPNOW_BROADCAST, (uint8_t *)&bcn, sizeof(bcn));
     }
 
     // Process staggered broadcast response

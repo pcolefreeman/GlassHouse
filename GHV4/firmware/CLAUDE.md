@@ -1,10 +1,14 @@
 # Firmware — ESP32 Protocol & Gotchas
-<!-- last verified: 2026-03-22 (CC/DD removal applied) -->
+<!-- last verified: 2026-03-24 (continuous beacons implemented, ranging disabled) -->
 
 ## Important
 - **Canonical firmware is in `GHV4/firmware/`** — `ListenerV4/` and `ShouterV4/` directories. `GHV3/firmware/` contains identical copies but is not the active working set.
 - **12 firmware improvements implemented (2026-03-22)** — see `docs/superpowers/plans/2026-03-21-firmware-12-improvements.md` for the full plan. All tasks complete; hardware testing deferred.
 - **Design spec** at `~/.claude/plans/transient-leaping-rabin.md` — detailed design with review fixes applied.
+- **Continuous shouter beacons (implemented, hardware test pending)** — 10 Hz ESP-NOW beacons
+  from each shouter for breathing/heart rate CSI. Replaces one-shot ranging for SAR mode.
+  Spec: `docs/superpowers/specs/2026-03-23-continuous-shouter-beacons-design.md`.
+  Plan: `docs/superpowers/plans/2026-03-23-continuous-shouter-beacons.md`.
 
 ## Serial Frame Types (listener COM port → PC)
 ```
@@ -80,6 +84,11 @@ text          — [LST] debug lines    pure ASCII, newline-terminated
   resets on next hit).
 - **Listener SPOF detection** — shouter tracks `last_poll_rx_ms`. If no polls received for 10s,
   emits `[SHT] WARN no polls for N ms — listener may be down` (one-shot, resets on next poll).
+- **Ranging disabled (SAR mode)** — `advance_ranging()` and the `rng_state != RNG_IDLE` gate
+  are commented out in `ListenerV4.ino loop()`. Polls run unconditionally from startup.
+  The ranging state machine, enum, variables, and WiFi event handler remain in source but are
+  inactive. To re-enable ranging: uncomment both lines and restore `delay(15)` in
+  `ShouterV4 send_poll_response()` snap drain loop.
 - **Passive background beacons removed** — the 1 Hz ESP-NOW passive beacons that caused 7-10%
   miss rate increase have been deleted from `loop()`. The `bcn_seq==0xFF` guard in `on_esp_now_recv`
   is retained as defensive code for backwards compatibility with old firmware peers.

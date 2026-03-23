@@ -36,3 +36,6 @@ ghv4_debug_*.log
 # ── Superpowers plans/specs (internal dev docs) ───────────────────────────────
 GHV4/docs/
 /docs
+
+# ── CSV Data ───────────────────────────────────────────────────────────────────
+*.CSV

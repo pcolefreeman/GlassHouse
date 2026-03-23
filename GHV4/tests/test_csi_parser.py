@@ -49,18 +49,26 @@ def test_parse_shouter_frame_miss_zero_csi():
 def test_parse_shouter_frame_bad_magic_returns_none():
     assert csi_parser.parse_shouter_frame(b'\x00\x00' + bytes(31), 0) is None
 
-# ── _parse_csi_bytes ──────────────────────────────────────────────────────────
+# ── parse_csi_bytes ───────────────────────────────────────────────────────────
+
+def test_parse_csi_bytes_is_public():
+    """parse_csi_bytes should be a public API (no leading underscore)."""
+    assert hasattr(csi_parser, 'parse_csi_bytes')
+    # 4 bytes = one I/Q pair = one complex number
+    result = csi_parser.parse_csi_bytes(struct.pack('<hh', 100, 200))
+    assert len(result) == 1
+    assert result[0] == complex(100, 200)
 
 def test_parse_csi_bytes_returns_complex():
     # 4 int16 values → 2 complex (I=1,Q=2) and (I=3,Q=4)
     raw    = struct.pack('<hhhh', 1, 2, 3, 4)
-    result = csi_parser._parse_csi_bytes(raw)
+    result = csi_parser.parse_csi_bytes(raw)
     assert len(result) == 2
     assert abs(result[0] - complex(1, 2)) < 1e-9
     assert abs(result[1] - complex(3, 4)) < 1e-9
 
 def test_parse_csi_bytes_empty():
-    assert csi_parser._parse_csi_bytes(b'') == []
+    assert csi_parser.parse_csi_bytes(b'') == []
 
 # ── _extract_features ─────────────────────────────────────────────────────────
 

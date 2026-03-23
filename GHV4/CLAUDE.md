@@ -21,6 +21,7 @@ python run_preprocess.py --raw-dir data/raw/SESSION --out-dir data/processed/SES
 python run_train.py                        # full pipeline (LogReg/KNN/SVM/GBT/RF + vote + stack)
 python run_train.py --fast                 # lighter models optimized for Pi inference (train on PC)
 python run_train.py --model rf             # force a specific model
+python run_train.py --model rf --skip-cv   # skip CV comparison, train RF directly (minutes vs hours)
 
 # Live inference
 python run_inference.py --port COM3 --model models/model.pkl --spacing data/raw/spacing.json

@@ -313,7 +313,8 @@ def plot_importance(clf, feat_names, name, out_dir):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def run(processed_dir: str, out_dir: str,
-        force_model: str | None = None, fast: bool = False):
+        force_model: str | None = None, fast: bool = False,
+        skip_cv: bool = False):
 
     # Load
     X = np.load(os.path.join(processed_dir, "X.npy"))
@@ -333,20 +334,31 @@ def run(processed_dir: str, out_dir: str,
     candidates = make_all_candidates(fast)
     os.makedirs(out_dir, exist_ok=True)
 
-    # Selection
-    print(f"=== Model Selection ({CV_FOLDS}-fold stratified CV) ===\n")
-    results, best_key = run_selection(X, y_cls, cv, candidates)
-    plot_selection(results, out_dir)
-
-    if force_model:
-        lookup = {k: est for _, k, est in candidates}
+    # Skip CV when force_model + skip_cv — train directly
+    if force_model and skip_cv:
+        lookup = {k: (name, est) for name, k, est in candidates}
         if force_model not in lookup:
             raise ValueError(f"--model must be one of: {list(lookup)}")
+        name, final_clf = lookup[force_model]
         best_key = force_model
-        print(f"  (Overriding winner with --model {force_model})\n")
+        print(f"=== Skipping CV — training {name} directly ===\n")
+        chosen = {"name": name, "estimator": final_clf,
+                  "f1_mean": 0.0, "f1_std": 0.0}
+    else:
+        # Selection
+        print(f"=== Model Selection ({CV_FOLDS}-fold stratified CV) ===\n")
+        results, best_key = run_selection(X, y_cls, cv, candidates)
+        plot_selection(results, out_dir)
 
-    chosen    = results[best_key]
-    final_clf = chosen["estimator"]
+        if force_model:
+            lookup = {k: est for _, k, est in candidates}
+            if force_model not in lookup:
+                raise ValueError(f"--model must be one of: {list(lookup)}")
+            best_key = force_model
+            print(f"  (Overriding winner with --model {force_model})\n")
+
+        chosen    = results[best_key]
+        final_clf = chosen["estimator"]
 
     # Final fit
     print(f"=== Final fit: {chosen['name']} ===\n")
@@ -388,6 +400,8 @@ if __name__ == "__main__":
                              "logreg | knn | svm | gbt | rf | voting | stacking")
     parser.add_argument("--fast", action="store_true",
                         help="Reduce tree counts for slower hardware (Pi 4B)")
+    parser.add_argument("--skip-cv", action="store_true",
+                        help="Skip CV comparison, train --model directly (much faster)")
     args = parser.parse_args()
     run(args.processed_dir, args.out_dir,
-        force_model=args.model, fast=args.fast)
+        force_model=args.model, fast=args.fast, skip_cv=args.skip_cv)

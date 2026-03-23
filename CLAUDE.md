@@ -5,12 +5,15 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- Test count: 181 passing + 1 skipped (2026-03-22)
-- Last exe rebuild: needs rebuild (inference.py + preprocess.py + debug_tab + serial_io + pi_display + config changed)
-- Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix + Pi LCD display
+- Test count: 181 passing + 1 skipped (2026-03-23)
+- Last exe rebuild: needs rebuild (inference.py + preprocess.py + debug_tab + serial_io + pi_display + config + breathing + run_sar changed)
+- Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix + Pi LCD display + META_COLS activity fix + breathing detection + --skip-cv training + continuous shouter beacons firmware
 - Active branch: main
-- Pending: Hardware test of firmware improvements (need ESP32 boards)
+- Done: Continuous shouter beacons firmware (2026-03-24) — ranging disabled, 10 Hz beacons added
+- Pending: Python SAR breathing detector — update to consume continuous snap frames (firmware ready)
+- Pending: Hardware test of continuous shouter beacons (need ESP32 boards)
 - Pending: End-to-end firmware/serial/data-collection debugging plan
+- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -31,6 +34,7 @@ run_inference.py       — entry point: live inference
 run_pi_display.py      — entry point: Pi LCD operator display (pygame)
 run_preprocess.py      — entry point: preprocessing pipeline
 run_train.py           — entry point: model training
+run_sar.py             — entry point: SAR breathing detection (planned, not yet implemented)
 
 ghv4/
   __init__.py          — package root (__version__ = "3.1.0")
@@ -45,6 +49,7 @@ ghv4/
   eda_utils.py         — label parsing, shared EDA helpers
   viz.py               — visualization widgets (heatmap, spacing overlay)
   cell_logic.py        — pure label/cell helper functions
+  breathing.py         — CSI breathing/micro-motion detection (planned, not yet implemented)
   ui/
     __init__.py        — UI subpackage
     app.py             — application shell: window, tab routing, crash logger

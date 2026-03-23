@@ -456,10 +456,8 @@ void loop() {
     drain_listener_csi();
 
     // Advance ranging state machine (one step per iteration)
-    advance_ranging();
-
-    // Normal polling only when ranging is idle
-    if (rng_state != RNG_IDLE) return;
+    // advance_ranging();          // SAR mode: ranging disabled
+    // if (rng_state != RNG_IDLE) return;  // polls run unconditionally
 
     // Rate limit polling
     if (now - last_cycle_ms < POLL_INTERVAL_MIN_MS) return;

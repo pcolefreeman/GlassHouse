@@ -34,7 +34,17 @@
       "Bash(python -m pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
       "Bash(python -m pytest tests/ -q)",
       "Bash(python -m pytest tests/ -x -q)",
-      "Bash(python -m pytest tests/test_pi_display.py -v)"
+      "Bash(python -m pytest tests/test_pi_display.py -v)",
+      "Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist tests/test_csi_parser.py::test_parse_csi_bytes_is_public tests/test_csi_parser.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_breathing.py -v)",
+      "Bash(python -m pytest tests/ -v --tb=no -q)",
+      "Bash(python -m pytest tests/test_breathing.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI tests/test_breathing.py::TestCSVReplay -v)",
+      "Bash(python -c \"from ghv4.breathing import BreathingDetector; print\\(''OK''\\)\")",
+      "Bash(python run_sar.py --help)",
+      "Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102/\"*.csv)",
+      "Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102\"/*.csv)",
+      "Bash(python generate_poster_images.py)"
     ]
   }
 }

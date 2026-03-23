@@ -106,7 +106,7 @@ def parse_shouter_frame(raw: bytes, offset: int) -> Optional[dict]:
     }
 
 
-def _parse_csi_bytes(csi_bytes: bytes) -> list:
+def parse_csi_bytes(csi_bytes: bytes) -> list:
     """Convert raw CSI bytes (int16 I/Q pairs, little-endian) to list[complex]."""
     return [complex(i, q) for i, q in struct.iter_unpack('<hh', csi_bytes)]
 
@@ -205,7 +205,7 @@ def _frame_to_feature_dict(frame: Optional[dict], prefix: str) -> dict:
         out[f"{prefix}_noise_floor"] = nan
         return out
 
-    csi_complex = _parse_csi_bytes(frame['csi_bytes'])
+    csi_complex = parse_csi_bytes(frame['csi_bytes'])
     while len(csi_complex) < SUBCARRIERS:
         csi_complex.append(complex(0, 0))
     csi_complex = csi_complex[:SUBCARRIERS]

@@ -128,3 +128,15 @@ def test_distance_feature_count():
     # 121 amp_norm + 121 phase per direction, 2 directions
     assert hasattr(config, "DISTANCE_FEATURE_COUNT")
     assert config.DISTANCE_FEATURE_COUNT == 484
+
+
+def test_breathing_constants_exist():
+    from ghv4 import config
+    assert config.BREATHING_WINDOW_S == 30
+    assert config.BREATHING_WINDOW_N == 150
+    assert config.BREATHING_SLIDE_N == 10
+    assert config.BREATHING_BAND_HZ == (0.1, 0.5)
+    assert config.BREATHING_NPAIRS == 10
+    assert config.BREATHING_CONFIDENCE_THRESHOLD == 0.3
+    assert isinstance(config.BREATHING_PATH_MAP, dict)
+    assert set(config.BREATHING_PATH_MAP.keys()) == {1, 2, 3, 4}
