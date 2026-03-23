@@ -5,7 +5,19 @@
       "Bash(mv /c/GlassHouse/GHV4/GHV3_Collector.spec /c/GlassHouse/GHV4/GHV4_Collector.spec)",
       "Bash(python -m pytest tests/ -v --tb=short)",
       "Bash(python -c \"from ghv4.breathing import BreathingDetector, BreathingDisplay, BreathingThread; print\\(''OK''\\)\")",
-      "Bash(python -c \"from ghv4.breathing import BreathingDetector, BreathingDisplay, BreathingThread; d = BreathingDetector\\(\\); print\\(''OK''\\)\")"
+      "Bash(python -c \"from ghv4.breathing import BreathingDetector, BreathingDisplay, BreathingThread; d = BreathingDetector\\(\\); print\\(''OK''\\)\")",
+      "Skill(claude-md-management:revise-claude-md)",
+      "Skill(claude-md-management:revise-claude-md:*)",
+      "Bash(find /c/GlassHouse/GHV4/docs -type f -name *.md)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(wc -l /c/GlassHouse/GHV4/ghv4/*.py)",
+      "Bash(wc -l /c/GlassHouse/GHV4/firmware/ListenerV4/*.ino /c/GlassHouse/GHV4/firmware/ShouterV4/*.ino /c/GlassHouse/GHV4/firmware/ghv4Protocol.h)",
+      "Bash(bash \"C:\\\\Users\\\\19124\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.4\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh\" --project-dir \"C:\\\\GlassHouse\\\\GHV3\")",
+      "Bash(where node:*)",
+      "Bash(python -c \"from ghv5.csi_parser import parse_csi_bytes, parse_csi_snap_frame; print\\(''OK''\\)\")",
+      "Bash(python -c \"from ghv5.serial_io import SerialReader; print\\(''OK''\\)\")",
+      "Bash(python -c \"from ghv5.breathing import BreathingDetector, SARDemoThread; print\\(''OK''\\)\")",
+      "Bash(python run_sar.py --help)"
     ]
   }
 }

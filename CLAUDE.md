@@ -18,6 +18,9 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 - Deployment constraint confirmed 2026-03-24: listener must be stationary INSIDE room during scan — moving outside behind closed door causes all paths to saturate (WiFi link degradation)
 - Pending: End-to-end firmware/serial/data-collection debugging plan
 - Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
+- Done: AMP verification testing (2026-03-25) — snap frame bug fixed, CSI breathing detection method finalized
+- Known bad: SAR (run_sar.py) — not yet usable
+- Next session: Write GHV5 implementation plan; begin GHV5 project scaffold
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
