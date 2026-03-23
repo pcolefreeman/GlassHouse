@@ -17,6 +17,8 @@ from ghv4.config import (
     BREATHING_CONFIDENCE_THRESHOLD,
     BREATHING_PATH_MAP,
     BREATHING_SNAP_HZ,
+    BREATHING_CONTRAST_CEILING,
+    BREATHING_MIN_PATHS_FOR_CONTRAST,
     CELL_LABELS,
 )
 from ghv4.csi_parser import parse_csi_bytes
@@ -199,6 +201,9 @@ class BreathingDetector:
             key: CSIRingBuffer() for key in self._path_map
         }
         self._projector = GridProjector(path_map=self._path_map)
+        self._extractor = CSIRatioExtractor()
+        self._analyzer = BreathingAnalyzer()
+        self._last_path_conf: dict[tuple, float] = {}
 
     def feed_frame(self, frame_type: str, frame_dict: dict) -> None:
         """Feed a parsed frame into the detector.
@@ -238,51 +243,76 @@ class BreathingDetector:
                 for key, buf in self._buffers.items()}
 
     def get_grid_scores(self) -> dict[str, float | None]:
-        """Run analysis on all ready paths and project onto grid.
+        """Run A+C analysis on all ready paths and project onto grid.
 
-        Uses per-subcarrier amplitude FFT. Breathing moves the dominant
-        reflector, modulating CSI amplitude at the breathing frequency.
-        No calibration required — works in any environment.
+        A+C approach (zero-calibration, no absolute gates):
+          (A) Inter-path contrast — snr_eig normalised by median of all paths.
+              A person elevates nearby paths relative to the group; environmental
+              noise raises all paths roughly equally → contrast ≈ 1.
+          (C) Phase-based CSI ratio — CSIRatioExtractor + BreathingAnalyzer.
+              Conjugate-multiply subcarrier pairs cancels CFO; FFT detects
+              breathing-band phase modulation from chest/body movement.
+
+        Final confidence = max(contrast_score, phase_score).
         """
-        path_confidences = {}
+        # Step 1: compute raw metrics for all ready paths
+        raw_snr: dict[tuple, float] = {}
+        phase_scores: dict[tuple, float] = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
             window = buf.get_window()
-            confidence = self._amplitude_score(window)
-            _log.info("Path S%d↔S%d amp=%.3f", key[0], key[1], confidence)
+            raw_snr[key] = self._raw_amplitude_energy(window)
+            phase_scores[key] = self._phase_score(window)
+
+        if not raw_snr:
+            return self._projector.project({})
+
+        # Step 2: inter-path contrast (Approach A)
+        snr_values = list(raw_snr.values())
+        median_snr = float(np.median(snr_values)) if len(snr_values) >= 1 else 1.0
+        if median_snr < 1e-6:
+            median_snr = 1e-6
+        use_contrast = len(snr_values) >= BREATHING_MIN_PATHS_FOR_CONTRAST
+
+        # Step 3: combined scoring
+        path_confidences = {}
+        for key in raw_snr:
+            phase = phase_scores[key]
+            if use_contrast:
+                contrast = raw_snr[key] / median_snr
+                ceiling = BREATHING_CONTRAST_CEILING
+                contrast_score = float(np.clip((contrast - 1.0) / (ceiling - 1.0), 0.0, 1.0))
+            else:
+                contrast = 0.0
+                contrast_score = 0.0
+
+            confidence = max(contrast_score, phase)
+            _log.info("Path S%d↔S%d snr_eig=%.3f contrast=%.2f phase=%.3f → %.3f",
+                      key[0], key[1], raw_snr[key], contrast, phase, confidence)
             path_confidences[key] = confidence
+
+        self._last_path_conf = path_confidences
         return self._projector.project(path_confidences)
 
     @staticmethod
-    def _amplitude_score(window: np.ndarray) -> float:
-        """Per-subcarrier amplitude FFT, scored as breathing-band SNR.
+    def _raw_amplitude_energy(window: np.ndarray) -> float:
+        """Band-restricted PCA eigenvalue ratio (raw, no gate/sigmoid).
 
-        Normalises by the noise floor in the reference band immediately above
-        the breathing band (0.5–1.0 Hz) rather than total power. Both bands
-        sit above the slow sub-0.1 Hz drift that dominates total power, so the
-        ratio is immune to that drift and self-normalising across environments.
-
-        Aggregates using the 95th-percentile subcarrier SNR: only a few of 121
-        subcarriers respond to any given breathing path; median always reflects
-        the non-responsive majority and gives near-zero discrimination.
-
-        Score mapping (log-sigmoid):
-          SNR = 1.0 (flat spectrum / no breathing) → ~5%
-          SNR = 3.0 (clear breathing peak)         → ~50%
-          SNR = 9.0 (strong signal)                → ~95%
+        Returns snr_eig = λ₁(C_breath) / λ₁(C_ref) where C = P.T @ P over
+        cross-subcarrier covariance in the breathing vs reference frequency band.
+        Used as the raw metric for inter-path contrast normalisation (Approach A).
         """
         n_time, n_subs = window.shape
         freq_res = BREATHING_SNAP_HZ / n_time
         bin_lo = max(1, int(np.ceil(BREATHING_BAND_HZ[0] / freq_res)))
         bin_hi = min(n_time // 2, int(np.floor(BREATHING_BAND_HZ[1] / freq_res)))
-        # Reference band: same number of bins immediately above breathing band
         n_band = bin_hi - bin_lo + 1
         ref_lo = bin_hi + 1
         ref_hi = min(n_time // 2, ref_lo + n_band - 1)
 
         valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
-        amp = np.abs(window[:, valid]).astype(np.float64)  # (n_time, n_valid)
+        amp = np.abs(window[:, valid]).astype(np.float64)
 
         # Vectorised linear detrend
         x = np.arange(n_time, dtype=np.float64)
@@ -294,24 +324,31 @@ class BreathingDetector:
 
         # Hanning taper + vectorised FFT
         amp *= np.hanning(n_time)[:, None]
-        power = np.abs(np.fft.rfft(amp, axis=0)) ** 2      # (n_freq, n_valid)
+        power = np.abs(np.fft.rfft(amp, axis=0)) ** 2
 
-        breath = np.mean(power[bin_lo:bin_hi + 1, :], axis=0)   # (n_valid,)
-        ref = np.mean(power[ref_lo:ref_hi + 1, :], axis=0)      # (n_valid,)
+        P_breath = power[bin_lo:bin_hi + 1, :]
+        P_ref = power[ref_lo:ref_hi + 1, :]
 
-        mask = ref > 1e-12
-        if not np.any(mask):
+        C_breath = P_breath.T @ P_breath
+        C_ref = P_ref.T @ P_ref
+
+        lambda1_breath = float(np.linalg.eigvalsh(C_breath)[-1])
+        lambda1_ref = float(np.linalg.eigvalsh(C_ref)[-1])
+
+        if lambda1_ref < 1e-12:
             return 0.0
-        snr = breath[mask] / ref[mask]                           # per-subcarrier SNR
 
-        # 95th-percentile captures the handful of most-responsive subcarriers
-        snr_p95 = float(np.percentile(snr, 95))
-        _log.debug("  snr_p95=%.3f", snr_p95)
+        return lambda1_breath / lambda1_ref
 
-        # Log-sigmoid: SNR=1→5%, SNR=3→50%, SNR=9→95%
-        log_snr = np.log(max(snr_p95, 1e-6))
-        score = 1.0 / (1.0 + np.exp(-3.0 * (log_snr - np.log(3.0))))
-        return float(score)
+    def _phase_score(self, window: np.ndarray) -> float:
+        """CSI ratio phase breathing confidence (Approach C).
+
+        Conjugate-multiply subcarrier pairs to cancel CFO/clock drift,
+        then FFT the ratio phase to detect breathing-band (0.1–0.5 Hz) energy.
+        Returns 0.0–1.0 confidence (median breathing-band power ratio across pairs).
+        """
+        ratio_phases = self._extractor.extract(window)
+        return self._analyzer.analyze(ratio_phases)
 
 
 def reconstruct_csi_from_csv_row(row, shouter_id: int,
@@ -418,11 +455,7 @@ class BreathingThread(threading.Thread):
                 if frames_since_update >= BREATHING_SLIDE_N and self._detector.is_ready():
                     frames_since_update = 0
                     scores = self._detector.get_grid_scores()
-                    path_conf = {}
-                    for key, buf in self._detector._buffers.items():
-                        if buf.is_full():
-                            window = buf.get_window()
-                            path_conf[key] = BreathingDetector._amplitude_score(window)
+                    path_conf = self._detector._last_path_conf
                     self._q.put({"type": "scores", "grid": scores, "path_conf": path_conf})
         except Exception as e:
             self._q.put({"type": "status", "msg": f"Error: {e}"})

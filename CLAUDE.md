@@ -14,13 +14,13 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 - Done: Continuous snap breathing implementation plan (2026-03-24) — reviewer approved, 10 tasks
 - Done: Empty-room baseline validated 2026-03-24 — root cause of false positives identified (listener proximity to paths)
 - Done: `_variance_score()` removed (2026-03-24) — replaced by `_amplitude_score()` (above-band SNR normalization, 95th-pct subcarrier aggregation, log-sigmoid mapping)
-- Pending: Tune sigmoid midpoint in `_amplitude_score()` based on real `snr_p95` hardware data (run with `--log-level DEBUG`)
 - Deployment constraint confirmed 2026-03-24: listener must be stationary INSIDE room during scan — moving outside behind closed door causes all paths to saturate (WiFi link degradation)
 - Pending: End-to-end firmware/serial/data-collection debugging plan
 - Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
-- Done: AMP verification testing (2026-03-25) — snap frame bug fixed, CSI breathing detection method finalized
-- Known bad: SAR (run_sar.py) — not yet usable
-- Next session: Write GHV5 implementation plan; begin GHV5 project scaffold
+- Done: Band-restricted PCA (Approach B) implemented 2026-03-25 — confirmed unreliable; false positives on multiple paths across multiple rooms
+- Pending: Replace `_amplitude_score()` with inter-path contrast (A) + phase-based CSI ratio (C) — both zero-calibration, no fixed gate
+- Known bad: SAR (run_sar.py) — not yet usable; current PCA scoring fires false positives
+- Next session: Implement breathing detection A+C (inter-path contrast + phase CSI ratio via existing CSIRatioExtractor)
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.

@@ -87,7 +87,10 @@ BREATHING_WINDOW_N    = int(BREATHING_WINDOW_S * BREATHING_SNAP_HZ)  # 600 frame
 BREATHING_SLIDE_N     = 20        # 20 frames at 20 Hz = 1s between updates
 BREATHING_BAND_HZ     = (0.1, 0.5)
 BREATHING_NPAIRS      = 10
-BREATHING_CONFIDENCE_THRESHOLD = 0.05
+BREATHING_CONFIDENCE_THRESHOLD = 0.30  # raised from 0.05; contrast makes empty room 0%
+BREATHING_CONTRAST_CEILING    = 3.0    # contrast ratio at which confidence saturates to 1.0
+                                       # (contrast = path_snr_eig / median_all_snr_eig)
+BREATHING_MIN_PATHS_FOR_CONTRAST = 3   # need 3+ paths for meaningful median; fewer → phase only
 
 # Path-to-cell mapping: which grid cells each shouter↔shouter path crosses.
 # Keys are (min_id, max_id) tuples for undirected shouter pairs.
