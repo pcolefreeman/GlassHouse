@@ -31,6 +31,24 @@ static const uint8_t known_macs[4][6] = {
     {0x20, 0xE7, 0xC8, 0xEC, 0xF5, 0xDC},  // ID 4
 };
 
+// ── Listener CSI ring buffer — callback stores here; loop drains to Serial ────
+#define LST_RING_SIZE 4
+
+struct LstCsiEntry {
+    uint8_t  mac[6];
+    uint32_t snap_seq;
+    uint32_t ts_ms;
+    int8_t   rssi;
+    int8_t   noise_floor;
+    uint16_t csi_len;
+    uint8_t  csi[CSI_MAX_BYTES];
+};
+
+static LstCsiEntry        lst_ring[LST_RING_SIZE];
+static volatile int       lst_ring_write = 0;
+static volatile int       lst_ring_read  = 0;
+static portMUX_TYPE       lst_ring_mux   = portMUX_INITIALIZER_UNLOCKED;
+
 uint8_t mac_to_id(const uint8_t mac[6]) {
     for (int i = 0; i < 4; i++) {
         if (memcmp(known_macs[i], mac, 6) == 0) return (uint8_t)(i + 1);
@@ -76,24 +94,6 @@ static uint32_t last_snap_ms = 0;
 static const uint16_t SNAP_EXPECTED_MAX = 105;  // N_BCN * 3 peers
 static const uint32_t SNAP_SILENCE_MS   = 500;
 static const uint32_t SNAP_HARD_CAP_MS  = 3000;
-
-// ── Listener CSI ring buffer — callback stores here; loop drains to Serial ────
-#define LST_RING_SIZE 4
-
-struct LstCsiEntry {
-    uint8_t  mac[6];
-    uint32_t snap_seq;
-    uint32_t ts_ms;
-    int8_t   rssi;
-    int8_t   noise_floor;
-    uint16_t csi_len;
-    uint8_t  csi[CSI_MAX_BYTES];
-};
-
-static LstCsiEntry        lst_ring[LST_RING_SIZE];
-static volatile int       lst_ring_write = 0;
-static volatile int       lst_ring_read  = 0;
-static portMUX_TYPE       lst_ring_mux   = portMUX_INITIALIZER_UNLOCKED;
 
 // IRAM_ATTR: only stores to ring buffer; no heap, no FreeRTOS calls, no Serial.
 void IRAM_ATTR listener_csi_cb(void* ctx, wifi_csi_info_t* info) {
