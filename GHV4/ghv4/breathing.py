@@ -5,8 +5,14 @@ Uses CSI Ratio (conjugate multiply between subcarrier pairs) to cancel
 CFO/clock drift, then FFT to detect breathing-band (0.1-0.5 Hz) power.
 """
 import logging
+import time as _time_mod
 
 import numpy as np
+
+from enum import Enum
+
+# Monotonic clock for staleness tracking (testable via override)
+_time_func = _time_mod.monotonic
 
 from ghv4.config import (
     SUBCARRIERS,
@@ -20,6 +26,12 @@ from ghv4.config import (
     BREATHING_CONTRAST_CEILING,
     BREATHING_MIN_PATHS_FOR_CONTRAST,
     BREATHING_MIN_PATHS_TOTAL,
+    BREATHING_CONFIDENCE_BETA,
+    BREATHING_CONFIRM_WINDOWS,
+    BREATHING_RELEASE_WINDOWS,
+    BREATHING_BASELINE_ALPHA,
+    BREATHING_BASELINE_WARMUP,
+    BREATHING_STALE_TIMEOUT_S,
     CELL_LABELS,
     HEARTRATE_CONFIDENCE_THRESHOLD,
     HAMPEL_WINDOW,
@@ -353,6 +365,104 @@ class PresenceScorer:
         return scores
 
 
+class TemporalState(Enum):
+    """Per-path detection state for the temporal consistency filter."""
+    QUIET = "quiet"
+    PENDING = "pending"
+    DETECTED = "detected"
+    RELEASING = "releasing"
+
+
+class TemporalFilter:
+    """Per-path temporal consistency filter to eliminate transient ghost detections.
+
+    State machine per path:
+        QUIET    --[conf > threshold]--> PENDING (counter=1)
+        PENDING  --[conf > threshold]--> PENDING (counter++) -> DETECTED when counter >= confirm_n
+        PENDING  --[conf <= threshold]-> QUIET
+        DETECTED --[conf <= threshold]-> RELEASING (counter=1)
+        RELEASING--[conf <= threshold]-> RELEASING (counter++) -> QUIET when counter >= release_n
+        RELEASING--[conf > threshold]--> DETECTED
+    """
+
+    def __init__(self, threshold: float = BREATHING_CONFIDENCE_THRESHOLD,
+                 confirm_n: int = BREATHING_CONFIRM_WINDOWS,
+                 release_n: int = BREATHING_RELEASE_WINDOWS):
+        self._threshold = threshold
+        self._confirm_n = confirm_n
+        self._release_n = release_n
+        self._states: dict[tuple, TemporalState] = {}
+        self._counters: dict[tuple, int] = {}
+
+    def get_state(self, path: tuple) -> TemporalState:
+        return self._states.get(path, TemporalState.QUIET)
+
+    def reset_path(self, path: tuple) -> None:
+        """Reset a path to QUIET (e.g. on staleness timeout)."""
+        self._states[path] = TemporalState.QUIET
+        self._counters[path] = 0
+
+    def update(self, path_confidences: dict[tuple, float]) -> dict[tuple, float]:
+        """Apply temporal filter to smoothed per-path confidences.
+
+        Returns filtered confidences: 0.0 for QUIET/PENDING, smoothed value for
+        DETECTED/RELEASING.
+        """
+        filtered = {}
+        for path, conf in path_confidences.items():
+            state = self._states.get(path, TemporalState.QUIET)
+            counter = self._counters.get(path, 0)
+            above = conf > self._threshold
+
+            if state == TemporalState.QUIET:
+                if above:
+                    state = TemporalState.PENDING
+                    counter = 1
+                # else: stay QUIET
+
+            elif state == TemporalState.PENDING:
+                if above:
+                    counter += 1
+                    if counter >= self._confirm_n:
+                        state = TemporalState.DETECTED
+                        counter = 0
+                else:
+                    state = TemporalState.QUIET
+                    counter = 0
+
+            elif state == TemporalState.DETECTED:
+                if above:
+                    pass  # stay DETECTED
+                else:
+                    state = TemporalState.RELEASING
+                    counter = 1
+
+            elif state == TemporalState.RELEASING:
+                if above:
+                    state = TemporalState.DETECTED
+                    counter = 0
+                else:
+                    counter += 1
+                    if counter >= self._release_n:
+                        state = TemporalState.QUIET
+                        counter = 0
+
+            self._states[path] = state
+            self._counters[path] = counter
+
+            if state in (TemporalState.DETECTED, TemporalState.RELEASING):
+                filtered[path] = conf
+            else:
+                filtered[path] = 0.0
+
+        return filtered
+
+    def get_active_paths(self) -> set[tuple]:
+        """Return paths currently in DETECTED or RELEASING state."""
+        return {p for p, s in self._states.items()
+                if s in (TemporalState.DETECTED, TemporalState.RELEASING)}
+
+
 class GridProjector:
     """Project per-path breathing confidence onto a 3x3 grid.
 
@@ -384,6 +494,39 @@ class GridProjector:
                     scores[cell] = value
         return scores
 
+    def corroborate(self, grid_scores: dict[str, float | None],
+                    active_paths: set[tuple]) -> dict[str, str | None]:
+        """Classify each cell as 'confirmed', 'uncertain', or None based on path diversity.
+
+        A cell needs 2+ distinct active paths contributing to it for 'confirmed'.
+        When fewer than 4 total active paths exist system-wide, the requirement
+        relaxes to 1 path (graceful degradation).
+
+        Args:
+            grid_scores: {cell_label: score_0_to_100_or_None} from project().
+            active_paths: set of (min_id, max_id) tuples in DETECTED/RELEASING state.
+
+        Returns:
+            {cell_label: 'confirmed' | 'uncertain' | None}
+        """
+        min_paths_for_confirmed = 2 if len(active_paths) >= 4 else 1
+        result: dict[str, str | None] = {}
+        for cell in CELL_LABELS:
+            score = grid_scores.get(cell)
+            if score is None or score <= 0:
+                result[cell] = None
+                continue
+            # Count how many distinct active paths contribute to this cell
+            n_active = sum(1 for path in active_paths
+                          if path in self.path_map and cell in self.path_map[path])
+            if n_active >= min_paths_for_confirmed:
+                result[cell] = 'confirmed'
+            elif n_active >= 1:
+                result[cell] = 'uncertain'
+            else:
+                result[cell] = None
+        return result
+
 
 class BreathingDetector:
     """Orchestrator: feeds csi_snap frames into ring buffers, runs hardened analysis pipeline.
@@ -408,10 +551,18 @@ class BreathingDetector:
         self._hr_analyzer = HeartRateAnalyzer()
         self._presence_scorer = PresenceScorer()
         self._last_path_conf: dict[tuple, float] = {}
+        self._last_raw_path_conf: dict[tuple, float] = {}
         self._last_hr_conf: dict[tuple, tuple[float, float]] = {}
         self._last_presence: dict[tuple, float] = {}
+        self._last_corroboration: dict[str, str | None] = {}
         self._rejected_frames = 0
         self._accepted_frames = 0
+        # Detection hardening state
+        self._smoothed_conf: dict[tuple, float] = {k: 0.0 for k in self._path_map}
+        self._baseline: dict[tuple, float] = {k: 0.0 for k in self._path_map}
+        self._baseline_count: dict[tuple, int] = {k: 0 for k in self._path_map}
+        self._temporal_filter = TemporalFilter()
+        self._last_frame_time: dict[tuple, float] = {}  # monotonic timestamps
 
     def feed_frame(self, frame_type: str, frame_dict: dict) -> None:
         """Feed a parsed frame into the detector.
@@ -467,6 +618,7 @@ class BreathingDetector:
             return
         self._accepted_frames += 1
         self._buffers[key].push(csi_array)
+        self._last_frame_time[key] = _time_func()
 
     def is_ready(self) -> bool:
         """True if at least one path has a full buffer."""
@@ -486,6 +638,19 @@ class BreathingDetector:
             "rejection_pct": (self._rejected_frames / total * 100) if total > 0 else 0.0,
         }
 
+    def _check_staleness(self) -> None:
+        """Reset state for paths with no data for BREATHING_STALE_TIMEOUT_S."""
+        now = _time_func()
+        for key in list(self._last_frame_time):
+            if now - self._last_frame_time[key] > BREATHING_STALE_TIMEOUT_S:
+                _log.info("Path S%d↔S%d stale (>%ds no data), resetting state",
+                          key[0], key[1], BREATHING_STALE_TIMEOUT_S)
+                self._smoothed_conf[key] = 0.0
+                self._baseline[key] = 0.0
+                self._baseline_count[key] = 0
+                self._temporal_filter.reset_path(key)
+                del self._last_frame_time[key]
+
     def get_grid_scores(self) -> dict[str, float | None]:
         """Run hardened dual-band analysis on all ready paths and project onto grid.
 
@@ -496,9 +661,17 @@ class BreathingDetector:
         4. CSI ratio → HeartRateAnalyzer (0.8-2.0 Hz)
         5. PresenceScorer across all paths (cross-path ranking + variance)
         6. Dual-band fusion: confidence = max(presence, breathing, heartrate)
+        7. Per-path adaptive baseline (§2.3): contrast against own history
+        8. Confidence EMA smoothing (§2.1)
+        9. Temporal consistency filter (§2.2): QUIET→PENDING→DETECTED→RELEASING
+        10. Grid projection + path diversity corroboration (§2.4)
         """
+        # Staleness check
+        self._check_staleness()
+
         # Step 1-4: per-path breathing + HR analysis with hardening
         breathing_scores: dict[tuple, float] = {}
+        path_mean_amps: dict[tuple, float] = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
@@ -510,6 +683,9 @@ class BreathingDetector:
                 # Hardening: Hampel filter on amplitudes
                 amp = np.abs(window).astype(np.float64)
                 amp_clean = hampel_filter(amp, window=HAMPEL_WINDOW, threshold=HAMPEL_THRESHOLD)
+
+                # Track mean amplitude for per-path baseline
+                path_mean_amps[key] = float(np.mean(amp_clean))
 
                 # Subcarrier selection on cleaned amplitudes
                 selected_idx = select_subcarriers(
@@ -547,26 +723,93 @@ class BreathingDetector:
                 self._last_hr_conf[key] = (0.0, 0.0)
 
         if not breathing_scores:
+            self._last_corroboration = {}
             return self._projector.project({})
 
         # Step 5: presence scoring across all paths
         presence = self._presence_scorer.score(self._buffers)
         self._last_presence = presence
 
-        # Step 6: dual-band fusion per path
-        path_confidences = {}
+        # Step 6: dual-band fusion per path → raw confidence
+        raw_confidences: dict[tuple, float] = {}
         for key in breathing_scores:
             br = breathing_scores[key]
             hr_c = self._last_hr_conf.get(key, (0.0, 0.0))[0]
             pres = presence.get(key, 0.0)
             vital = max(br, hr_c)
             confidence = max(pres, vital)
-            _log.info("Path S%d↔S%d presence=%.2f breathing=%.3f hr=%.3f → %.3f",
-                      key[0], key[1], pres, br, hr_c, confidence)
-            path_confidences[key] = confidence
+            raw_confidences[key] = confidence
 
-        self._last_path_conf = path_confidences
-        return self._projector.project(path_confidences)
+        self._last_raw_path_conf = dict(raw_confidences)
+
+        # Step 7: per-path adaptive baseline contrast (§2.3)
+        # During quiet/pending: update baseline EMA with mean amplitude
+        # Compute contrast = mean_amp / baseline (or use raw confidence if warmup)
+        all_mean_amps = list(path_mean_amps.values())
+        median_amp = float(np.median(all_mean_amps)) if all_mean_amps else 1.0
+        if median_amp < 1e-6:
+            median_amp = 1e-6
+
+        for key in raw_confidences:
+            state = self._temporal_filter.get_state(key)
+            mean_amp = path_mean_amps.get(key, 0.0)
+
+            # Update baseline during quiet/pending periods only
+            if state in (TemporalState.QUIET, TemporalState.PENDING):
+                if mean_amp > 0:
+                    alpha = BREATHING_BASELINE_ALPHA
+                    self._baseline[key] = (alpha * mean_amp
+                                           + (1 - alpha) * self._baseline.get(key, 0.0))
+                    self._baseline_count[key] = self._baseline_count.get(key, 0) + 1
+
+            # Compute contrast-adjusted confidence
+            bl_count = self._baseline_count.get(key, 0)
+            bl_val = self._baseline.get(key, 0.0)
+
+            if bl_count >= BREATHING_BASELINE_WARMUP and bl_val > 1e-6:
+                # Per-path baseline available: contrast = mean_amp / baseline
+                contrast = mean_amp / bl_val
+            elif len(all_mean_amps) >= BREATHING_MIN_PATHS_FOR_CONTRAST:
+                # Fallback: cross-path median during warmup
+                contrast = mean_amp / median_amp if mean_amp > 0 else 0.0
+            else:
+                # Too few paths — skip contrast, use raw confidence
+                contrast = 0.0
+
+            if contrast > 0:
+                # Map contrast to 0-1: values < 1 → 0, values up to ceiling → 1
+                contrast_score = float(np.clip(
+                    (contrast - 1.0) / (BREATHING_CONTRAST_CEILING - 1.0), 0.0, 1.0))
+                # Combine: max of contrast-adjusted and raw confidence
+                raw_confidences[key] = max(raw_confidences[key], contrast_score)
+
+        # Step 8: EMA smoothing (§2.1)
+        for key, raw_conf in raw_confidences.items():
+            prev = self._smoothed_conf.get(key, 0.0)
+            self._smoothed_conf[key] = (BREATHING_CONFIDENCE_BETA * raw_conf
+                                        + (1 - BREATHING_CONFIDENCE_BETA) * prev)
+
+        # Step 9: temporal consistency filter (§2.2)
+        filtered = self._temporal_filter.update(self._smoothed_conf)
+
+        # Log per-path details
+        for key in sorted(raw_confidences):
+            raw = self._last_raw_path_conf.get(key, 0.0)
+            smoothed = self._smoothed_conf.get(key, 0.0)
+            filt = filtered.get(key, 0.0)
+            state = self._temporal_filter.get_state(key)
+            _log.info("Path S%d↔S%d raw=%.3f smoothed=%.3f filtered=%.3f state=%s",
+                      key[0], key[1], raw, smoothed, filt, state.value)
+
+        # Use filtered confidences for grid projection
+        self._last_path_conf = filtered
+        grid_scores = self._projector.project(filtered)
+
+        # Step 10: path diversity corroboration (§2.4)
+        active = self._temporal_filter.get_active_paths()
+        self._last_corroboration = self._projector.corroborate(grid_scores, active)
+
+        return grid_scores
 
 
 def reconstruct_csi_from_csv_row(row, shouter_id: int,
@@ -685,8 +928,10 @@ class BreathingThread(threading.Thread):
                     scores = self._detector.get_grid_scores()
                     path_conf = self._detector._last_path_conf
                     hr_conf = self._detector._last_hr_conf
+                    corroboration = self._detector._last_corroboration
                     self._q.put({"type": "scores", "grid": scores,
-                                  "path_conf": path_conf, "hr_conf": hr_conf})
+                                  "path_conf": path_conf, "hr_conf": hr_conf,
+                                  "corroboration": corroboration})
         except Exception as e:
             self._q.put({"type": "status", "msg": f"Error: {e}"})
         finally:
@@ -756,6 +1001,7 @@ try:
             self._grid_scores = {cell: None for cell in CELL_LABELS}
             self._path_conf = {}
             self._path_fill = {}
+            self._corroboration = {}
             self._status_msg = "Waiting..."
             self._hr_conf = {}
             self._cell_rects = {}
@@ -829,6 +1075,10 @@ try:
             """Update per-path buffer fill fractions {(s1,s2): 0.0-1.0}."""
             self._path_fill = fill
 
+        def update_corroboration(self, corroboration):
+            """Update path diversity corroboration {cell: 'confirmed'|'uncertain'|None}."""
+            self._corroboration = corroboration
+
         def set_status(self, msg):
             self._status_msg = msg
 
@@ -860,10 +1110,18 @@ try:
             for (row, col), rect in self._cell_rects.items():
                 label = f"r{row}c{col}"
                 score = self._grid_scores.get(label)
-                if score is not None:
-                    bg = self._cell_color(score)
-                    text_color = PI_TEXT_ACTIVE
-                    score_text = f"{score:.0f}%"
+                cell_status = self._corroboration.get(label)
+                if score is not None and score > 0:
+                    if cell_status == 'uncertain':
+                        # 50% alpha blend between active and inactive for uncertain
+                        active_bg = self._cell_color(score)
+                        bg = tuple((a + i) // 2 for a, i in zip(active_bg, PI_CELL_INACTIVE))
+                        text_color = PI_TEXT_ACTIVE
+                        score_text = f"{score:.0f}?"
+                    else:
+                        bg = self._cell_color(score)
+                        text_color = PI_TEXT_ACTIVE
+                        score_text = f"{score:.0f}%"
                 else:
                     bg = PI_CELL_INACTIVE
                     text_color = PI_TEXT_INACTIVE

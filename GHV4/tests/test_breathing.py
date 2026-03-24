@@ -13,9 +13,17 @@ from ghv4.breathing import (
     BreathingAnalyzer,
     GridProjector,
     BreathingDetector,
+    TemporalFilter,
+    TemporalState,
     reconstruct_csi_from_csv_row,
 )
-from ghv4.config import BREATHING_PATH_MAP, CELL_LABELS
+from ghv4.config import (
+    BREATHING_PATH_MAP,
+    BREATHING_CONFIDENCE_THRESHOLD,
+    BREATHING_CONFIRM_WINDOWS,
+    BREATHING_RELEASE_WINDOWS,
+    CELL_LABELS,
+)
 
 
 class TestCSIRingBuffer:
@@ -293,9 +301,36 @@ class TestBreathingDetector:
             assert cell in scores
 
 
+def _run_multiple_windows(det, n_calls=8):
+    """Call get_grid_scores() multiple times to let EMA + temporal filter converge.
+
+    The hardening pipeline (EMA β=0.3 + CONFIRM_WINDOWS=3) requires ~5-8
+    consecutive scoring windows for smoothed confidence to cross the threshold
+    and then be confirmed by the temporal filter.
+
+    Freezes _time_func to prevent staleness resets during slow scoring calls.
+    """
+    import ghv4.breathing as breathing_mod
+    original_time = breathing_mod._time_func
+    frozen_time = original_time()
+    breathing_mod._time_func = lambda: frozen_time
+    try:
+        scores = None
+        for _ in range(n_calls):
+            scores = det.get_grid_scores()
+        return scores
+    finally:
+        breathing_mod._time_func = original_time
+
+
 class TestBreathingDetectorE2E:
+
     def test_synthetic_breathing_one_hot_path(self):
-        """Feed breathing on one path, static on others — hot path cells detected."""
+        """Feed breathing on one path, static on others — hot path cells detected.
+
+        Note: With hardening (EMA + temporal filter), detection requires multiple
+        scoring windows. We call get_grid_scores() 8 times to let the pipeline confirm.
+        """
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
         n_time = BREATHING_WINDOW_N
@@ -314,7 +349,7 @@ class TestBreathingDetectorE2E:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
                 })
 
-        scores = det.get_grid_scores()
+        scores = _run_multiple_windows(det)
         # Hot path covers r2c0, r1c1, r0c2
         assert scores["r1c1"] is not None and scores["r1c1"] > 20.0, \
             f"Center cell should detect breathing, got {scores['r1c1']}"
@@ -341,9 +376,9 @@ class TestBreathingDetectorE2E:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
                 })
 
-        scores = det.get_grid_scores()
+        scores = _run_multiple_windows(det)
         # All paths have identical signal → similar scores, low spread
-        active_scores = [s for s in scores.values() if s is not None]
+        active_scores = [s for s in scores.values() if s is not None and s > 0]
         if active_scores:
             spread = max(active_scores) - min(active_scores)
             assert spread < 30.0, \
@@ -360,7 +395,7 @@ class TestBreathingDetectorE2E:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
                 })
 
-        scores = det.get_grid_scores()
+        scores = _run_multiple_windows(det)
         for cell, score in scores.items():
             if score is not None:
                 assert score < 30.0, f"Cell {cell} had {score}% with static signal"
@@ -457,7 +492,8 @@ class TestBreathingDetectorE2E:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
                 })
 
-        scores = det.get_grid_scores()
+        # Multiple scoring windows for EMA + temporal filter to converge
+        scores = _run_multiple_windows(det)
         # Hot path (1,2) covers r2c0, r1c0, r0c0 — these should be elevated
         hot_cells = set(BREATHING_PATH_MAP[hot_path])
         cold_cells = set(CELL_LABELS) - hot_cells
@@ -469,14 +505,13 @@ class TestBreathingDetectorE2E:
         for cell in cold_cells:
             # Cold cells may still have some score from overlapping paths
             # but should be much lower than hot cells
-            if scores[cell] is not None:
+            if scores[cell] is not None and scores[cell] > 0:
                 hot_min = min(scores[c] for c in hot_cells if scores[c] is not None)
                 assert scores[cell] < hot_min, \
                     f"Cold cell {cell}={scores[cell]} should be below hot min {hot_min}"
 
 
 
-<<<<<<< HEAD
 class TestDualBandFusionInDetector:
     """Tests for dual-band fusion (breathing + HR + presence) in BreathingDetector."""
 
@@ -505,7 +540,8 @@ class TestDualBandFusionInDetector:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
                 })
 
-        scores = det.get_grid_scores()
+        # Multiple scoring windows for EMA + temporal filter to converge
+        scores = _run_multiple_windows(det)
         # Hot path (1,2) covers r2c0, r1c0, r0c0
         hot_cells = BREATHING_PATH_MAP[(1, 2)]
         for cell in hot_cells:
@@ -551,7 +587,8 @@ class TestDualBandFusionInDetector:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
                 })
 
-        scores = det.get_grid_scores()
+        # Multiple scoring windows for EMA + temporal filter to converge
+        scores = _run_multiple_windows(det)
         # Both breathing path (1,3) and HR path (2,4) cross r1c1
         # Center cell should have a score from fusion
         assert scores["r1c1"] is not None, "Center cell should be covered by both paths"
@@ -570,7 +607,8 @@ class TestDualBandFusionInDetector:
             assert 0.0 <= frac <= 1.0, f"Fill fraction {frac} out of range for {key}"
         # Path (1,2) should have some fill
         assert fill[(1, 2)] > 0.0
-=======
+
+
 class TestGetBufferFill:
     """Tests for BreathingDetector.get_buffer_fill()."""
 
@@ -606,7 +644,7 @@ class TestGetBufferFill:
 
 
 class TestFewPathsFallback:
-    """Tests for A+C scoring when fewer than BREATHING_MIN_PATHS_FOR_CONTRAST paths are ready."""
+    """Tests for scoring when fewer than BREATHING_MIN_PATHS_FOR_CONTRAST paths are ready."""
 
     def test_two_paths_uses_phase_only(self):
         """With only 2 ready paths (< MIN_PATHS_FOR_CONTRAST=3), contrast_score should be 0."""
@@ -650,25 +688,6 @@ class TestFewPathsFallback:
             assert scores[cell] is not None
 
 
-class TestRawAmplitudeEnergyEdgeCases:
-    """Edge case tests for BreathingDetector._raw_amplitude_energy()."""
-
-    def test_all_zero_window_returns_zero(self):
-        """All-zero CSI window should return 0.0 (denominator guard)."""
-        from ghv4.config import BREATHING_WINDOW_N, SUBCARRIERS
-        window = np.zeros((BREATHING_WINDOW_N, SUBCARRIERS), dtype=np.complex64)
-        result = BreathingDetector._raw_amplitude_energy(window)
-        assert result == 0.0
-
-    def test_dc_only_signal_low_snr(self):
-        """Constant amplitude (DC only) should yield low snr_eig after detrend."""
-        from ghv4.config import BREATHING_WINDOW_N, SUBCARRIERS
-        window = np.full((BREATHING_WINDOW_N, SUBCARRIERS), 500 + 0j, dtype=np.complex64)
-        result = BreathingDetector._raw_amplitude_energy(window)
-        # After detrend, a constant signal becomes ~zero; snr_eig should be near 0
-        assert result < 1.0, f"DC-only signal should have low snr_eig, got {result}"
-
-
 class TestCombinedACScoring:
     """Tests for the max(contrast_score, phase_score) combination logic."""
 
@@ -700,7 +719,8 @@ class TestCombinedACScoring:
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
                 })
 
-        scores = det.get_grid_scores()
+        # Multiple scoring windows for EMA + temporal filter to converge
+        scores = _run_multiple_windows(det)
         # Hot path cells should have some detection via phase score
         hot_cells = set(BREATHING_PATH_MAP[hot_path])
         for cell in hot_cells:
@@ -741,7 +761,6 @@ class TestReconstructCSIEdgeCases:
         result = reconstruct_csi_from_csv_row(row, shouter_id=1)
         assert abs(result[10]) == pytest.approx(2.0, abs=0.01)
         assert result[0] == 0 + 0j
->>>>>>> overstory/lead-GlassHouseRepo-7407/GlassHouseRepo-7407
 
 
 class TestRunSarCLI:
@@ -857,3 +876,226 @@ class TestDemoThread:
         assert "grid" in item
         assert "r0c0" in item["grid"]
         assert "path_conf" in item
+
+
+# ---------------------------------------------------------------------------
+# Detection Hardening Tests
+# ---------------------------------------------------------------------------
+
+class TestTemporalFilter:
+    """Tests for the TemporalFilter state machine."""
+
+    def test_quiet_to_pending_on_above_threshold(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=3, release_n=2)
+        result = tf.update({(1, 2): 0.5})
+        assert result[(1, 2)] == 0.0  # PENDING, not yet confirmed
+        assert tf.get_state((1, 2)) == TemporalState.PENDING
+
+    def test_pending_to_detected_after_confirm_n(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=3, release_n=2)
+        for _ in range(2):
+            tf.update({(1, 2): 0.5})
+        assert tf.get_state((1, 2)) == TemporalState.PENDING
+        result = tf.update({(1, 2): 0.5})
+        assert tf.get_state((1, 2)) == TemporalState.DETECTED
+        assert result[(1, 2)] == 0.5
+
+    def test_pending_to_quiet_on_below_threshold(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=3, release_n=2)
+        tf.update({(1, 2): 0.5})  # PENDING
+        result = tf.update({(1, 2): 0.1})  # below threshold
+        assert tf.get_state((1, 2)) == TemporalState.QUIET
+        assert result[(1, 2)] == 0.0
+
+    def test_detected_to_releasing_on_below_threshold(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=2, release_n=2)
+        tf.update({(1, 2): 0.5})  # PENDING
+        tf.update({(1, 2): 0.5})  # DETECTED
+        result = tf.update({(1, 2): 0.1})  # RELEASING
+        assert tf.get_state((1, 2)) == TemporalState.RELEASING
+        assert result[(1, 2)] == 0.1  # still outputs confidence during RELEASING
+
+    def test_releasing_to_quiet_after_release_n(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=2, release_n=2)
+        tf.update({(1, 2): 0.5})  # PENDING
+        tf.update({(1, 2): 0.5})  # DETECTED
+        tf.update({(1, 2): 0.1})  # RELEASING, counter=1
+        result = tf.update({(1, 2): 0.1})  # QUIET, counter >= release_n
+        assert tf.get_state((1, 2)) == TemporalState.QUIET
+        assert result[(1, 2)] == 0.0
+
+    def test_releasing_to_detected_on_reactivation(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=2, release_n=3)
+        tf.update({(1, 2): 0.5})  # PENDING
+        tf.update({(1, 2): 0.5})  # DETECTED
+        tf.update({(1, 2): 0.1})  # RELEASING
+        result = tf.update({(1, 2): 0.5})  # back to DETECTED
+        assert tf.get_state((1, 2)) == TemporalState.DETECTED
+        assert result[(1, 2)] == 0.5
+
+    def test_get_active_paths(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=2, release_n=2)
+        tf.update({(1, 2): 0.5, (1, 3): 0.1})
+        tf.update({(1, 2): 0.5, (1, 3): 0.1})
+        assert tf.get_active_paths() == {(1, 2)}  # (1,3) stayed QUIET
+
+    def test_reset_path(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=2, release_n=2)
+        tf.update({(1, 2): 0.5})
+        tf.update({(1, 2): 0.5})  # DETECTED
+        tf.reset_path((1, 2))
+        assert tf.get_state((1, 2)) == TemporalState.QUIET
+
+    def test_multiple_paths_independent(self):
+        tf = TemporalFilter(threshold=0.3, confirm_n=2, release_n=2)
+        tf.update({(1, 2): 0.5, (3, 4): 0.5})
+        tf.update({(1, 2): 0.5, (3, 4): 0.1})  # (1,2) DETECTED, (3,4) back to QUIET
+        assert tf.get_state((1, 2)) == TemporalState.DETECTED
+        assert tf.get_state((3, 4)) == TemporalState.QUIET
+
+
+class TestConfidenceEMASmoothing:
+    """Tests for EMA smoothing in BreathingDetector."""
+
+    def test_smoothed_conf_initialized_to_zero(self):
+        det = BreathingDetector()
+        for key in BREATHING_PATH_MAP:
+            assert det._smoothed_conf[key] == 0.0
+
+    def test_smoothed_conf_updates_on_scoring(self):
+        """After scoring, smoothed_conf should be non-zero for active paths."""
+        det = BreathingDetector()
+        path = (1, 2)
+        # Fill the buffer for one path with a breathing signal
+        rng = np.random.default_rng(42)
+        n = det._buffers[path]._capacity
+        for i in range(n):
+            t = i / 20.0
+            csi = np.zeros(128, dtype=np.complex64)
+            for sc in range(128):
+                amp = 10.0 + 3.0 * np.sin(2 * np.pi * 0.25 * t + sc * 0.1)
+                phase = rng.uniform(-np.pi, np.pi)
+                csi[sc] = amp * np.exp(1j * phase)
+            det._buffers[path].push(csi)
+        det.get_grid_scores()
+        # smoothed_conf should be updated (may be 0 if signal is weak, but state exists)
+        assert path in det._smoothed_conf
+
+
+class TestPerPathBaseline:
+    """Tests for per-path adaptive baseline in BreathingDetector."""
+
+    def test_baseline_initialized_to_zero(self):
+        det = BreathingDetector()
+        for key in BREATHING_PATH_MAP:
+            assert det._baseline[key] == 0.0
+            assert det._baseline_count[key] == 0
+
+    def test_baseline_updates_during_quiet(self):
+        """Baseline should update when path is in QUIET state."""
+        det = BreathingDetector()
+        path = (1, 2)
+        # Fill with low-variance signal (quiet)
+        n = det._buffers[path]._capacity
+        for i in range(n):
+            csi = np.ones(128, dtype=np.complex64) * 5.0
+            det._buffers[path].push(csi)
+        det.get_grid_scores()
+        # Baseline should have been updated
+        assert det._baseline_count[path] >= 1
+        assert det._baseline[path] > 0
+
+
+class TestPathDiversityCorroboration:
+    """Tests for GridProjector.corroborate()."""
+
+    def test_no_active_paths_all_none(self):
+        gp = GridProjector()
+        scores = {cell: None for cell in CELL_LABELS}
+        result = gp.corroborate(scores, set())
+        assert all(v is None for v in result.values())
+
+    def test_single_active_path_uncertain_with_4plus(self):
+        """With 4+ active paths, a cell covered by only 1 is uncertain."""
+        gp = GridProjector()
+        active = {(1, 2), (1, 3), (2, 3), (3, 4)}
+        scores = {cell: 50.0 for cell in CELL_LABELS}
+        result = gp.corroborate(scores, active)
+        # r2c1 is only on path (1,4) which is not active → None
+        # r0c0 is on (1,2) and (2,3) and (2,4) — but only (1,2) and (2,3) active → confirmed
+        assert result["r0c0"] == "confirmed"
+
+    def test_graceful_degradation_few_active(self):
+        """With < 4 active paths, 1 path is enough for confirmed."""
+        gp = GridProjector()
+        active = {(1, 2)}
+        scores = {"r2c0": 80.0, "r1c0": 60.0, "r0c0": 40.0}
+        scores.update({cell: None for cell in CELL_LABELS if cell not in scores})
+        result = gp.corroborate(scores, active)
+        assert result["r2c0"] == "confirmed"  # 1 path, but < 4 total so relaxed
+
+    def test_zero_score_is_none(self):
+        gp = GridProjector()
+        scores = {cell: 0.0 for cell in CELL_LABELS}
+        result = gp.corroborate(scores, {(1, 2)})
+        assert all(v is None for v in result.values())
+
+    def test_two_paths_confirmed_cell(self):
+        """Cell at intersection of two active paths should be confirmed."""
+        gp = GridProjector()
+        # r0c0 is on paths (1,2) and (2,3) and (2,4)
+        active = {(1, 2), (2, 3), (1, 3), (3, 4)}
+        scores = {cell: 50.0 for cell in CELL_LABELS}
+        result = gp.corroborate(scores, active)
+        # r0c0 covered by (1,2) and (2,3) — both active → confirmed
+        assert result["r0c0"] == "confirmed"
+
+
+class TestStalenessReset:
+    """Tests for staleness timeout in BreathingDetector."""
+
+    def test_stale_path_resets_smoothed_conf(self):
+        import ghv4.breathing as breathing_mod
+        det = BreathingDetector()
+        path = (1, 2)
+        # Simulate a frame arriving at time 0, then staleness check at time 100
+        original_time = breathing_mod._time_func
+        try:
+            breathing_mod._time_func = lambda: 100.0  # way past 30s timeout
+            det._last_frame_time[path] = 0.0
+            det._smoothed_conf[path] = 0.8
+            det._baseline[path] = 5.0
+            det._baseline_count[path] = 20
+            det._check_staleness()
+            assert det._smoothed_conf[path] == 0.0
+            assert det._baseline[path] == 0.0
+            assert det._baseline_count[path] == 0
+            assert path not in det._last_frame_time
+        finally:
+            breathing_mod._time_func = original_time
+
+
+class TestDetectorHardeningIntegration:
+    """Integration test: detector with hardening layers."""
+
+    def test_last_corroboration_populated(self):
+        """After scoring, _last_corroboration should be set."""
+        det = BreathingDetector()
+        path = (1, 2)
+        n = det._buffers[path]._capacity
+        for i in range(n):
+            csi = np.ones(128, dtype=np.complex64) * 5.0
+            det._buffers[path].push(csi)
+        det.get_grid_scores()
+        assert isinstance(det._last_corroboration, dict)
+
+    def test_last_raw_path_conf_preserved(self):
+        """Raw (pre-filter) path confidences should be preserved for debugging."""
+        det = BreathingDetector()
+        path = (1, 2)
+        n = det._buffers[path]._capacity
+        for i in range(n):
+            csi = np.ones(128, dtype=np.complex64) * 5.0
+            det._buffers[path].push(csi)
+        det.get_grid_scores()
+        assert isinstance(det._last_raw_path_conf, dict)

@@ -110,6 +110,14 @@ BREATHING_CONTRAST_CEILING    = 3.0   # contrast ratio at which confidence satur
 BREATHING_MIN_PATHS_FOR_CONTRAST = 3   # need 3+ paths for meaningful median; fewer → phase only
 BREATHING_MIN_PATHS_TOTAL     = 2      # Absolute minimum active paths required to attempt a guess
 
+# ── Detection hardening (anti-ghost, temporal persistence) ────
+BREATHING_CONFIDENCE_BETA     = 0.3    # EMA smoothing factor for per-path confidence (~3s time constant)
+BREATHING_CONFIRM_WINDOWS     = 3      # Consecutive above-threshold windows to confirm detection
+BREATHING_RELEASE_WINDOWS     = 2      # Consecutive below-threshold windows to release detection
+BREATHING_BASELINE_ALPHA      = 0.05   # EMA factor for per-path amplitude baseline (~20 window TC)
+BREATHING_BASELINE_WARMUP     = 10     # Windows before per-path baseline is trusted
+BREATHING_STALE_TIMEOUT_S     = 30     # Seconds of no data before resetting path state
+
 # Path-to-cell mapping: which grid cells each shouter↔shouter path crosses.
 # Keys are (min_id, max_id) tuples for undirected shouter pairs.
 # Shouter corners: S1=BL, S2=TL, S3=TR, S4=BR.

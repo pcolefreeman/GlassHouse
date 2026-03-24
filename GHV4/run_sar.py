@@ -22,10 +22,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s
 _log = logging.getLogger("run_sar")
 
 
-def _print_console(scores: dict, path_conf: dict, hr_conf: dict | None = None):
-    """Print SAR vital sign status table to console."""
+def _print_console(scores: dict, path_conf: dict, hr_conf: dict | None = None,
+                    corroboration: dict | None = None):
+    """Print SAR vital sign status table to console.
+
+    Args:
+        scores: {cell_label: score_0_to_100_or_None} grid scores.
+        path_conf: {(s1,s2): confidence_0_to_1} per-path filtered confidence.
+        hr_conf: optional {(s1,s2): (conf, bpm)} heart rate data.
+        corroboration: optional {cell_label: 'confirmed'|'uncertain'|None} from GridProjector.
+    """
     ts = time.strftime("%H:%M:%S")
     hr_conf = hr_conf or {}
+    corroboration = corroboration or {}
     lines = [
         f"\n=== GHV4-SAR: Vital Sign Detector === ({ts})",
         "",
@@ -50,6 +59,25 @@ def _print_console(scores: dict, path_conf: dict, hr_conf: dict | None = None):
             status = "· quiet"
 
         lines.append(f"{label:<12}{presence:>9.0f}%{br_str:>15}{hr_str:>15}  {status}")
+
+    # Grid display with corroboration markers
+    lines.append("")
+    grid_lines = []
+    for row in range(3):
+        cells = []
+        for col in range(3):
+            cell = f"r{row}c{col}"
+            score = scores.get(cell)
+            status = corroboration.get(cell)
+            if score is not None and score > 0:
+                if status == 'uncertain':
+                    cells.append(f"[{score:3.0f}?]")
+                else:
+                    cells.append(f"[{score:3.0f}%]")
+            else:
+                cells.append("[  -- ]")
+        grid_lines.append(" ".join(cells))
+    lines.extend(grid_lines)
 
     detected = [f"S{k[0]}↔S{k[1]}" for k, v in path_conf.items()
                 if v > BREATHING_CONFIDENCE_THRESHOLD]
@@ -124,7 +152,8 @@ def _run_console_loop(port: str, detector: BreathingDetector):
                 scores = detector.get_grid_scores()
                 path_conf = detector._last_path_conf
                 _print_console(scores, path_conf,
-                               getattr(detector, '_last_hr_conf', {}))
+                               getattr(detector, '_last_hr_conf', {}),
+                               getattr(detector, '_last_corroboration', {}))
     except KeyboardInterrupt:
         _log.info("Stopped.")
     except OSError as exc:
@@ -178,6 +207,8 @@ def _run_pygame_loop(port, detector, fullscreen, demo):
                 display.update(latest_scores["grid"], latest_scores["path_conf"])
                 if hasattr(display, 'update_hr') and "hr_conf" in latest_scores:
                     display.update_hr(latest_scores["hr_conf"])
+                if hasattr(display, 'update_corroboration') and "corroboration" in latest_scores:
+                    display.update_corroboration(latest_scores["corroboration"])
             display.render()
             pygame.display.flip()
             clock.tick(PI_DISPLAY_FPS)
