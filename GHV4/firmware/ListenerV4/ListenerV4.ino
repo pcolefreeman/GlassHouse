@@ -399,6 +399,50 @@ void advance_ranging() {
     }
 }
 
+// ── Per-path CSI baseline SPIFFS stubs ───────────────────────────────────────
+// Actual calibration data is collected at runtime and written via save_baseline().
+// load_baseline() is called once at boot to restore the last saved baseline.
+// SPIFFS must be mounted before calling these functions.
+#define BASELINE_PATH "/baseline.bin"
+
+static baseline_file_t baseline_data;
+static bool baseline_loaded = false;
+
+bool load_baseline() {
+    // TODO: mount SPIFFS, read BASELINE_PATH into baseline_data
+    // if (SPIFFS.begin(true)) {
+    //     File f = SPIFFS.open(BASELINE_PATH, "r");
+    //     if (f && f.size() == sizeof(baseline_file_t)) {
+    //         f.read((uint8_t*)&baseline_data, sizeof(baseline_data));
+    //         f.close();
+    //         if (baseline_data.magic[0] == 'B' && baseline_data.magic[1] == 'L') {
+    //             baseline_loaded = true;
+    //             Serial.printf("[LST] Baseline loaded: %d paths\n", baseline_data.n_paths);
+    //             return true;
+    //         }
+    //     }
+    // }
+    baseline_loaded = false;
+    return false;
+}
+
+bool save_baseline() {
+    // TODO: mount SPIFFS, write baseline_data to BASELINE_PATH
+    // if (SPIFFS.begin(true)) {
+    //     File f = SPIFFS.open(BASELINE_PATH, "w");
+    //     if (f) {
+    //         baseline_data.magic[0] = 'B';
+    //         baseline_data.magic[1] = 'L';
+    //         baseline_data.ver = 1;
+    //         f.write((uint8_t*)&baseline_data, sizeof(baseline_data));
+    //         f.close();
+    //         Serial.printf("[LST] Baseline saved: %d paths\n", baseline_data.n_paths);
+    //         return true;
+    //     }
+    // }
+    return false;
+}
+
 void setup() {
     Serial.begin(921600);
     WiFi.mode(WIFI_AP);
@@ -446,6 +490,7 @@ void setup() {
 }
 
 static unsigned long last_cycle_ms = 0;
+static uint8_t stagger_cycle = 0;  // rotating first-responder: cycles 1→2→3→4→1→...
 
 void loop() {
     unsigned long now = millis();
@@ -482,12 +527,14 @@ void loop() {
 
     poll_pkt_t pkt;
     memset(&pkt, 0, sizeof(pkt));
-    pkt.magic[0]    = POLL_MAGIC_0;
-    pkt.magic[1]    = POLL_MAGIC_1;
-    pkt.ver         = 1;
-    pkt.target_id   = 0xFF;  // broadcast sentinel
-    pkt.poll_seq    = poll_seq;
-    pkt.listener_ms = millis();
+    pkt.magic[0]      = POLL_MAGIC_0;
+    pkt.magic[1]      = POLL_MAGIC_1;
+    pkt.ver           = 1;
+    pkt.target_id     = 0xFF;  // broadcast sentinel
+    pkt.poll_seq      = poll_seq;
+    pkt.listener_ms   = millis();
+    pkt.stagger_base  = (stagger_cycle % 4) + 1;  // rotating 1→2→3→4
+    stagger_cycle++;
     memset(pkt.pad, 0xA5, POLL_PAD_SIZE);
     udp.beginPacket(IPAddress(192, 168, 4, 255), SHOUTER_PORT);
     udp.write((uint8_t*)&pkt, sizeof(pkt));
@@ -523,6 +570,15 @@ void loop() {
             }
         }
     }
+    // Snap priority drain window — give late snap frames time to arrive before next poll
+    unsigned long snap_drain_end = millis() + 20;
+    while (millis() < snap_drain_end) {
+        response_pkt_t drain_dummy;
+        handle_incoming_udp(&drain_dummy);
+        drain_listener_csi();
+        delayMicroseconds(100);
+    }
+
     bool polled_any = true;
 
 #else
