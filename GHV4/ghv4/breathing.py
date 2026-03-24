@@ -21,8 +21,18 @@ from ghv4.config import (
     BREATHING_MIN_PATHS_FOR_CONTRAST,
     BREATHING_MIN_PATHS_TOTAL,
     CELL_LABELS,
+    HEARTRATE_CONFIDENCE_THRESHOLD,
+    HAMPEL_WINDOW,
+    HAMPEL_THRESHOLD,
+    COHERENCE_THRESHOLD,
+    SUBCARRIER_TOP_K,
+    SUBCARRIER_MIN_K,
+    PRESENCE_LOGSIGMOID_SCALE,
+    PRESENCE_LOGSIGMOID_MIDPOINT,
+    PRESENCE_RANK_DIVISOR,
 )
 from ghv4.csi_parser import parse_csi_bytes
+from ghv4.signal_hardening import hampel_filter, gate_frame, select_subcarriers
 
 _log = logging.getLogger(__name__)
 
@@ -50,8 +60,15 @@ class CSIRingBuffer:
         return self._count >= self._capacity
 
     def push(self, csi_complex: np.ndarray) -> None:
-        """Add one frame of complex CSI data to the buffer."""
-        self._buf[self._head] = csi_complex[:self._n_sub]
+        """Add one frame of complex CSI data to the buffer.
+
+        Non-finite values (NaN/inf) are replaced with 0 before storage.
+        """
+        frame = csi_complex[:self._n_sub]
+        if not np.all(np.isfinite(frame)):
+            _log.debug("CSIRingBuffer.push: non-finite values replaced with 0")
+            frame = np.where(np.isfinite(frame), frame, 0.0 + 0j)
+        self._buf[self._head] = frame
         self._head = (self._head + 1) % self._capacity
         self._count += 1
 
@@ -93,9 +110,19 @@ class CSIRatioExtractor:
 
         Returns:
             (n_time, n_pairs) float32 array of ratio phases in radians.
+
+        Raises:
+            ValueError: If window is not 2-D or has zero time steps.
         """
+        if window.ndim != 2:
+            raise ValueError(
+                f"CSIRatioExtractor.extract expects 2-D array, got shape {window.shape}")
         n_time = window.shape[0]
+        if n_time == 0:
+            return np.empty((0, len(self.pair_indices)), dtype=np.float32)
         n_pairs = len(self.pair_indices)
+        if n_pairs == 0:
+            return np.empty((n_time, 0), dtype=np.float32)
         result = np.empty((n_time, n_pairs), dtype=np.float32)
         for j, (k1, k2) in enumerate(self.pair_indices):
             ratio = window[:, k1] * np.conj(window[:, k2])
@@ -125,15 +152,28 @@ class BreathingAnalyzer:
         Returns:
             Confidence score 0.0-1.0 (max breathing power ratio across pairs).
         """
+        if ratio_phases.ndim != 2:
+            raise ValueError(
+                f"BreathingAnalyzer.analyze expects 2-D array, got shape {ratio_phases.shape}")
         n_time, n_pairs = ratio_phases.shape
+        if n_time < 2 or n_pairs == 0:
+            return 0.0
+
         freq_resolution = self._fs / n_time
         # Bin indices for breathing band
         bin_lo = max(1, int(np.ceil(self._band_hz[0] / freq_resolution)))
         bin_hi = min(n_time // 2, int(np.floor(self._band_hz[1] / freq_resolution)))
+        if bin_lo >= bin_hi:
+            _log.debug("BreathingAnalyzer: window too short for breathing band resolution")
+            return 0.0
 
         pair_ratios = []
         for j in range(n_pairs):
             signal = ratio_phases[:, j].astype(np.float64)
+            # Replace any NaN/inf before processing
+            if not np.all(np.isfinite(signal)):
+                _log.debug("BreathingAnalyzer: non-finite values in pair %d, zeroing", j)
+                signal = np.where(np.isfinite(signal), signal, 0.0)
             # Detrend: subtract linear fit
             x = np.arange(n_time, dtype=np.float64)
             coeffs = np.polyfit(x, signal, 1)
@@ -151,7 +191,166 @@ class BreathingAnalyzer:
             breathing_power = np.sum(power[bin_lo:bin_hi + 1])
             pair_ratios.append(float(breathing_power / total_power))
 
+        if not pair_ratios:
+            return 0.0
         return float(np.median(pair_ratios))
+
+
+class HeartRateAnalyzer:
+    """Detect heart rate (0.8-2.0 Hz) using CSI ratio + FFT.
+
+    Same pipeline as BreathingAnalyzer but targeting the heartbeat band.
+    Uses peak prominence instead of band power ratio for more reliable
+    detection of the weaker cardiac signal.
+    """
+
+    def __init__(self, sample_rate_hz: float = BREATHING_SNAP_HZ,
+                 band_hz: tuple | None = None,
+                 peak_prominence: float | None = None):
+        from ghv4.config import HEARTRATE_BAND_HZ, HEARTRATE_PEAK_PROMINENCE
+        self._fs = sample_rate_hz
+        self._band_hz = band_hz if band_hz is not None else HEARTRATE_BAND_HZ
+        self._prominence = peak_prominence if peak_prominence is not None else HEARTRATE_PEAK_PROMINENCE
+
+    def analyze(self, ratio_phases: np.ndarray) -> tuple[float, float]:
+        """Compute heart rate confidence and estimated BPM.
+
+        Args:
+            ratio_phases: (n_time, n_pairs) float array of CSI ratio phases.
+
+        Returns:
+            (confidence_0_to_1, estimated_bpm). BPM is 0.0 if not detected.
+        """
+        if ratio_phases.ndim != 2:
+            raise ValueError(
+                f"HeartRateAnalyzer.analyze expects 2-D array, got shape {ratio_phases.shape}")
+        n_time, n_pairs = ratio_phases.shape
+        if n_time < 2 or n_pairs == 0:
+            return 0.0, 0.0
+
+        freq_resolution = self._fs / n_time
+        bin_lo = max(1, int(np.ceil(self._band_hz[0] / freq_resolution)))
+        bin_hi = min(n_time // 2, int(np.floor(self._band_hz[1] / freq_resolution)))
+
+        if bin_lo >= bin_hi:
+            return 0.0, 0.0
+
+        pair_confidences = []
+        pair_peak_bins = []
+
+        for j in range(n_pairs):
+            signal = ratio_phases[:, j].astype(np.float64)
+            # Replace NaN/inf before processing
+            if not np.all(np.isfinite(signal)):
+                _log.debug("HeartRateAnalyzer: non-finite values in pair %d, zeroing", j)
+                signal = np.where(np.isfinite(signal), signal, 0.0)
+            # Detrend
+            x = np.arange(n_time, dtype=np.float64)
+            coeffs = np.polyfit(x, signal, 1)
+            signal -= np.polyval(coeffs, x)
+            # Hanning window
+            signal *= np.hanning(n_time)
+            # FFT
+            spectrum = np.fft.rfft(signal)
+            power = np.abs(spectrum) ** 2
+
+            # Extract HR band
+            hr_power = power[bin_lo:bin_hi + 1]
+            total_power = np.sum(power[1:])
+            if total_power < 1e-12:
+                pair_confidences.append(0.0)
+                pair_peak_bins.append(bin_lo)
+                continue
+
+            # Peak prominence
+            peak_idx = np.argmax(hr_power)
+            peak_val = hr_power[peak_idx]
+            band_mean = (np.sum(hr_power) - peak_val) / max(1, len(hr_power) - 1)
+            if band_mean < 1e-12:
+                prominence = float(peak_val > 0)
+            else:
+                prominence = float(peak_val / band_mean)
+
+            band_ratio = float(np.sum(hr_power) / total_power)
+            conf = min(1.0, band_ratio * prominence) if prominence > self._prominence else 0.0
+            pair_confidences.append(conf)
+            pair_peak_bins.append(bin_lo + peak_idx)
+
+        if not pair_confidences:
+            return 0.0, 0.0
+
+        confidence = float(np.median(pair_confidences))
+        if confidence < 1e-6:
+            return 0.0, 0.0
+
+        median_bin = int(np.median(pair_peak_bins))
+        bpm = float(median_bin * freq_resolution * 60.0)
+        return confidence, bpm
+
+
+class PresenceScorer:
+    """Score human presence per path using cross-path ranking + amplitude variance.
+
+    Two independent signals fused with max():
+    - Cross-path ranking: compare each path's mean amplitude against median of all paths
+    - Amplitude variance: 75th-percentile variance over window, mapped through log-sigmoid
+    """
+
+    def score(self, ring_buffers: dict[tuple, 'CSIRingBuffer']) -> dict[tuple, float]:
+        """Return {(min_id, max_id): presence_0_to_1} for all paths with full buffers."""
+        if not ring_buffers:
+            return {}
+
+        ready = {}
+        for key, buf in ring_buffers.items():
+            window = buf.get_window()
+            if window is not None:
+                ready[key] = window
+
+        if not ready:
+            return {key: 0.0 for key in ring_buffers}
+
+        # Cross-path ranking: mean amplitude per path
+        mean_amps = {}
+        for key, w in ready.items():
+            amp = np.abs(w)
+            # Handle all-zero windows
+            mean_val = float(np.mean(amp))
+            if not np.isfinite(mean_val):
+                mean_val = 0.0
+            mean_amps[key] = mean_val
+
+        all_means = list(mean_amps.values())
+        median_amp = float(np.median(all_means)) if all_means else 1.0
+        if median_amp < 1e-6:
+            median_amp = 1e-6
+
+        # Amplitude variance per path (75th percentile across subcarriers)
+        var_scores = {}
+        for key, window in ready.items():
+            amp = np.abs(window).astype(np.float64)
+            # Replace non-finite values before variance
+            if not np.all(np.isfinite(amp)):
+                amp = np.where(np.isfinite(amp), amp, 0.0)
+            per_sub_var = np.var(amp, axis=0)
+            var_75 = float(np.percentile(per_sub_var, 75))
+            # Log-sigmoid mapping using config constants
+            var_scores[key] = float(
+                1.0 / (1.0 + np.exp(
+                    -PRESENCE_LOGSIGMOID_SCALE * (np.log1p(var_75) - PRESENCE_LOGSIGMOID_MIDPOINT)
+                ))
+            )
+
+        scores = {}
+        for key in ring_buffers:
+            if key not in ready:
+                scores[key] = 0.0
+                continue
+            # Rank score: how much this path deviates above median
+            rank_score = float(np.clip(
+                (mean_amps[key] / median_amp - 1.0) / PRESENCE_RANK_DIVISOR, 0.0, 1.0))
+            scores[key] = max(rank_score, var_scores[key])
+        return scores
 
 
 class GridProjector:
@@ -187,7 +386,10 @@ class GridProjector:
 
 
 class BreathingDetector:
-    """Orchestrator: feeds csi_snap frames into ring buffers, runs analysis pipeline.
+    """Orchestrator: feeds csi_snap frames into ring buffers, runs hardened analysis pipeline.
+
+    Pipeline: coherence gate → ring buffer → Hampel filter → subcarrier selection
+    → CSI ratio → BreathingAnalyzer + HeartRateAnalyzer → PresenceScorer → dual-band fusion.
 
     Usage:
         det = BreathingDetector()
@@ -202,18 +404,28 @@ class BreathingDetector:
             key: CSIRingBuffer() for key in self._path_map
         }
         self._projector = GridProjector(path_map=self._path_map)
-        self._extractor = CSIRatioExtractor()
         self._analyzer = BreathingAnalyzer()
+        self._hr_analyzer = HeartRateAnalyzer()
+        self._presence_scorer = PresenceScorer()
         self._last_path_conf: dict[tuple, float] = {}
+        self._last_hr_conf: dict[tuple, tuple[float, float]] = {}
+        self._last_presence: dict[tuple, float] = {}
+        self._rejected_frames = 0
+        self._accepted_frames = 0
 
     def feed_frame(self, frame_type: str, frame_dict: dict) -> None:
         """Feed a parsed frame into the detector.
+
+        Applies coherence gate at ingestion — noisy frames are rejected.
 
         Args:
             frame_type: 'csi_snap' (other types are ignored)
             frame_dict: parsed frame dict with 'reporter_id', 'peer_id', 'csi'
         """
         if frame_type != 'csi_snap':
+            return
+        if not isinstance(frame_dict, dict):
+            _log.warning("feed_frame: expected dict, got %s", type(frame_dict).__name__)
             return
         reporter = frame_dict.get('reporter_id')
         peer = frame_dict.get('peer_id')
@@ -225,13 +437,35 @@ class BreathingDetector:
         csi_raw = frame_dict.get('csi', b'')
         if not csi_raw:
             return
-        csi_complex = parse_csi_bytes(csi_raw)
+        try:
+            csi_complex = parse_csi_bytes(csi_raw)
+        except Exception as exc:
+            _log.warning("feed_frame: failed to parse CSI bytes for S%d↔S%d: %s",
+                         key[0], key[1], exc)
+            return
         csi_array = np.array(csi_complex, dtype=np.complex64)
+        if csi_array.size == 0:
+            _log.debug("feed_frame: empty CSI array for S%d↔S%d", key[0], key[1])
+            return
         # Pad/truncate to SUBCARRIERS
         if len(csi_array) < SUBCARRIERS:
             csi_array = np.pad(csi_array, (0, SUBCARRIERS - len(csi_array)))
         else:
             csi_array = csi_array[:SUBCARRIERS]
+        # Replace NaN/inf before coherence check
+        if not np.all(np.isfinite(csi_array)):
+            _log.debug("feed_frame: non-finite CSI values for S%d↔S%d, replacing with 0",
+                       key[0], key[1])
+            csi_array = np.where(np.isfinite(csi_array), csi_array, 0.0 + 0j)
+        # Reject all-zero frames (no useful signal)
+        if np.all(csi_array == 0):
+            self._rejected_frames += 1
+            return
+        # Coherence gate: reject noisy frames
+        if not gate_frame(csi_array, threshold=COHERENCE_THRESHOLD):
+            self._rejected_frames += 1
+            return
+        self._accepted_frames += 1
         self._buffers[key].push(csi_array)
 
     def is_ready(self) -> bool:
@@ -243,113 +477,96 @@ class BreathingDetector:
         return {key: buf.count / BREATHING_WINDOW_N
                 for key, buf in self._buffers.items()}
 
+    def get_frame_stats(self) -> dict:
+        """Return frame acceptance/rejection statistics."""
+        total = self._accepted_frames + self._rejected_frames
+        return {
+            "accepted": self._accepted_frames,
+            "rejected": self._rejected_frames,
+            "rejection_pct": (self._rejected_frames / total * 100) if total > 0 else 0.0,
+        }
+
     def get_grid_scores(self) -> dict[str, float | None]:
-        """Run A+C analysis on all ready paths and project onto grid.
+        """Run hardened dual-band analysis on all ready paths and project onto grid.
 
-        A+C approach (zero-calibration, no absolute gates):
-          (A) Inter-path contrast — snr_eig normalised by median of all paths.
-              A person elevates nearby paths relative to the group; environmental
-              noise raises all paths roughly equally → contrast ≈ 1.
-          (C) Phase-based CSI ratio — CSIRatioExtractor + BreathingAnalyzer.
-              Conjugate-multiply subcarrier pairs cancels CFO; FFT detects
-              breathing-band phase modulation from chest/body movement.
-
-        Final confidence = max(contrast_score, phase_score).
+        Pipeline per path:
+        1. Hampel filter on amplitude data (temporal outlier rejection)
+        2. Variance-ranked subcarrier selection (top-K most informative)
+        3. CSI ratio → BreathingAnalyzer (0.1-0.5 Hz)
+        4. CSI ratio → HeartRateAnalyzer (0.8-2.0 Hz)
+        5. PresenceScorer across all paths (cross-path ranking + variance)
+        6. Dual-band fusion: confidence = max(presence, breathing, heartrate)
         """
-        # Step 1: compute raw metrics for all ready paths
-        raw_snr: dict[tuple, float] = {}
-        phase_scores: dict[tuple, float] = {}
+        # Step 1-4: per-path breathing + HR analysis with hardening
+        breathing_scores: dict[tuple, float] = {}
         for key, buf in self._buffers.items():
             if not buf.is_full():
                 continue
             window = buf.get_window()
-            raw_snr[key] = self._raw_amplitude_energy(window)
-            phase_scores[key] = self._phase_score(window)
+            if window is None:
+                continue
 
-        if not raw_snr:
+            try:
+                # Hardening: Hampel filter on amplitudes
+                amp = np.abs(window).astype(np.float64)
+                amp_clean = hampel_filter(amp, window=HAMPEL_WINDOW, threshold=HAMPEL_THRESHOLD)
+
+                # Subcarrier selection on cleaned amplitudes
+                selected_idx = select_subcarriers(
+                    amp_clean, top_k=SUBCARRIER_TOP_K, min_k=SUBCARRIER_MIN_K)
+
+                if len(selected_idx) == 0:
+                    breathing_scores[key] = 0.0
+                    self._last_hr_conf[key] = (0.0, 0.0)
+                    continue
+
+                # CSI ratio on selected subcarriers (null_indices empty — already filtered)
+                window_selected = window[:, selected_idx]
+                n_pairs = min(BREATHING_NPAIRS, len(selected_idx) - 1)
+                if n_pairs < 1:
+                    breathing_scores[key] = 0.0
+                    self._last_hr_conf[key] = (0.0, 0.0)
+                    continue
+                extractor = CSIRatioExtractor(
+                    n_subcarriers=len(selected_idx),
+                    n_pairs=n_pairs,
+                    null_indices=frozenset(),
+                )
+                ratio_phases = extractor.extract(window_selected)
+
+                # Breathing analysis
+                breathing_scores[key] = self._analyzer.analyze(ratio_phases)
+
+                # Heart rate analysis
+                hr_conf, hr_bpm = self._hr_analyzer.analyze(ratio_phases)
+                self._last_hr_conf[key] = (hr_conf, hr_bpm)
+            except Exception as exc:
+                _log.error("get_grid_scores: analysis failed for S%d↔S%d: %s",
+                           key[0], key[1], exc)
+                breathing_scores[key] = 0.0
+                self._last_hr_conf[key] = (0.0, 0.0)
+
+        if not breathing_scores:
             return self._projector.project({})
 
-        # Step 2: inter-path contrast (Approach A)
-        snr_values = list(raw_snr.values())
-        median_snr = float(np.median(snr_values)) if len(snr_values) >= 1 else 1.0
-        if median_snr < 1e-6:
-            median_snr = 1e-6
-        use_contrast = len(snr_values) >= BREATHING_MIN_PATHS_FOR_CONTRAST
+        # Step 5: presence scoring across all paths
+        presence = self._presence_scorer.score(self._buffers)
+        self._last_presence = presence
 
-        # Step 3: combined scoring
+        # Step 6: dual-band fusion per path
         path_confidences = {}
-        for key in raw_snr:
-            phase = phase_scores[key]
-            if use_contrast:
-                contrast = raw_snr[key] / median_snr
-                ceiling = BREATHING_CONTRAST_CEILING
-                contrast_score = float(np.clip((contrast - 1.0) / (ceiling - 1.0), 0.0, 1.0))
-            else:
-                contrast = 0.0
-                contrast_score = 0.0
-
-            confidence = max(contrast_score, phase)
-            _log.info("Path S%d↔S%d snr_eig=%.3f contrast=%.2f phase=%.3f → %.3f",
-                      key[0], key[1], raw_snr[key], contrast, phase, confidence)
+        for key in breathing_scores:
+            br = breathing_scores[key]
+            hr_c = self._last_hr_conf.get(key, (0.0, 0.0))[0]
+            pres = presence.get(key, 0.0)
+            vital = max(br, hr_c)
+            confidence = max(pres, vital)
+            _log.info("Path S%d↔S%d presence=%.2f breathing=%.3f hr=%.3f → %.3f",
+                      key[0], key[1], pres, br, hr_c, confidence)
             path_confidences[key] = confidence
 
         self._last_path_conf = path_confidences
         return self._projector.project(path_confidences)
-
-    @staticmethod
-    def _raw_amplitude_energy(window: np.ndarray) -> float:
-        """Band-restricted PCA eigenvalue ratio (raw, no gate/sigmoid).
-
-        Returns snr_eig = λ₁(C_breath) / λ₁(C_ref) where C = P.T @ P over
-        cross-subcarrier covariance in the breathing vs reference frequency band.
-        Used as the raw metric for inter-path contrast normalisation (Approach A).
-        """
-        n_time, n_subs = window.shape
-        freq_res = BREATHING_SNAP_HZ / n_time
-        bin_lo = max(1, int(np.ceil(BREATHING_BAND_HZ[0] / freq_res)))
-        bin_hi = min(n_time // 2, int(np.floor(BREATHING_BAND_HZ[1] / freq_res)))
-        n_band = bin_hi - bin_lo + 1
-        ref_lo = bin_hi + 1
-        ref_hi = min(n_time // 2, ref_lo + n_band - 1)
-
-        valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
-        amp = np.abs(window[:, valid]).astype(np.float64)
-
-        # Vectorised linear detrend
-        x = np.arange(n_time, dtype=np.float64)
-        xm = x - x.mean()
-        xvar = float(np.dot(xm, xm))
-        slopes = (xm @ amp) / xvar
-        intercepts = amp.mean(axis=0) - slopes * x.mean()
-        amp -= x[:, None] * slopes + intercepts
-
-        # Hanning taper + vectorised FFT
-        amp *= np.hanning(n_time)[:, None]
-        power = np.abs(np.fft.rfft(amp, axis=0)) ** 2
-
-        P_breath = power[bin_lo:bin_hi + 1, :]
-        P_ref = power[ref_lo:ref_hi + 1, :]
-
-        C_breath = P_breath.T @ P_breath
-        C_ref = P_ref.T @ P_ref
-
-        lambda1_breath = float(np.linalg.eigvalsh(C_breath)[-1])
-        lambda1_ref = float(np.linalg.eigvalsh(C_ref)[-1])
-
-        if lambda1_ref < 1e-12:
-            return 0.0
-
-        return lambda1_breath / lambda1_ref
-
-    def _phase_score(self, window: np.ndarray) -> float:
-        """CSI ratio phase breathing confidence (Approach C).
-
-        Conjugate-multiply subcarrier pairs to cancel CFO/clock drift,
-        then FFT the ratio phase to detect breathing-band (0.1–0.5 Hz) energy.
-        Returns 0.0–1.0 confidence (median breathing-band power ratio across pairs).
-        """
-        ratio_phases = self._extractor.extract(window)
-        return self._analyzer.analyze(ratio_phases)
 
 
 def reconstruct_csi_from_csv_row(row, shouter_id: int,
@@ -402,7 +619,12 @@ class BreathingThread(threading.Thread):
         from ghv4.config import BREATHING_SLIDE_N
 
         frame_queue = _queue.Queue()
-        ser = pyserial.Serial(self._port, self._baud, timeout=1.0)
+        try:
+            ser = pyserial.Serial(self._port, self._baud, timeout=1.0)
+        except (pyserial.SerialException, OSError) as exc:
+            self._q.put({"type": "status",
+                          "msg": f"Cannot open {self._port}: {exc}"})
+            return
         reader = SerialReader(ser, frame_queue)
         reader.start()
         self._q.put({"type": "status", "msg": f"Connected: {self._port}"})
@@ -422,6 +644,11 @@ class BreathingThread(threading.Thread):
                         last_fill_report = now
                         fill = self._detector.get_buffer_fill()
                         self._q.put({"type": "fill", "fill": fill})
+                    # Detect serial disconnect
+                    if not ser.is_open:
+                        self._q.put({"type": "status",
+                                      "msg": f"Serial port {self._port} disconnected"})
+                        break
                     continue
                 frame_type, frame_dict = item
                 self._detector.feed_frame(frame_type, frame_dict)
@@ -457,12 +684,17 @@ class BreathingThread(threading.Thread):
                     frames_since_update = 0
                     scores = self._detector.get_grid_scores()
                     path_conf = self._detector._last_path_conf
-                    self._q.put({"type": "scores", "grid": scores, "path_conf": path_conf})
+                    hr_conf = self._detector._last_hr_conf
+                    self._q.put({"type": "scores", "grid": scores,
+                                  "path_conf": path_conf, "hr_conf": hr_conf})
         except Exception as e:
             self._q.put({"type": "status", "msg": f"Error: {e}"})
         finally:
             reader.stop()
-            ser.close()
+            try:
+                ser.close()
+            except Exception:
+                pass
 
 
 class SARDemoThread(threading.Thread):
@@ -481,14 +713,20 @@ class SARDemoThread(threading.Thread):
         while not self._stop.is_set():
             # Rotate which path has highest confidence
             path_conf = {}
+            hr_conf = {}
             for i, key in enumerate(path_keys):
-                # Sinusoidal confidence cycling with phase offset per path
                 t = step * 0.05
                 phase_offset = i * (2 * np.pi / len(path_keys))
+                # Breathing confidence (cycling sinusoid)
                 conf = 0.5 + 0.4 * np.sin(2 * np.pi * 0.25 * t + phase_offset)
                 path_conf[key] = float(conf)
+                # Simulated heart rate (weaker, different phase)
+                hr_c = 0.3 + 0.2 * np.sin(2 * np.pi * 0.15 * t + phase_offset + 1.0)
+                hr_bpm = 60 + 20 * np.sin(2 * np.pi * 0.05 * t + phase_offset)
+                hr_conf[key] = (float(max(0, hr_c)), float(hr_bpm))
             grid = projector.project(path_conf)
-            self._q.put({"type": "scores", "grid": grid, "path_conf": path_conf})
+            self._q.put({"type": "scores", "grid": grid, "path_conf": path_conf,
+                          "hr_conf": hr_conf})
             step += 1
             # ~1 Hz update rate
             for _ in range(10):
@@ -519,6 +757,7 @@ try:
             self._path_conf = {}
             self._path_fill = {}
             self._status_msg = "Waiting..."
+            self._hr_conf = {}
             self._cell_rects = {}
             self._shouter_positions = {}
 
@@ -581,6 +820,10 @@ try:
         def update(self, grid_scores, path_conf):
             self._grid_scores = grid_scores
             self._path_conf = path_conf
+
+        def update_hr(self, hr_conf):
+            """Update heart rate confidence per path."""
+            self._hr_conf = hr_conf
 
         def update_fill(self, fill):
             """Update per-path buffer fill fractions {(s1,s2): 0.0-1.0}."""
@@ -658,6 +901,19 @@ try:
                     color = tuple(int(c * alpha) for c in cyan)
                     _pygame.draw.line(self._screen, color, s1_pos, s2_pos, 2)
 
+            # HR indicators on paths with heartbeat detected
+            for key, (hr_c, hr_bpm) in self._hr_conf.items():
+                if hr_c > HEARTRATE_CONFIDENCE_THRESHOLD:
+                    s1_pos = self._shouter_positions.get(key[0])
+                    s2_pos = self._shouter_positions.get(key[1])
+                    if s1_pos and s2_pos:
+                        mid_x = (s1_pos[0] + s2_pos[0]) // 2
+                        mid_y = (s1_pos[1] + s2_pos[1]) // 2
+                        hr_label = self._font_shouter.render(
+                            f"HR {hr_bpm:.0f}", True, (255, 80, 80))
+                        self._screen.blit(hr_label,
+                            hr_label.get_rect(center=(mid_x, mid_y - 10)))
+
             # Status bar
             h = self._screen_size[1]
             bar_y = h - self.STATUS_H
@@ -689,6 +945,14 @@ try:
                     parts.append(f"DETECTED ({', '.join(detected)})")
                 else:
                     parts.append("No breathing detected")
+
+            # HR readings in status bar
+            hr_parts = []
+            for k, (hr_c, hr_bpm) in sorted(self._hr_conf.items()):
+                if hr_c > 0.2 and hr_bpm > 0:
+                    hr_parts.append(f"S{k[0]}↔S{k[1]}:{hr_bpm:.0f}bpm")
+            if hr_parts:
+                parts.append("HR: " + " ".join(hr_parts))
 
             status = self._font_status.render("  |  ".join(parts), True, PI_TEXT_INACTIVE)
             self._screen.blit(status, status.get_rect(

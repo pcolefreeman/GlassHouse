@@ -39,15 +39,38 @@ placeholder default; the user selects the actual port before connecting.
 - Colors match `viz.py` confidence mode (#FF6B35 rescue orange, #0d0d0d dark bg)
 - Pi deployment: `pip install pygame>=2.5.0`; for headless use `SDL_VIDEODRIVER=kmsdrm`
 
+## Signal Hardening (implemented 2026-03-24)
+- File: `ghv4/signal_hardening.py` — three CSI cleaning filters
+- `hampel_filter(csi_amplitudes, window, threshold)` — temporal outlier rejection per subcarrier using MAD
+- `coherence_score(csi_complex)` / `gate_frame(csi_complex, threshold)` — rejects frames with unstable phase via circular variance
+- `select_subcarriers(ring_buffer, top_k, min_k)` — variance-ranked subcarrier selection
+- Config constants: `HAMPEL_WINDOW=11`, `HAMPEL_THRESHOLD=3.0`, `COHERENCE_THRESHOLD=0.3`, `SUBCARRIER_TOP_K=30`, `SUBCARRIER_MIN_K=10`
+
+## Heart Rate Detection (implemented 2026-03-24)
+- `HeartRateAnalyzer` class in `ghv4/breathing.py` — FFT peak prominence in 0.8–2.0 Hz band
+- Config: `HEARTRATE_BAND_HZ=(0.8, 2.0)`, `HEARTRATE_CONFIDENCE_THRESHOLD=0.2`, `HEARTRATE_PEAK_PROMINENCE=0.05`
+- Returns `(confidence, bpm)` tuple; confidence < threshold means no cardiac signal detected
+
+## Presence Scoring (implemented 2026-03-24)
+- `PresenceScorer` class in `ghv4/breathing.py` — cross-path amplitude ranking + 75th-percentile variance with log-sigmoid mapping
+- Returns dict of `{(tx, rx): score}` where score is 0.0–1.0
+
+## Dual-Band Fusion (implemented 2026-03-24)
+- `BreathingDetector.get_grid_scores()` now computes `confidence = max(presence, breathing, heartrate)` per path
+- `BreathingDetector` rewritten: `feed_frame()` has coherence gate, `get_frame_stats()` tracks accepted/rejected
+- Old methods removed: `_raw_amplitude_energy()`, `_phase_score()`, old contrast scoring
+- New attributes: `_hr_analyzer`, `_presence_scorer`, `_last_hr_conf`, `_last_presence`, `_rejected_frames`, `_accepted_frames`
+
 ## CSI Breathing Detection (implemented 2026-03-23, updated 2026-03-24)
 - Spec: `docs/superpowers/specs/2026-03-24-continuous-snap-breathing-design.md`
 - Plan: `docs/superpowers/plans/2026-03-24-continuous-snap-breathing.md` (10 tasks)
-- Files: `ghv4/breathing.py`, `run_sar.py`, `tests/test_breathing.py`
+- SAR vital sign plan: `docs/superpowers/plans/2026-03-24-ghv4-sar-vital-sign-detector.md` (8 tasks)
+- Files: `ghv4/breathing.py`, `ghv4/signal_hardening.py`, `run_sar.py`, `tests/test_breathing.py`, `tests/test_heartrate.py`, `tests/test_signal_hardening.py`
 - `_parse_csi_bytes` renamed to `parse_csi_bytes` (public API)
 - Pure signal processing (no ML) — CSI ratio + FFT for zero-calibration human presence detection
 - Uses shouter↔shouter CSI_SNAP frames (`[0xEE][0xFF]`), 6 paths covering all 9 grid cells
 - `BREATHING_PATH_MAP` uses `(min_id, max_id)` tuple keys for undirected shouter pairs
-- `BREATHING_SNAP_HZ=20`, `BREATHING_WINDOW_N=600` (20 Hz × 30s), `BREATHING_SLIDE_N=20`
+- `BREATHING_SNAP_HZ=20`, `BREATHING_WINDOW_N=300` (20 Hz × 15s), `BREATHING_SLIDE_N=20`
 - `SerialReader` enqueues snap frames as `('csi_snap', frame)` to `frame_queue`
 - `BreathingDetector.feed_frame('csi_snap', frame)` with canonical `(min,max)` key routing
 - Pygame heatmap display via `BreathingDisplay` + `BreathingThread`/`SARDemoThread`

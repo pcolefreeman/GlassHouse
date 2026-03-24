@@ -14,7 +14,7 @@
 #define SER_B_MAGIC_0   0xBB
 #define SER_B_MAGIC_1   0xDD
 
-#define POLL_PAD_SIZE     95
+#define POLL_PAD_SIZE     96
 #define CSI_MAX_BYTES    384
 #define SHOUTER_CSI_MAX  384
 
@@ -31,9 +31,8 @@ typedef struct __attribute__((packed)) {
     uint8_t  target_id;
     uint32_t poll_seq;
     uint32_t listener_ms;
-    uint8_t  stagger_base;          // rotating first-responder ID (1-4); 0 = legacy (S1 first)
     uint8_t  pad[POLL_PAD_SIZE];
-} poll_pkt_t;              // 108 bytes (stagger_base replaces 1 pad byte)
+} poll_pkt_t;              // 108 bytes
 
 typedef struct __attribute__((packed)) {
     uint8_t  magic[2];
@@ -116,23 +115,16 @@ typedef struct __attribute__((packed)) {
     uint8_t  csi[CSI_SNAP_MAX];
 } csi_snap_pkt_t;            // 8 + 384 = 392 bytes max
 
-// ── Per-path CSI baseline (SPIFFS storage) ──────────────────────────────
-// Stores empty-room CSI amplitude baseline per shouter pair for SAR normalization.
-// 6 paths: (1,2), (1,3), (1,4), (2,3), (2,4), (3,4)
-#define BASELINE_N_PATHS   6
-#define BASELINE_N_SUBCARRIERS 128
+// ── Per-path CSI baseline (stored in SPIFFS) ─────────────────────────────────
+// Stores average empty-room CSI amplitude per subcarrier for one shouter pair.
+// Used by SAR breathing/presence detection to subtract static environment.
+// 128 subcarriers × 2 bytes (amplitude) = 256 bytes of CSI data.
+#define BASELINE_N_SUBCARRIERS  128
 
 typedef struct __attribute__((packed)) {
-    uint8_t  ver;                          // = 1
-    uint8_t  reporter_id;                  // shouter that captured the CSI
-    uint8_t  peer_id;                      // peer shouter
-    uint8_t  _reserved;
-    float    mean_amplitude[BASELINE_N_SUBCARRIERS];  // mean |CSI| per subcarrier
-} path_baseline_entry_t;    // 4 + 128*4 = 516 bytes
-
-typedef struct __attribute__((packed)) {
-    uint8_t  magic[2];                     // 'B','L' for identification
-    uint8_t  ver;                          // = 1
-    uint8_t  n_paths;                      // number of valid entries (0-6)
-    path_baseline_entry_t paths[BASELINE_N_PATHS];
-} baseline_file_t;          // 4 + 6*516 = 3100 bytes
+    uint8_t  reporter_id;    // shouter that captured the CSI
+    uint8_t  peer_id;        // shouter that sent the beacon
+    uint16_t n_samples;      // number of frames averaged into this baseline
+    uint32_t timestamp_ms;   // millis() when baseline was captured
+    float    amplitude[BASELINE_N_SUBCARRIERS];  // mean |CSI| per subcarrier (float for averaging)
+} csi_baseline_t;            // 2 + 2 + 4 + 128*4 = 520 bytes

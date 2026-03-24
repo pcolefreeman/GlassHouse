@@ -80,6 +80,23 @@ CALIBRATION_MIN_PAIRS  = 10       # min matched fwd/rev pairs per shouter pair
 DISTANCE_MODEL_DIR     = "distance_models"
 DISTANCE_MAX_TREES     = 200      # max estimators per GB/RF model (Pi memory budget)
 
+# ── Signal hardening (RuView-inspired) ───────────────────────
+HAMPEL_WINDOW = 11                        # Sliding window size for Hampel filter
+HAMPEL_THRESHOLD = 3.0                    # MAD multiplier for outlier rejection
+COHERENCE_THRESHOLD = 0.3                 # Min coherence score to accept frame
+SUBCARRIER_TOP_K = 30                     # Number of subcarriers to select per path
+SUBCARRIER_MIN_K = 10                     # Never select fewer than this many subcarriers
+
+# ── Heart rate detection ─────────────────────────────────────
+HEARTRATE_BAND_HZ = (0.8, 2.0)           # Heart rate frequency range
+HEARTRATE_CONFIDENCE_THRESHOLD = 0.2      # Lower than breathing (0.3) — weaker signal
+HEARTRATE_PEAK_PROMINENCE = 0.05          # FFT peak prominence threshold
+
+# ── Presence scoring ────────────────────────────────────────
+PRESENCE_LOGSIGMOID_SCALE = 2.0           # Steepness of log-sigmoid mapping
+PRESENCE_LOGSIGMOID_MIDPOINT = 0.5        # log1p(var) midpoint for sigmoid
+PRESENCE_RANK_DIVISOR = 2.0               # Normalizer: (mean/median - 1) / divisor → 0-1
+
 # ── Breathing detection ───────────────────────────────────────
 BREATHING_WINDOW_S    = 15
 BREATHING_SNAP_HZ     = 20

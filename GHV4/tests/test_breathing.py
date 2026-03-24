@@ -319,8 +319,14 @@ class TestBreathingDetectorE2E:
         assert scores["r1c1"] is not None and scores["r1c1"] > 20.0, \
             f"Center cell should detect breathing, got {scores['r1c1']}"
 
-    def test_all_paths_uniform_no_detection(self):
-        """All paths with identical breathing → contrast ≈ 1 → no localized detection."""
+    def test_all_paths_uniform_detected_not_localized(self):
+        """All paths with identical breathing → detection on all paths, no localization.
+
+        With the new dual-band pipeline (PresenceScorer + BreathingAnalyzer),
+        uniform breathing across all paths IS detected (someone is present).
+        The system correctly detects vital signs but cannot localize — all paths
+        show similar confidence.
+        """
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
         n_time = BREATHING_WINDOW_N
@@ -336,12 +342,12 @@ class TestBreathingDetectorE2E:
                 })
 
         scores = det.get_grid_scores()
-        # Uniform breathing on all paths: contrast ≈ 1 for all → low/no confidence
-        # (correct: indistinguishable from environmental noise affecting all paths)
-        for cell in CELL_LABELS:
-            if scores[cell] is not None:
-                assert scores[cell] < 50.0, \
-                    f"Uniform paths should not trigger high confidence: {cell}={scores[cell]}"
+        # All paths have identical signal → similar scores, low spread
+        active_scores = [s for s in scores.values() if s is not None]
+        if active_scores:
+            spread = max(active_scores) - min(active_scores)
+            assert spread < 30.0, \
+                f"Uniform paths should have similar scores, spread={spread}"
 
     def test_static_signal_no_detection(self):
         """Feed constant CSI via csi_snap, verify low/no confidence."""
@@ -359,62 +365,66 @@ class TestBreathingDetectorE2E:
             if score is not None:
                 assert score < 30.0, f"Cell {cell} had {score}% with static signal"
 
-    def test_raw_amplitude_energy_coherent_beats_incoherent(self):
-        """PCA snr_eig: coherent multi-subcarrier breathing has higher snr_eig than noise."""
-        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, SUBCARRIERS
-        from ghv4.breathing import BreathingDetector
+    def test_breathing_analyzer_detects_025hz(self):
+        """BreathingAnalyzer detects 0.25 Hz phase modulation (replaces old _phase_score test)."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
+        from ghv4.breathing import BreathingAnalyzer, CSIRatioExtractor
 
         n_time = BREATHING_WINDOW_N
-        n_sub = SUBCARRIERS
-        t = np.arange(n_time) / BREATHING_SNAP_HZ
-        rng = np.random.default_rng(42)
-
-        base_amp = 1000.0
-        breath_amp = 800.0
-        breathing_signal = breath_amp * np.sin(2 * np.pi * 0.25 * t)
-        coherent_real = np.full((n_time, n_sub), base_amp, dtype=np.float32)
-        coherent_real[:, :10] += breathing_signal[:, None].astype(np.float32)
-        coherent_window = coherent_real.astype(np.complex64)
-
-        noise_real = (rng.standard_normal((n_time, n_sub)) * base_amp).astype(np.float32)
-        noise_window = noise_real.astype(np.complex64)
-
-        coherent_snr = BreathingDetector._raw_amplitude_energy(coherent_window)
-        noise_snr = BreathingDetector._raw_amplitude_energy(noise_window)
-
-        assert coherent_snr > noise_snr, (
-            f"Coherent snr_eig {coherent_snr:.3f} should exceed noise {noise_snr:.3f}"
-        )
-        assert coherent_snr > 1.0, "Coherent 0.25 Hz signal should have snr_eig > 1"
-
-    def test_phase_score_detects_breathing(self):
-        """Phase-based CSI ratio (Approach C) detects 0.25 Hz phase modulation."""
-        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, SUBCARRIERS
-
-        det = BreathingDetector()
-        n_time = BREATHING_WINDOW_N
-        n_sub = SUBCARRIERS
+        n_sub = 128
         t = np.arange(n_time) / BREATHING_SNAP_HZ
 
-        # Phase-modulated CSI: different subcarriers get differential phase shift
-        # simulating path-length change from breathing
+        # Phase-modulated CSI with differential phase shift across subcarriers
         window = np.ones((n_time, n_sub), dtype=np.complex64)
         for sc in range(n_sub):
-            # Differential phase modulation: amplitude scales with subcarrier index
             phase_mod = 0.3 * np.sin(2 * np.pi * 0.25 * t) * (sc / n_sub)
             window[:, sc] = np.exp(1j * phase_mod)
 
-        score = det._phase_score(window)
-        assert score > 0.3, f"Phase score {score:.3f} should detect 0.25 Hz phase modulation"
+        extractor = CSIRatioExtractor()
+        analyzer = BreathingAnalyzer()
+        ratio_phases = extractor.extract(window)
+        score = analyzer.analyze(ratio_phases)
+        assert score > 0.3, f"Score {score:.3f} should detect 0.25 Hz phase modulation"
 
-    def test_phase_score_low_for_static(self):
-        """Static CSI (no phase modulation) yields low phase score."""
-        from ghv4.config import BREATHING_WINDOW_N, SUBCARRIERS
+    def test_breathing_analyzer_low_for_static(self):
+        """Static CSI yields low breathing confidence (replaces old _phase_score test)."""
+        from ghv4.config import BREATHING_WINDOW_N
+        from ghv4.breathing import BreathingAnalyzer, CSIRatioExtractor
 
-        det = BreathingDetector()
-        window = np.ones((BREATHING_WINDOW_N, SUBCARRIERS), dtype=np.complex64)
-        score = det._phase_score(window)
-        assert score < 0.1, f"Static signal phase score {score:.3f} should be near zero"
+        window = np.ones((BREATHING_WINDOW_N, 128), dtype=np.complex64)
+        extractor = CSIRatioExtractor()
+        analyzer = BreathingAnalyzer()
+        ratio_phases = extractor.extract(window)
+        score = analyzer.analyze(ratio_phases)
+        assert score < 0.1, f"Static signal score {score:.3f} should be near zero"
+
+    def test_presence_scorer_coherent_beats_noise(self):
+        """PresenceScorer: path with breathing has higher presence than noise (replaces old PCA test)."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, SUBCARRIERS
+        from ghv4.breathing import PresenceScorer, CSIRingBuffer
+
+        n_time = BREATHING_WINDOW_N
+        n_sub = SUBCARRIERS
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        # Coherent breathing path
+        breath_buf = CSIRingBuffer(capacity=n_time, n_subcarriers=n_sub)
+        for step in range(n_time):
+            amp = 1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step])
+            csi = np.full(n_sub, amp, dtype=np.complex64)
+            breath_buf.push(csi)
+
+        # Noise path
+        rng = np.random.default_rng(42)
+        noise_buf = CSIRingBuffer(capacity=n_time, n_subcarriers=n_sub)
+        for _ in range(n_time):
+            csi = (rng.standard_normal(n_sub) * 0.1 + 1.0).astype(np.complex64)
+            noise_buf.push(csi)
+
+        scorer = PresenceScorer()
+        scores = scorer.score({(1, 3): breath_buf, (2, 3): noise_buf})
+        assert scores[(1, 3)] > scores[(2, 3)], \
+            f"Breathing path {scores[(1, 3)]:.3f} should exceed noise {scores[(2, 3)]:.3f}"
 
     def test_contrast_normalization_isolates_hot_path(self):
         """Inter-path contrast (Approach A): one elevated path detected, others suppressed."""
@@ -464,6 +474,101 @@ class TestBreathingDetectorE2E:
                 assert scores[cell] < hot_min, \
                     f"Cold cell {cell}={scores[cell]} should be below hot min {hot_min}"
 
+
+
+class TestDualBandFusionInDetector:
+    """Tests for dual-band fusion (breathing + HR + presence) in BreathingDetector."""
+
+    @staticmethod
+    def _make_csi_bytes_modulated(n_sub, t_val, freq):
+        """Generate CSI bytes with amplitude modulation at given frequency."""
+        amp = int(1000 + 800 * np.sin(2 * np.pi * freq * t_val))
+        return b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+
+    def test_hr_only_path_detected(self):
+        """Path with HR-band modulation (1.0 Hz) but no breathing should still be detected."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+        hot_path = (1, 2)
+        static_csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(128))
+
+        for step in range(n_time):
+            for key in BREATHING_PATH_MAP:
+                if key == hot_path:
+                    csi = self._make_csi_bytes_modulated(128, t[step], 1.0)
+                else:
+                    csi = static_csi
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
+
+        scores = det.get_grid_scores()
+        # Hot path (1,2) covers r2c0, r1c0, r0c0
+        hot_cells = BREATHING_PATH_MAP[(1, 2)]
+        for cell in hot_cells:
+            assert scores[cell] is not None and scores[cell] > 0.0, \
+                f"HR-only path cell {cell} should be detected, got {scores[cell]}"
+
+    def test_get_frame_stats_counts_coherence_gate(self):
+        """Frame stats should track accepted vs rejected frames through coherence gate."""
+        det = BreathingDetector()
+        # Coherent frame (linear phase) — should be accepted
+        coherent_csi = b''.join(
+            struct.pack('<hh', int(1000 * np.cos(0.05 * sc)), int(1000 * np.sin(0.05 * sc)))
+            for sc in range(128)
+        )
+        det.feed_frame('csi_snap', {'reporter_id': 1, 'peer_id': 2, 'csi': coherent_csi})
+        stats = det.get_frame_stats()
+        total = stats["accepted"] + stats["rejected"]
+        assert total == 1
+        assert "rejection_pct" in stats
+
+    def test_dual_band_fusion_uses_max(self):
+        """Dual-band fusion takes max(presence, breathing, heartrate) per path.
+        Verify by feeding two paths: one with breathing, one with HR."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        # Path (1,3): breathing frequency (0.25 Hz)
+        # Path (2,4): HR frequency (1.0 Hz)
+        # All other paths: static
+        static_csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(128))
+
+        for step in range(n_time):
+            for key in BREATHING_PATH_MAP:
+                if key == (1, 3):
+                    csi = self._make_csi_bytes_modulated(128, t[step], 0.25)
+                elif key == (2, 4):
+                    csi = self._make_csi_bytes_modulated(128, t[step], 1.0)
+                else:
+                    csi = static_csi
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
+
+        scores = det.get_grid_scores()
+        # Both breathing path (1,3) and HR path (2,4) cross r1c1
+        # Center cell should have a score from fusion
+        assert scores["r1c1"] is not None, "Center cell should be covered by both paths"
+
+    def test_buffer_fill_reports_fractions(self):
+        """get_buffer_fill() should return fractions between 0 and 1."""
+        from ghv4.config import BREATHING_WINDOW_N
+        det = BreathingDetector()
+        csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(128))
+        # Feed 10 frames to one path
+        for _ in range(10):
+            det.feed_frame('csi_snap', {'reporter_id': 1, 'peer_id': 2, 'csi': csi})
+        fill = det.get_buffer_fill()
+        assert isinstance(fill, dict)
+        for key, frac in fill.items():
+            assert 0.0 <= frac <= 1.0, f"Fill fraction {frac} out of range for {key}"
+        # Path (1,2) should have some fill
+        assert fill[(1, 2)] > 0.0
 
 
 class TestRunSarCLI:

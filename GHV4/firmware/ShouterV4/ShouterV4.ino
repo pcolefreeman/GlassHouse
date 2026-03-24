@@ -358,13 +358,15 @@ void loop() {
         listener_warning_sent = true;
     }
 
-    // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (~20 Hz avg)
+    // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (~20 Hz)
+    // Jitter: random interval 42-58ms (base 50ms ± 8ms) to reduce ESP-NOW collisions
+    // between shouters that would otherwise beacon at synchronized intervals.
     static uint32_t last_beacon_ms = 0;
     static uint32_t cont_bcn_seq = 0;
-    static uint32_t next_beacon_interval = 50;
+    static uint32_t next_beacon_interval = 50;  // ms until next beacon
     if (my_id > 0 && millis() - last_beacon_ms >= next_beacon_interval) {
         last_beacon_ms = millis();
-        next_beacon_interval = 40 + (esp_random() % 21);  // 40-60ms jitter to reduce ESP-NOW collisions
+        next_beacon_interval = 42 + (esp_random() % 17);  // 42-58ms (50 ± 8ms jitter)
         range_bcn_pkt_t bcn;
         bcn.magic[0]   = RANGE_BCN_MAGIC_0;
         bcn.magic[1]   = RANGE_BCN_MAGIC_1;
@@ -467,19 +469,20 @@ void loop() {
     }
     if (poll->target_id != my_id && poll->target_id != 0xFF) return;
 
-    // For broadcast polls, stagger response using rotating base from listener
+    // For broadcast polls, stagger response using rotation offset from listener.
+    // pad[0] contains the rotation offset (0-3); shouter computes its position
+    // in the rotated order: position = (my_id - 1 - offset + 4) % 4.
+    // Position 0 responds immediately; others stagger by position * STAGGER_MS.
     if (poll->target_id == 0xFF) {
-        uint8_t base = poll->stagger_base;
-        if (base < 1 || base > 4) base = 0;  // range validation for old-firmware compat
-        uint8_t offset = (base > 0) ? ((my_id - base + 4) % 4) : (my_id - 1);
-        if (offset > 0) {
+        uint8_t offset = poll->pad[0] % 4;
+        uint8_t position = ((my_id - 1) - offset + 4) % 4;
+        if (position > 0) {
             stagger_pending = true;
-            stagger_target_ms = millis() + (uint32_t)offset * STAGGER_MS;
+            stagger_target_ms = millis() + (uint32_t)position * STAGGER_MS;
             memcpy(&stagger_poll, poll, sizeof(poll_pkt_t));
             return;  // response sent from loop() after stagger delay
         }
-        // offset == 0: this shouter is the first responder this cycle
     }
-    // Direct poll or first shouter in broadcast — respond immediately
+    // Direct poll or first in rotated broadcast order — respond immediately
     send_poll_response(poll);
 }

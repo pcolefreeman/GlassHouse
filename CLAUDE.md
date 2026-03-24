@@ -5,24 +5,20 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- Test count: 181 passing + 1 skipped (2026-03-23)
-- Last exe rebuild: needs rebuild (breathing.py + run_sar.py changed)
-- Unstaged changes: ML distance pipeline + [CC][DD] removal + inference scaling fix + spacing name fix + Pi LCD display + META_COLS activity fix + breathing detection + --skip-cv training + continuous shouter beacons firmware
+- Test count: ~264 passing + 1 skipped (2026-03-24)
+- Exe: no longer used (data collection phase complete)
 - Active branch: main
+- Unstaged changes: all previous + signal hardening + heartrate + presence scorer + dual-band fusion
+- Done: SAR vital sign detector implementation (2026-03-24) — signal hardening, HeartRateAnalyzer, PresenceScorer, dual-band fusion, BreathingDetector rewrite
+- Done: Overstory setup (2026-03-24) — quality gates fixed for Python, os-eco files removed from git tracking
 - Done: Continuous shouter beacons firmware (2026-03-24) — ranging disabled, 10 Hz beacons added
 - Done: Continuous snap breathing detection spec (2026-03-24) — design approved, spec reviewed
-- Done: Continuous snap breathing implementation plan (2026-03-24) — reviewer approved, 10 tasks
 - Done: Empty-room baseline validated 2026-03-24 — root cause of false positives identified (listener proximity to paths)
-- Done: `_variance_score()` removed (2026-03-24) — replaced by `_amplitude_score()` (above-band SNR normalization, 95th-pct subcarrier aggregation, log-sigmoid mapping)
-- Deployment constraint confirmed 2026-03-24: listener must be stationary INSIDE room during scan — moving outside behind closed door causes all paths to saturate (WiFi link degradation)
-- Pending: End-to-end firmware/serial/data-collection debugging plan
-- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
-- Done: AMP verification testing (2026-03-25) — snap frame bug fixed, CSI breathing detection method finalized
-- Done: Snap rate diagnostics + beacon rate 20 Hz + BREATHING_WINDOW_S=15 (2026-03-25)
-- Done: `BREATHING_CONTRAST_CEILING` fixed to `3.0` (2026-03-25) — A+C amplitude contrast scoring now active
-- Done: run_sar.py import cleanup (2026-03-25) — lazy imports consolidated, unused BREATHING_PATH_MAP removed, console/pygame parity fix
 - Done: SAR connectivity + effectiveness design spec (2026-03-25) — stagger rotation, beacon jitter, temporal filter, per-path baseline, path diversity
-- Next session: Write implementation plan + implement SAR connectivity/effectiveness improvements (spec at `docs/superpowers/specs/2026-03-25-sar-connectivity-effectiveness-design.md`)
+- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
+- Done: `ov sling` Windows fix (2026-03-24) — 3 patches to installed overstory-cli package (see Overstory section)
+- Done: Reported Windows/psmux bugs to upstream overstory issue #83 (jayminwest/overstory) — markdown at overstory-issue-79-comment.md
+- Next session: Build overstory orchestrator to improve firmware + software based on hardware constraints and goals
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -117,6 +113,27 @@ Detailed gotchas, protocols, and conventions are in local CLAUDE.md files
 - **`GHV4/firmware/CLAUDE.md`** — serial/UDP frame protocol, ESP32 gotchas, ranging, CSI format
 - **`GHV4/ghv4/CLAUDE.md`** — constants rule, data/labels, GUI ports, ML distance pipeline, parser gotchas
 - **`GHV4/tests/CLAUDE.md`** — known test failures, test fixture requirements
+
+## Overstory (Multi-Agent Orchestration)
+- CLI: `ov` (installed via bun global)
+- Config: `.overstory/config.yaml` — quality gates use `cd GHV4 && python -m pytest tests/`
+- All os-eco dirs (`.overstory/`, `.seeds/`, `.canopy/`, `.mulch/`) are gitignored and local-only — do NOT commit them
+- Agent roles: scout (Haiku), builder/reviewer/merger/monitor (Sonnet), lead/coordinator/orchestrator (Opus)
+- Commands: `ov status`, `ov sling <agent>`, `ov mail check`, `ov doctor`, `ov dashboard`
+
+### Windows / psmux Compatibility (FIXED 2026-03-24)
+Three patches applied to `~/.bun/install/global/node_modules/@os-eco/overstory-cli/src/`:
+
+**Root cause**: psmux is a native Windows ConPTY multiplexer; it cannot resolve `/bin/bash` (Unix path) and MSYS2 bash intermittently dies when starting as the ConPTY process.
+
+**Patch 1 — `worktree/tmux.ts` (createSession)**: On Windows, translate bash `export`/`unset` to `cmd /c SET "K=V"` commands. Avoids `/bin/bash` entirely. cmd.exe is native Windows and works reliably cold.
+
+**Patch 2 — `worktree/tmux.ts` (getDescendantPids)**: Return `[]` on Windows (`pgrep` not available; session kill still works via tmux kill-session).
+
+**Patch 3 — `runtimes/claude.ts` (detectReady)**: psmux's `capture-pane` strips column-padding spaces from TUI output, so "WARNING: Claude Code running..." becomes "WARNING:ClaudeCode...". Added spaceless-form checks for the bypass permissions dialog and "bypasspermissions" for the status bar.
+
+**Note**: These patches are in the installed bun package and will be lost on `bun upgrade` of overstory. Re-apply if overstory is upgraded.
+**Upstream tracking**: jayminwest/overstory issue #83 — "Native Windows support via mprocs/psmux (no WSL required)"
 
 ## Behavioral Rules
 - Do NOT run any git commands (commit, add, push, pull, checkout) — user handles all git operations
