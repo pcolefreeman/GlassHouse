@@ -1,0 +1,199 @@
+"""Tests for ghv4.signal_hardening — CSI signal cleaning filters."""
+import numpy as np
+import pytest
+
+
+class TestHampelFilter:
+    def test_clean_data_unchanged(self):
+        """Clean sinusoidal data should pass through without modification."""
+        from ghv4.signal_hardening import hampel_filter
+        n_frames, n_subs = 50, 10
+        t = np.arange(n_frames, dtype=np.float64)
+        data = np.column_stack([np.sin(0.1 * t + i) for i in range(n_subs)])
+        result = hampel_filter(data, window=11, threshold=3.0)
+        np.testing.assert_allclose(result, data, atol=1e-6)
+
+    def test_outliers_replaced_with_median(self):
+        """Known outlier spikes should be replaced by local median."""
+        from ghv4.signal_hardening import hampel_filter
+        n_frames, n_subs = 50, 5
+        data = np.ones((n_frames, n_subs), dtype=np.float64)
+        data[25, 0] = 100.0
+        result = hampel_filter(data, window=11, threshold=3.0)
+        assert abs(result[25, 0] - 1.0) < 0.5, f"Outlier not replaced: {result[25, 0]}"
+
+    def test_output_shape_matches_input(self):
+        """Output shape must equal input shape."""
+        from ghv4.signal_hardening import hampel_filter
+        data = np.random.default_rng(42).standard_normal((30, 20))
+        result = hampel_filter(data, window=7, threshold=3.0)
+        assert result.shape == data.shape
+
+    def test_50_percent_contamination_robust(self):
+        """Hampel should resist up to ~50% contaminated samples per window."""
+        from ghv4.signal_hardening import hampel_filter
+        n_frames = 22
+        data = np.ones((n_frames, 1), dtype=np.float64)
+        for i in range(6, 11):
+            data[i, 0] = 50.0
+        result = hampel_filter(data, window=11, threshold=3.0)
+        assert abs(result[3, 0] - 1.0) < 0.5
+
+
+class TestCoherenceGate:
+    def test_clean_phase_accepted(self):
+        """Frame with linear phase progression should be accepted."""
+        from ghv4.signal_hardening import coherence_score, gate_frame
+        n_subs = 64
+        phases = np.linspace(0, np.pi, n_subs)
+        csi = np.exp(1j * phases).astype(np.complex64)
+        score = coherence_score(csi)
+        assert score > 0.5, f"Clean phase score {score} too low"
+        assert gate_frame(csi, threshold=0.3) is True
+
+    def test_random_phase_rejected(self):
+        """Frame with random phase should be rejected."""
+        from ghv4.signal_hardening import coherence_score, gate_frame
+        rng = np.random.default_rng(42)
+        n_subs = 64
+        phases = rng.uniform(-np.pi, np.pi, n_subs)
+        csi = np.exp(1j * phases).astype(np.complex64)
+        score = coherence_score(csi)
+        assert score < 0.3, f"Random phase score {score} too high"
+        assert gate_frame(csi, threshold=0.3) is False
+
+    def test_score_range_0_to_1(self):
+        """Coherence score must be in [0, 1]."""
+        from ghv4.signal_hardening import coherence_score
+        rng = np.random.default_rng(99)
+        for _ in range(10):
+            csi = (rng.standard_normal(64) + 1j * rng.standard_normal(64)).astype(np.complex64)
+            s = coherence_score(csi)
+            assert 0.0 <= s <= 1.0, f"Score {s} out of range"
+
+
+class TestSubcarrierSelection:
+    def test_selects_high_variance_subcarriers(self):
+        """Top-K should include planted high-variance subcarriers."""
+        from ghv4.signal_hardening import select_subcarriers
+        rng = np.random.default_rng(42)
+        n_frames, n_subs = 100, 50
+        data = rng.standard_normal((n_frames, n_subs)) * 0.01
+        planted = [10, 20, 30]
+        for sc in planted:
+            data[:, sc] = rng.standard_normal(n_frames) * 10.0
+        selected = select_subcarriers(data, top_k=10, min_k=5)
+        for sc in planted:
+            assert sc in selected, f"Planted subcarrier {sc} not selected"
+
+    def test_returns_at_least_min_k(self):
+        """Even with uniform variance, at least min_k subcarriers returned."""
+        from ghv4.signal_hardening import select_subcarriers
+        data = np.ones((50, 30), dtype=np.float64)
+        selected = select_subcarriers(data, top_k=10, min_k=5)
+        assert len(selected) >= 5
+
+    def test_returns_at_most_top_k(self):
+        """Should not return more than top_k subcarriers."""
+        from ghv4.signal_hardening import select_subcarriers
+        rng = np.random.default_rng(42)
+        data = rng.standard_normal((100, 50))
+        selected = select_subcarriers(data, top_k=10, min_k=5)
+        assert len(selected) <= 10
+
+    def test_output_is_sorted_indices(self):
+        """Returned indices should be valid subcarrier indices."""
+        from ghv4.signal_hardening import select_subcarriers
+        rng = np.random.default_rng(42)
+        data = rng.standard_normal((100, 50))
+        selected = select_subcarriers(data, top_k=10, min_k=5)
+        assert all(0 <= idx < 50 for idx in selected)
+
+
+class TestHampelFilterEdgeCases:
+    """Additional edge-case tests for Hampel filter."""
+
+    def test_single_column(self):
+        """Hampel filter works on a single subcarrier column."""
+        from ghv4.signal_hardening import hampel_filter
+        data = np.ones((20, 1), dtype=np.float64)
+        data[10, 0] = 999.0
+        result = hampel_filter(data, window=5, threshold=3.0)
+        assert abs(result[10, 0] - 1.0) < 0.5
+
+    def test_all_identical_values_unchanged(self):
+        """Constant data with no outliers should pass through unchanged."""
+        from ghv4.signal_hardening import hampel_filter
+        data = np.full((30, 5), 42.0, dtype=np.float64)
+        result = hampel_filter(data, window=7, threshold=3.0)
+        np.testing.assert_allclose(result, data)
+
+    def test_multiple_outliers_different_columns(self):
+        """Outliers in separate columns should each be corrected independently."""
+        from ghv4.signal_hardening import hampel_filter
+        data = np.zeros((40, 3), dtype=np.float64)
+        data[5, 0] = 100.0
+        data[20, 1] = -100.0
+        data[35, 2] = 200.0
+        result = hampel_filter(data, window=11, threshold=3.0)
+        assert abs(result[5, 0]) < 1.0
+        assert abs(result[20, 1]) < 1.0
+        assert abs(result[35, 2]) < 1.0
+
+    def test_does_not_modify_input(self):
+        """Hampel filter must return a copy, not modify in-place."""
+        from ghv4.signal_hardening import hampel_filter
+        data = np.ones((20, 3), dtype=np.float64)
+        data[10, 0] = 500.0
+        original = data.copy()
+        hampel_filter(data, window=7, threshold=3.0)
+        np.testing.assert_array_equal(data, original)
+
+    def test_small_window_size(self):
+        """Window=3 (minimum useful odd) still works."""
+        from ghv4.signal_hardening import hampel_filter
+        data = np.ones((10, 2), dtype=np.float64)
+        data[5, 0] = 50.0
+        result = hampel_filter(data, window=3, threshold=3.0)
+        assert abs(result[5, 0] - 1.0) < 0.5
+
+
+class TestCoherenceGateEdgeCases:
+    """Additional edge-case tests for coherence scoring."""
+
+    def test_constant_phase_perfect_coherence(self):
+        """All subcarriers with identical phase should have coherence ~1.0."""
+        from ghv4.signal_hardening import coherence_score
+        csi = np.exp(1j * 0.5) * np.ones(64, dtype=np.complex64)
+        score = coherence_score(csi)
+        assert score > 0.95, f"Constant phase should give ~1.0, got {score}"
+
+    def test_gate_threshold_boundary(self):
+        """Frame right at threshold boundary should be accepted if score == threshold."""
+        from ghv4.signal_hardening import gate_frame
+        # Linear phase gives high coherence; test that threshold=0.0 accepts anything
+        rng = np.random.default_rng(42)
+        csi = (rng.standard_normal(64) + 1j * rng.standard_normal(64)).astype(np.complex64)
+        assert gate_frame(csi, threshold=0.0) is True
+
+
+class TestSubcarrierSelectionEdgeCases:
+    """Additional edge-case tests for subcarrier selection."""
+
+    def test_min_k_exceeds_n_subs(self):
+        """When n_subs < min_k, should return n_subs indices (all of them)."""
+        from ghv4.signal_hardening import select_subcarriers
+        data = np.random.default_rng(42).standard_normal((20, 5))
+        selected = select_subcarriers(data, top_k=30, min_k=10)
+        # k = max(10, min(30, 5)) = 10, but capped by n_subs=5 in argsort
+        assert len(selected) == 5
+
+    def test_ranking_order_descending_variance(self):
+        """First returned index should have the highest variance."""
+        from ghv4.signal_hardening import select_subcarriers
+        rng = np.random.default_rng(42)
+        data = rng.standard_normal((100, 10))
+        # Plant highest variance in column 7
+        data[:, 7] = rng.standard_normal(100) * 100.0
+        selected = select_subcarriers(data, top_k=5, min_k=1)
+        assert selected[0] == 7, f"Highest variance subcarrier should be first, got {selected[0]}"

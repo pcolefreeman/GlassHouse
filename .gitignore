@@ -47,3 +47,5 @@ GHV4\EMPTYROOMBASELINE_run_sar.txt
 .seeds/
 .canopy/
 .overstory/
+.claude/worktrees/
+overstory-issue-79-comment.md
