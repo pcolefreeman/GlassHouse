@@ -87,8 +87,8 @@ def test_magic_bytes_are_two_bytes():
 
 
 def test_meta_cols_count():
-    """META_COLS has exactly 5 entries."""
-    assert len(META_COLS) == 5
+    """META_COLS has exactly 6 entries (activity column added)."""
+    assert len(META_COLS) == 6
 
 
 def test_baud_rate_positive():
@@ -132,9 +132,9 @@ def test_distance_feature_count():
 
 def test_breathing_constants_exist():
     from ghv4 import config
-    assert config.BREATHING_WINDOW_S == 30
+    assert config.BREATHING_WINDOW_S == 15
     assert config.BREATHING_SNAP_HZ == 20
-    assert config.BREATHING_WINDOW_N == 600
+    assert config.BREATHING_WINDOW_N == 300
     assert config.BREATHING_SLIDE_N == 20
     assert config.BREATHING_BAND_HZ == (0.1, 0.5)
     assert config.BREATHING_NPAIRS == 10
