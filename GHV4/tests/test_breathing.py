@@ -466,6 +466,178 @@ class TestBreathingDetectorE2E:
 
 
 
+class TestGetBufferFill:
+    """Tests for BreathingDetector.get_buffer_fill()."""
+
+    def test_empty_buffers_all_zero(self):
+        """All paths should report 0.0 fill when no frames have been fed."""
+        det = BreathingDetector()
+        fill = det.get_buffer_fill()
+        assert isinstance(fill, dict)
+        for key, frac in fill.items():
+            assert frac == 0.0, f"Path {key} should be 0.0, got {frac}"
+
+    def test_partial_fill_fraction(self):
+        """After feeding some frames, fill fraction should be between 0 and 1."""
+        from ghv4.config import BREATHING_WINDOW_N
+        det = BreathingDetector()
+        csi = struct.pack('<hh', 100, 50) * 128
+        n_feed = BREATHING_WINDOW_N // 4
+        for _ in range(n_feed):
+            det.feed_frame('csi_snap', {'reporter_id': 1, 'peer_id': 2, 'csi': csi})
+        fill = det.get_buffer_fill()
+        expected = n_feed / BREATHING_WINDOW_N
+        assert fill[(1, 2)] == pytest.approx(expected, abs=0.01)
+
+    def test_full_buffer_reports_one(self):
+        """A full buffer should report fill fraction 1.0."""
+        from ghv4.config import BREATHING_WINDOW_N
+        det = BreathingDetector()
+        csi = struct.pack('<hh', 100, 50) * 128
+        for _ in range(BREATHING_WINDOW_N):
+            det.feed_frame('csi_snap', {'reporter_id': 1, 'peer_id': 2, 'csi': csi})
+        fill = det.get_buffer_fill()
+        assert fill[(1, 2)] == pytest.approx(1.0)
+
+
+class TestFewPathsFallback:
+    """Tests for A+C scoring when fewer than BREATHING_MIN_PATHS_FOR_CONTRAST paths are ready."""
+
+    def test_two_paths_uses_phase_only(self):
+        """With only 2 ready paths (< MIN_PATHS_FOR_CONTRAST=3), contrast_score should be 0."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ, BREATHING_PATH_MAP
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        n_sub = 128
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        # Feed breathing signal on exactly 2 paths only
+        path_keys = list(BREATHING_PATH_MAP.keys())[:2]
+        for step in range(n_time):
+            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
+            csi = b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+            for key in path_keys:
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
+
+        scores = det.get_grid_scores()
+        # Should still produce scores (via phase path), not crash
+        assert isinstance(scores, dict)
+        assert len(scores) == 9
+
+    def test_single_path_still_produces_scores(self):
+        """Even with 1 ready path, get_grid_scores should return valid dict."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+        for step in range(n_time):
+            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
+            csi = b''.join(struct.pack('<hh', amp, 0) for _ in range(128))
+            det.feed_frame('csi_snap', {
+                'reporter_id': 1, 'peer_id': 2, 'csi': csi
+            })
+        scores = det.get_grid_scores()
+        assert isinstance(scores, dict)
+        # Path (1,2) covers r0c0, r1c0, r2c0
+        for cell in BREATHING_PATH_MAP[(1, 2)]:
+            assert scores[cell] is not None
+
+
+class TestRawAmplitudeEnergyEdgeCases:
+    """Edge case tests for BreathingDetector._raw_amplitude_energy()."""
+
+    def test_all_zero_window_returns_zero(self):
+        """All-zero CSI window should return 0.0 (denominator guard)."""
+        from ghv4.config import BREATHING_WINDOW_N, SUBCARRIERS
+        window = np.zeros((BREATHING_WINDOW_N, SUBCARRIERS), dtype=np.complex64)
+        result = BreathingDetector._raw_amplitude_energy(window)
+        assert result == 0.0
+
+    def test_dc_only_signal_low_snr(self):
+        """Constant amplitude (DC only) should yield low snr_eig after detrend."""
+        from ghv4.config import BREATHING_WINDOW_N, SUBCARRIERS
+        window = np.full((BREATHING_WINDOW_N, SUBCARRIERS), 500 + 0j, dtype=np.complex64)
+        result = BreathingDetector._raw_amplitude_energy(window)
+        # After detrend, a constant signal becomes ~zero; snr_eig should be near 0
+        assert result < 1.0, f"DC-only signal should have low snr_eig, got {result}"
+
+
+class TestCombinedACScoring:
+    """Tests for the max(contrast_score, phase_score) combination logic."""
+
+    def test_phase_triggers_when_contrast_low(self):
+        """Phase-modulated signal on a path with all paths at similar amplitude
+        should still trigger detection via phase score even if contrast is ~1."""
+        from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
+        det = BreathingDetector()
+        n_time = BREATHING_WINDOW_N
+        n_sub = 128
+        t = np.arange(n_time) / BREATHING_SNAP_HZ
+
+        # All paths get same amplitude but one path gets phase modulation
+        hot_path = (1, 3)
+        for step in range(n_time):
+            for key in BREATHING_PATH_MAP:
+                if key == hot_path:
+                    # Phase-modulated: differential phase shift between subcarriers
+                    pairs = []
+                    for sc in range(n_sub):
+                        phase = 0.5 * np.sin(2 * np.pi * 0.25 * t[step]) * (sc / n_sub)
+                        c = 1000 * np.exp(1j * phase)
+                        pairs.append(struct.pack('<hh', int(c.real), int(c.imag)))
+                    csi = b''.join(pairs)
+                else:
+                    # Static: uniform amplitude, no phase modulation
+                    csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(n_sub))
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi
+                })
+
+        scores = det.get_grid_scores()
+        # Hot path cells should have some detection via phase score
+        hot_cells = set(BREATHING_PATH_MAP[hot_path])
+        for cell in hot_cells:
+            assert scores[cell] is not None, f"Hot cell {cell} should have a score"
+
+    def test_no_ready_paths_returns_all_none(self):
+        """If no buffers are full, all cells should be None."""
+        det = BreathingDetector()
+        # Feed just a few frames — not enough to fill any buffer
+        csi = struct.pack('<hh', 100, 50) * 128
+        det.feed_frame('csi_snap', {'reporter_id': 1, 'peer_id': 2, 'csi': csi})
+        scores = det.get_grid_scores()
+        for cell in CELL_LABELS:
+            assert scores[cell] is None
+
+
+class TestReconstructCSIEdgeCases:
+    """Edge case tests for reconstruct_csi_from_csv_row."""
+
+    def test_nan_values_produce_zero(self):
+        """NaN amp/phase values should produce zero complex value for that subcarrier."""
+        row = {}
+        for sc in range(128):
+            row[f"s1_amp_norm_{sc}"] = float('nan')
+            row[f"s1_phase_{sc}"] = float('nan')
+        result = reconstruct_csi_from_csv_row(row, shouter_id=1)
+        assert np.all(result == 0 + 0j)
+
+    def test_single_nonzero_subcarrier(self):
+        """Only one subcarrier with data; rest should be zero."""
+        row = {}
+        for sc in range(128):
+            row[f"s1_amp_norm_{sc}"] = float('nan')
+            row[f"s1_phase_{sc}"] = float('nan')
+        # Set subcarrier 10 to amp=2.0, phase=0
+        row["s1_amp_norm_10"] = 2.0
+        row["s1_phase_10"] = 0.0
+        result = reconstruct_csi_from_csv_row(row, shouter_id=1)
+        assert abs(result[10]) == pytest.approx(2.0, abs=0.01)
+        assert result[0] == 0 + 0j
+
+
 class TestRunSarCLI:
     def test_help_flag(self):
         """run_sar.py --help should exit 0 and show usage."""
