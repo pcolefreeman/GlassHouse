@@ -95,7 +95,7 @@ def test_parse_label_three_people():
 
 # ── load_csv ───────────────────────────────────────────────────────────────────
 
-META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col"]
+META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col", "activity"]
 
 def _write_temp_csv(rows, filename="capture_6.0x4.0m_test.csv"):
     d = tempfile.mkdtemp()
