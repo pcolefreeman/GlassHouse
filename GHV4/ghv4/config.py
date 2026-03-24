@@ -81,14 +81,14 @@ DISTANCE_MODEL_DIR     = "distance_models"
 DISTANCE_MAX_TREES     = 200      # max estimators per GB/RF model (Pi memory budget)
 
 # ── Breathing detection ───────────────────────────────────────
-BREATHING_WINDOW_S    = 30
+BREATHING_WINDOW_S    = 15
 BREATHING_SNAP_HZ     = 20
 BREATHING_WINDOW_N    = int(BREATHING_WINDOW_S * BREATHING_SNAP_HZ)  # 600 frames
 BREATHING_SLIDE_N     = 20        # 20 frames at 20 Hz = 1s between updates
 BREATHING_BAND_HZ     = (0.1, 0.5)
 BREATHING_NPAIRS      = 10
 BREATHING_CONFIDENCE_THRESHOLD = 0.30  # raised from 0.05; contrast makes empty room 0%
-BREATHING_CONTRAST_CEILING    = .0    # contrast ratio at which confidence saturates to 1.0
+BREATHING_CONTRAST_CEILING    = 3.0   # contrast ratio at which confidence saturates to 1.0
                                        # (contrast = path_snr_eig / median_all_snr_eig)
 BREATHING_MIN_PATHS_FOR_CONTRAST = 3   # need 3+ paths for meaningful median; fewer → phase only
 BREATHING_MIN_PATHS_TOTAL     = 2      # Absolute minimum active paths required to attempt a guess

@@ -18,8 +18,11 @@ scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 - Pending: End-to-end firmware/serial/data-collection debugging plan
 - Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
 - Done: AMP verification testing (2026-03-25) — snap frame bug fixed, CSI breathing detection method finalized
-- Known bad: SAR (run_sar.py) — not yet usable
-- Next session: Write GHV5 implementation plan; begin GHV5 project scaffold
+- Done: Snap rate diagnostics + beacon rate 20 Hz + BREATHING_WINDOW_S=15 (2026-03-25)
+- Done: `BREATHING_CONTRAST_CEILING` fixed to `3.0` (2026-03-25) — A+C amplitude contrast scoring now active
+- Done: run_sar.py import cleanup (2026-03-25) — lazy imports consolidated, unused BREATHING_PATH_MAP removed, console/pygame parity fix
+- Done: SAR connectivity + effectiveness design spec (2026-03-25) — stagger rotation, beacon jitter, temporal filter, per-path baseline, path diversity
+- Next session: Write implementation plan + implement SAR connectivity/effectiveness improvements (spec at `docs/superpowers/specs/2026-03-25-sar-connectivity-effectiveness-design.md`)
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.

@@ -26,6 +26,7 @@ static volatile int       ring_count = 0;
 static portMUX_TYPE       ring_mux   = portMUX_INITIALIZER_UNLOCKED;
 static volatile uint32_t  csi_overflow_count = 0;
 static uint32_t           sht_resp_count = 0;
+static uint32_t           bcn_rx_count[5] = {};  // beacons received per peer ID (indices 1-4)
 
 // ── CSI snapshot buffer (ranging phase) ───────────────────────────────────
 #define N_SNAP 35
@@ -138,6 +139,7 @@ void on_esp_now_recv(const esp_now_recv_info_t *recv_info,
         bcn->magic[1] != RANGE_BCN_MAGIC_1) return;
     uint8_t sid = bcn->shouter_id;
     if (sid < 1 || sid > 4 || sid == my_id) return;
+    bcn_rx_count[sid]++;
     int8_t rssi = (int8_t)recv_info->rx_ctrl->rssi;
     portENTER_CRITICAL(&peer_mux);
     if (peer_table[sid].valid) {
@@ -295,6 +297,9 @@ void send_poll_response(poll_pkt_t *poll) {
     sht_resp_count++;
     if (sht_resp_count % 100 == 0) {
         Serial.printf("[SHT] csi_overflow=%lu\n", (unsigned long)csi_overflow_count);
+        Serial.printf("[SHT] bcn_rx: S1=%lu S2=%lu S3=%lu S4=%lu\n",
+            (unsigned long)bcn_rx_count[1], (unsigned long)bcn_rx_count[2],
+            (unsigned long)bcn_rx_count[3], (unsigned long)bcn_rx_count[4]);
     }
 
     // Transmit buffered CSI snapshots to listener.
@@ -356,7 +361,7 @@ void loop() {
     // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (10 Hz)
     static uint32_t last_beacon_ms = 0;
     static uint32_t cont_bcn_seq = 0;
-    if (my_id > 0 && millis() - last_beacon_ms >= 100) {
+    if (my_id > 0 && millis() - last_beacon_ms >= 50) {
         last_beacon_ms = millis();
         range_bcn_pkt_t bcn;
         bcn.magic[0]   = RANGE_BCN_MAGIC_0;

@@ -67,7 +67,11 @@ placeholder default; the user selects the actual port before connecting.
 - **`run_sar.py --log-level DEBUG`** — now shows `snr_eig=`, `contrast=`, `phase=` per path per update cycle. Use to validate A+C behaviour on new hardware.
 - **`_last_path_conf` cache** — `BreathingDetector` stores path confidences from last `get_grid_scores()` call. `BreathingThread` and console loop read this instead of recomputing.
 - **S2↔S4 and S3↔S4 have low snap rates** (~1–4/s vs 8–19/s for S1 paths) — buffers may not fill reliably for these paths in current hardware config. With `BREATHING_MIN_PATHS_FOR_CONTRAST=3`, contrast scoring activates even if only 3 of 6 paths are ready.
+- **`BREATHING_CONTRAST_CEILING = 3.0`** — fixed 2026-03-25 (was `.0`). Ceiling=3.0 means a 3× path elevation above median = full contrast confidence. Values below 1.0 map to 0; values above 3.0 clip to 1.0.
+- **Console/pygame display parity** — `_print_console` in `run_sar.py` and `BreathingDisplay.render()` in `breathing.py` must stay in sync: both apply `BREATHING_MIN_PATHS_TOTAL` guard and the same `BREATHING_CONFIDENCE_THRESHOLD` check. If one changes, update the other.
+- **`BREATHING_WINDOW_S` is now 15** (changed from 30) — `BREATHING_WINDOW_N` = 300 frames; slow paths fill in ~75 s instead of ~150 s at 4 snaps/s.
 - **Deployment constraint** — listener must be inside the room, stationary, positioned away from all shouter pair paths during scans. Operator holding the listener must stand still.
+- **Ghost false positives root cause (identified 2026-03-25)** — S1 paths fill 3–5× faster than non-S1 paths due to fixed stagger order (S1 always responds first). When only 3 paths are ready and 2–3 are S1 paths, the contrast median reflects S1 characteristics, so any S1 fluctuation looks like elevated contrast. Fix designed: stagger rotation + per-path adaptive baseline (see spec `docs/superpowers/specs/2026-03-25-sar-connectivity-effectiveness-design.md`).
 
 ## Gotchas
 

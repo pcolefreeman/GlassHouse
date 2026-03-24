@@ -1,382 +1,385 @@
 {
-	"permissions": {
-		"allow": [
-			"Skill(claude-md-management:revise-claude-md)",
-			"Skill(claude-md-management:revise-claude-md:*)",
-			"Bash(python -m pytest tests/test_config.py::test_distance_constants_exist tests/test_config.py::test_distance_valid_subcarriers tests/test_config.py::test_distance_feature_count -v)",
-			"Bash(python -m pytest tests/test_config.py -v)",
-			"Bash(python -m pytest tests/test_config.py --tb=short)",
-			"Bash(python -c \"from ghv4 import config; print\\(f''SUBCARRIERS: {config.SUBCARRIERS}''\\); print\\(f''NULL_SUBCARRIER_INDICES: {config.NULL_SUBCARRIER_INDICES}''\\); print\\(f''Null count: {len\\(config.NULL_SUBCARRIER_INDICES\\)}''\\); print\\(f''VALID_SUBCARRIER_COUNT: {config.VALID_SUBCARRIER_COUNT}''\\); print\\(f''DISTANCE_FEATURE_COUNT: {config.DISTANCE_FEATURE_COUNT}''\\)\")",
-			"Bash(python -m pytest tests/test_config.py -v --tb=short)",
-			"Bash(python -m pytest tests/test_distance_features.py -v)",
-			"Bash(python -m pytest tests/ -v --ignore=tests/test_distance_features.py -q)",
-			"Bash(python -m pytest tests/ -q --ignore=tests/test_distance_features.py --ignore=tests/test_glass_house_filename.py --ignore=tests/test_viz.py)",
-			"Bash(python -m pytest tests/test_distance_preprocess.py -v)",
-			"Bash(python -m pip install joblib scikit-learn)",
-			"Bash(python -m pytest tests/test_distance_train.py -v)",
-			"Bash(python -m pytest tests/test_distance_inference.py -v)",
-			"Bash(python -c \"from ghv4.distance_inference import DistanceCalibrator; print\\(''OK''\\)\")",
-			"Bash(python -m pytest tests/test_serial_io.py -v)",
-			"Bash(pip show:*)",
-			"Bash(pip install:*)",
-			"Bash(python -m pytest tests/test_inference.py -v)",
-			"Bash(python -m py_compile ghv4/ui/capture_tab.py)",
-			"Bash(python -m pytest tests/test_distance_e2e.py -v)",
-			"Bash(python -m pytest tests/test_distance_features.py tests/test_distance_inference.py tests/test_distance_preprocess.py tests/test_distance_train.py tests/test_distance_e2e.py -v)",
-			"Bash(python -m pytest tests/ -v --tb=short)",
-			"Bash(python -m pytest tests/ -v --tb=short --ignore=tests/test_viz.py)",
-			"Bash(python -c \"from ghv4.distance_inference import DistanceCalibrator; print\\(''No pandas import - OK''\\)\")",
-			"Bash(python -m pytest tests/ -v --tb=short --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
-			"Bash(python -m pytest tests/test_viz.py -v --tb=short)",
-			"Bash(python -m pytest tests/test_debug_tab.py -v --tb=short)",
-			"Bash(python run_inference.py --help)",
-			"Bash(pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
-			"Bash(python -m pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
-			"Bash(python -m pytest tests/ -q)",
-			"Bash(python -m pytest tests/ -x -q)",
-			"Bash(python -m pytest tests/test_pi_display.py -v)",
-			"Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist tests/test_csi_parser.py::test_parse_csi_bytes_is_public tests/test_csi_parser.py -v --tb=short)",
-			"Bash(python -m pytest tests/test_breathing.py -v)",
-			"Bash(python -m pytest tests/ -v --tb=no -q)",
-			"Bash(python -m pytest tests/test_breathing.py -v --tb=short)",
-			"Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI tests/test_breathing.py::TestCSVReplay -v)",
-			"Bash(python -c \"from ghv4.breathing import BreathingDetector; print\\(''OK''\\)\")",
-			"Bash(python run_sar.py --help)",
-			"Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102/\"*.csv)",
-			"Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102\"/*.csv)",
-			"Bash(python generate_poster_images.py)",
-			"Bash(python -m pytest tests/test_serial_io.py::TestSerialReader::test_snap_frame_enqueued_to_frame_queue -v)",
-			"Bash(python -m pytest tests/test_breathing.py::TestBreathingAnalyzer -v)",
-			"Bash(python -m pytest tests/test_breathing.py::TestBreathingDetector -v)",
-			"Bash(python -m pytest tests/test_breathing.py::TestGridProjector -v)",
-			"Bash(python -m pytest tests/test_breathing.py::TestBreathingDetectorE2E -v)",
-			"Bash(python -m pytest tests/test_breathing.py::TestDemoThread tests/test_breathing.py::TestBreathingDisplay -v)",
-			"Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI -v)",
-			"Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist -v)",
-			"Bash(python -m pytest tests/test_breathing.py tests/test_config.py::test_breathing_constants_exist -v --tb=short)",
-			"Bash(python -m pytest tests/test_breathing.py -q)",
-			"Bash(python -m pytest tests/test_breathing.py -v --tb=no -q)",
-			"Bash(awk 'NR==1 || NR==50 || NR==100 || NR==150 || NR==200 || NR==250 || NR==300 || NR==350 || NR==400 || NR==403')",
-			"Bash(awk 'NR==1 || NR==50 || NR==100 || NR==150 || NR==200 || NR==250 || NR==300 || NR==347')",
-			"Bash(for path:*)",
-			"Bash(do echo:*)",
-			"Bash(awk 'NR<=3 || NR==int\\(NR/2\\) || NR>=NR-2')",
-			"Bash(python -m pytest tests/ -v --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py -x)",
-			"Bash(python -m pytest tests/ -v --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py -k \"not TestRunSarCLI\")"
-		]
-	},
-	"hooks": {
-		"SessionStart": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator"
-					},
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
-					}
-				]
-			}
-		],
-		"UserPromptSubmit": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
-					}
-				]
-			}
-		],
-		"PreToolUse": [
-			{
-				"matcher": "Write",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_WORKTREE_PATH\" ] && exit 0; read -r INPUT; FILE_PATH=$(echo \"$INPUT\" | sed -n 's/.*\"file_path\": *\"\\([^\"]*\\)\".*/\\1/p'); [ -z \"$FILE_PATH\" ] && exit 0; case \"$FILE_PATH\" in /*) ;; *) FILE_PATH=\"$(pwd)/$FILE_PATH\" ;; esac; case \"$FILE_PATH\" in \"$OVERSTORY_WORKTREE_PATH\"/*) exit 0 ;; \"$OVERSTORY_WORKTREE_PATH\") exit 0 ;; esac; echo '{\"decision\":\"block\",\"reason\":\"Path boundary violation: file is outside your assigned worktree. All writes must target files within your worktree.\"}';"
-					}
-				]
-			},
-			{
-				"matcher": "Edit",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_WORKTREE_PATH\" ] && exit 0; read -r INPUT; FILE_PATH=$(echo \"$INPUT\" | sed -n 's/.*\"file_path\": *\"\\([^\"]*\\)\".*/\\1/p'); [ -z \"$FILE_PATH\" ] && exit 0; case \"$FILE_PATH\" in /*) ;; *) FILE_PATH=\"$(pwd)/$FILE_PATH\" ;; esac; case \"$FILE_PATH\" in \"$OVERSTORY_WORKTREE_PATH\"/*) exit 0 ;; \"$OVERSTORY_WORKTREE_PATH\") exit 0 ;; esac; echo '{\"decision\":\"block\",\"reason\":\"Path boundary violation: file is outside your assigned worktree. All writes must target files within your worktree.\"}';"
-					}
-				]
-			},
-			{
-				"matcher": "NotebookEdit",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_WORKTREE_PATH\" ] && exit 0; read -r INPUT; FILE_PATH=$(echo \"$INPUT\" | sed -n 's/.*\"notebook_path\": *\"\\([^\"]*\\)\".*/\\1/p'); [ -z \"$FILE_PATH\" ] && exit 0; case \"$FILE_PATH\" in /*) ;; *) FILE_PATH=\"$(pwd)/$FILE_PATH\" ;; esac; case \"$FILE_PATH\" in \"$OVERSTORY_WORKTREE_PATH\"/*) exit 0 ;; \"$OVERSTORY_WORKTREE_PATH\") exit 0 ;; esac; echo '{\"decision\":\"block\",\"reason\":\"Path boundary violation: file is outside your assigned worktree. All writes must target files within your worktree.\"}';"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '\\bgit\\s+push\\b'; then   echo '{\"decision\":\"block\",\"reason\":\"git push is blocked — use ov merge to integrate changes, push manually when ready\"}';   exit 0; fi; if echo \"$CMD\" | grep -qE 'git\\s+reset\\s+--hard'; then   echo '{\"decision\":\"block\",\"reason\":\"git reset --hard is not allowed — it destroys uncommitted work\"}';   exit 0; fi; if echo \"$CMD\" | grep -qE 'git\\s+checkout\\s+-b\\s'; then   BRANCH=$(echo \"$CMD\" | sed 's/.*git\\s*checkout\\s*-b\\s*\\([^ ]*\\).*/\\1/');   if ! echo \"$BRANCH\" | grep -qE '^overstory/coordinator/'; then     echo '{\"decision\":\"block\",\"reason\":\"Branch must follow overstory/coordinator/{task-id} convention\"}';     exit 0;   fi; fi;"
-					}
-				]
-			},
-			{
-				"matcher": "Task",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — Task is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TeamCreate",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TeamCreate is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TeamDelete",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TeamDelete is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "SendMessage",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — SendMessage is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TaskCreate",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskCreate is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TaskUpdate",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskUpdate is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TaskList",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskList is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TaskGet",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskGet is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TaskOutput",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskOutput is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "TaskStop",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskStop is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "AskUserQuestion",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"AskUserQuestion requires human interaction -- agents run non-interactively. Use ov mail (--type question) to escalate\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "EnterPlanMode",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"EnterPlanMode requires human interaction -- agents run non-interactively. Use ov mail (--type question) to escalate\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "EnterWorktree",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"EnterWorktree requires human interaction -- agents run non-interactively. Use ov mail (--type question) to escalate\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "Write",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — Write is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "Edit",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — Edit is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "NotebookEdit",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — NotebookEdit is not allowed\"}'"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '^\\s*ov '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*overstory '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bd '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*sd '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git status'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git log'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git diff'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git show'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git blame'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git branch'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*mulch '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git add'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git commit'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bun test'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bun run lint'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bun run typecheck'; then exit 0; fi; if echo \"$CMD\" | grep -qE 'sed\\s+-i|sed\\s+--in-place|echo\\s+.*>|printf\\s+.*>|cat\\s+.*>|tee\\s|\\bvim\\b|\\bnano\\b|\\bvi\\b|\\bmv\\s|\\bcp\\s|\\brm\\s|\\bmkdir\\s|\\btouch\\s|\\bchmod\\s|\\bchown\\s|>>|\\bgit\\s+add\\b|\\bgit\\s+commit\\b|\\bgit\\s+merge\\b|\\bgit\\s+push\\b|\\bgit\\s+reset\\b|\\bgit\\s+checkout\\b|\\bgit\\s+rebase\\b|\\bgit\\s+stash\\b|\\bnpm\\s+install\\b|\\bbun\\s+install\\b|\\bbun\\s+add\\b|\\bbun\\s+-e\\b|\\bbun\\s+--eval\\b|\\bnode\\s+-e\\b|\\bnode\\s+--eval\\b|\\bdeno\\s+eval\\b|\\bpython3?\\s+-c\\b|\\bperl\\s+-e\\b|\\bruby\\s+-e\\b'; then   echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — this command is not allowed\"}';   exit 0; fi;"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_TASK_ID\" ] && exit 0; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '^\\s*(sd|bd)\\s+close\\s'; then   ISSUE_ID=$(echo \"$CMD\" | sed -E 's/^[[:space:]]*(sd|bd)[[:space:]]+close[[:space:]]+([^ ]+).*/\\2/');   if [ \"$ISSUE_ID\" != \"$OVERSTORY_TASK_ID\" ]; then     echo \"{\\\"decision\\\":\\\"block\\\",\\\"reason\\\":\\\"Cannot close issue $ISSUE_ID — agents may only close their own task ($OVERSTORY_TASK_ID). Report completion via worker_done mail to your parent instead.\\\"}\";     exit 0;   fi; fi; if echo \"$CMD\" | grep -qE '^\\s*(sd|bd)\\s+update\\s.*--status'; then   ISSUE_ID=$(echo \"$CMD\" | sed -E 's/^[[:space:]]*(sd|bd)[[:space:]]+update[[:space:]]+([^ ]+).*/\\2/');   if [ \"$ISSUE_ID\" != \"$OVERSTORY_TASK_ID\" ]; then     echo \"{\\\"decision\\\":\\\"block\\\",\\\"reason\\\":\\\"Cannot update issue $ISSUE_ID — agents may only update their own task ($OVERSTORY_TASK_ID).\\\"}\";     exit 0;   fi; fi;"
-					}
-				]
-			},
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-start --agent coordinator --stdin"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '\\bgit\\s+push\\b'; then echo '{\"decision\":\"block\",\"reason\":\"git push is blocked — use ov merge to integrate changes, push manually when ready\"}'; exit 0; fi;"
-					}
-				]
-			}
-		],
-		"PostToolUse": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-end --agent coordinator --stdin"
-					},
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 500"
-					}
-				]
-			},
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 30000"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; if echo \"$INPUT\" | grep -qE '\\bgit\\s+commit\\b'; then ml diff HEAD~1 >/dev/null 2>&1 || true; fi; exit 0;"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "read -r INPUT; if echo \"$INPUT\" | grep -q 'git commit'; then mulch diff HEAD~1 2>/dev/null || true; fi"
-					}
-				]
-			}
-		],
-		"Stop": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log session-end --agent coordinator --stdin"
-					},
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ml learn"
-					}
-				]
-			}
-		],
-		"PreCompact": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator --compact"
-					}
-				]
-			}
-		]
-	}
+  "permissions": {
+    "allow": [
+      "Skill(claude-md-management:revise-claude-md)",
+      "Skill(claude-md-management:revise-claude-md:*)",
+      "Bash(python -m pytest tests/test_config.py::test_distance_constants_exist tests/test_config.py::test_distance_valid_subcarriers tests/test_config.py::test_distance_feature_count -v)",
+      "Bash(python -m pytest tests/test_config.py -v)",
+      "Bash(python -m pytest tests/test_config.py --tb=short)",
+      "Bash(python -c \"from ghv4 import config; print\\(f''SUBCARRIERS: {config.SUBCARRIERS}''\\); print\\(f''NULL_SUBCARRIER_INDICES: {config.NULL_SUBCARRIER_INDICES}''\\); print\\(f''Null count: {len\\(config.NULL_SUBCARRIER_INDICES\\)}''\\); print\\(f''VALID_SUBCARRIER_COUNT: {config.VALID_SUBCARRIER_COUNT}''\\); print\\(f''DISTANCE_FEATURE_COUNT: {config.DISTANCE_FEATURE_COUNT}''\\)\")",
+      "Bash(python -m pytest tests/test_config.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_distance_features.py -v)",
+      "Bash(python -m pytest tests/ -v --ignore=tests/test_distance_features.py -q)",
+      "Bash(python -m pytest tests/ -q --ignore=tests/test_distance_features.py --ignore=tests/test_glass_house_filename.py --ignore=tests/test_viz.py)",
+      "Bash(python -m pytest tests/test_distance_preprocess.py -v)",
+      "Bash(python -m pip install joblib scikit-learn)",
+      "Bash(python -m pytest tests/test_distance_train.py -v)",
+      "Bash(python -m pytest tests/test_distance_inference.py -v)",
+      "Bash(python -c \"from ghv4.distance_inference import DistanceCalibrator; print\\(''OK''\\)\")",
+      "Bash(python -m pytest tests/test_serial_io.py -v)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest tests/test_inference.py -v)",
+      "Bash(python -m py_compile ghv4/ui/capture_tab.py)",
+      "Bash(python -m pytest tests/test_distance_e2e.py -v)",
+      "Bash(python -m pytest tests/test_distance_features.py tests/test_distance_inference.py tests/test_distance_preprocess.py tests/test_distance_train.py tests/test_distance_e2e.py -v)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/ -v --tb=short --ignore=tests/test_viz.py)",
+      "Bash(python -c \"from ghv4.distance_inference import DistanceCalibrator; print\\(''No pandas import - OK''\\)\")",
+      "Bash(python -m pytest tests/ -v --tb=short --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
+      "Bash(python -m pytest tests/test_viz.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_debug_tab.py -v --tb=short)",
+      "Bash(python run_inference.py --help)",
+      "Bash(pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
+      "Bash(python -m pytest tests/ -q --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py)",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python -m pytest tests/ -x -q)",
+      "Bash(python -m pytest tests/test_pi_display.py -v)",
+      "Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist tests/test_csi_parser.py::test_parse_csi_bytes_is_public tests/test_csi_parser.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_breathing.py -v)",
+      "Bash(python -m pytest tests/ -v --tb=no -q)",
+      "Bash(python -m pytest tests/test_breathing.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI tests/test_breathing.py::TestCSVReplay -v)",
+      "Bash(python -c \"from ghv4.breathing import BreathingDetector; print\\(''OK''\\)\")",
+      "Bash(python run_sar.py --help)",
+      "Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102/\"*.csv)",
+      "Bash(head -1 \"C:/Users/incre/Class/SENIOR CAP/CLAUDE/Glass House/Glass House Data/tests/test_coll_1/room2102\"/*.csv)",
+      "Bash(python generate_poster_images.py)",
+      "Bash(python -m pytest tests/test_serial_io.py::TestSerialReader::test_snap_frame_enqueued_to_frame_queue -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestBreathingAnalyzer -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestBreathingDetector -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestGridProjector -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestBreathingDetectorE2E -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestDemoThread tests/test_breathing.py::TestBreathingDisplay -v)",
+      "Bash(python -m pytest tests/test_breathing.py::TestRunSarCLI -v)",
+      "Bash(python -m pytest tests/test_config.py::test_breathing_constants_exist -v)",
+      "Bash(python -m pytest tests/test_breathing.py tests/test_config.py::test_breathing_constants_exist -v --tb=short)",
+      "Bash(python -m pytest tests/test_breathing.py -q)",
+      "Bash(python -m pytest tests/test_breathing.py -v --tb=no -q)",
+      "Bash(awk 'NR==1 || NR==50 || NR==100 || NR==150 || NR==200 || NR==250 || NR==300 || NR==350 || NR==400 || NR==403')",
+      "Bash(awk 'NR==1 || NR==50 || NR==100 || NR==150 || NR==200 || NR==250 || NR==300 || NR==347')",
+      "Bash(for path:*)",
+      "Bash(do echo:*)",
+      "Bash(awk 'NR<=3 || NR==int\\(NR/2\\) || NR>=NR-2')",
+      "Bash(python -m pytest tests/ -v --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py -x)",
+      "Bash(python -m pytest tests/ -v --ignore=tests/test_viz.py --ignore=tests/test_debug_tab.py -k \"not TestRunSarCLI\")",
+      "Bash(mulch prime:*)",
+      "Bash(ov status:*)",
+      "Bash(ov doctor:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator"
+          },
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_WORKTREE_PATH\" ] && exit 0; read -r INPUT; FILE_PATH=$(echo \"$INPUT\" | sed -n 's/.*\"file_path\": *\"\\([^\"]*\\)\".*/\\1/p'); [ -z \"$FILE_PATH\" ] && exit 0; case \"$FILE_PATH\" in /*) ;; *) FILE_PATH=\"$(pwd)/$FILE_PATH\" ;; esac; case \"$FILE_PATH\" in \"$OVERSTORY_WORKTREE_PATH\"/*) exit 0 ;; \"$OVERSTORY_WORKTREE_PATH\") exit 0 ;; esac; echo '{\"decision\":\"block\",\"reason\":\"Path boundary violation: file is outside your assigned worktree. All writes must target files within your worktree.\"}';"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_WORKTREE_PATH\" ] && exit 0; read -r INPUT; FILE_PATH=$(echo \"$INPUT\" | sed -n 's/.*\"file_path\": *\"\\([^\"]*\\)\".*/\\1/p'); [ -z \"$FILE_PATH\" ] && exit 0; case \"$FILE_PATH\" in /*) ;; *) FILE_PATH=\"$(pwd)/$FILE_PATH\" ;; esac; case \"$FILE_PATH\" in \"$OVERSTORY_WORKTREE_PATH\"/*) exit 0 ;; \"$OVERSTORY_WORKTREE_PATH\") exit 0 ;; esac; echo '{\"decision\":\"block\",\"reason\":\"Path boundary violation: file is outside your assigned worktree. All writes must target files within your worktree.\"}';"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_WORKTREE_PATH\" ] && exit 0; read -r INPUT; FILE_PATH=$(echo \"$INPUT\" | sed -n 's/.*\"notebook_path\": *\"\\([^\"]*\\)\".*/\\1/p'); [ -z \"$FILE_PATH\" ] && exit 0; case \"$FILE_PATH\" in /*) ;; *) FILE_PATH=\"$(pwd)/$FILE_PATH\" ;; esac; case \"$FILE_PATH\" in \"$OVERSTORY_WORKTREE_PATH\"/*) exit 0 ;; \"$OVERSTORY_WORKTREE_PATH\") exit 0 ;; esac; echo '{\"decision\":\"block\",\"reason\":\"Path boundary violation: file is outside your assigned worktree. All writes must target files within your worktree.\"}';"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '\\bgit\\s+push\\b'; then   echo '{\"decision\":\"block\",\"reason\":\"git push is blocked — use ov merge to integrate changes, push manually when ready\"}';   exit 0; fi; if echo \"$CMD\" | grep -qE 'git\\s+reset\\s+--hard'; then   echo '{\"decision\":\"block\",\"reason\":\"git reset --hard is not allowed — it destroys uncommitted work\"}';   exit 0; fi; if echo \"$CMD\" | grep -qE 'git\\s+checkout\\s+-b\\s'; then   BRANCH=$(echo \"$CMD\" | sed 's/.*git\\s*checkout\\s*-b\\s*\\([^ ]*\\).*/\\1/');   if ! echo \"$BRANCH\" | grep -qE '^overstory/coordinator/'; then     echo '{\"decision\":\"block\",\"reason\":\"Branch must follow overstory/coordinator/{task-id} convention\"}';     exit 0;   fi; fi;"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — Task is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TeamCreate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TeamCreate is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TeamDelete",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TeamDelete is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — SendMessage is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TaskCreate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskCreate is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskUpdate is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TaskList",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskList is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TaskGet",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskGet is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TaskOutput",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskOutput is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "TaskStop",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"Overstory agents must use '\\''ov sling'\\'' for delegation — TaskStop is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"AskUserQuestion requires human interaction -- agents run non-interactively. Use ov mail (--type question) to escalate\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "EnterPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"EnterPlanMode requires human interaction -- agents run non-interactively. Use ov mail (--type question) to escalate\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"EnterWorktree requires human interaction -- agents run non-interactively. Use ov mail (--type question) to escalate\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — Write is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — Edit is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — NotebookEdit is not allowed\"}'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '^\\s*ov '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*overstory '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bd '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*sd '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git status'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git log'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git diff'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git show'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git blame'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git branch'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*mulch '; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git add'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*git commit'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bun test'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bun run lint'; then exit 0; fi; if echo \"$CMD\" | grep -qE '^\\s*bun run typecheck'; then exit 0; fi; if echo \"$CMD\" | grep -qE 'sed\\s+-i|sed\\s+--in-place|echo\\s+.*>|printf\\s+.*>|cat\\s+.*>|tee\\s|\\bvim\\b|\\bnano\\b|\\bvi\\b|\\bmv\\s|\\bcp\\s|\\brm\\s|\\bmkdir\\s|\\btouch\\s|\\bchmod\\s|\\bchown\\s|>>|\\bgit\\s+add\\b|\\bgit\\s+commit\\b|\\bgit\\s+merge\\b|\\bgit\\s+push\\b|\\bgit\\s+reset\\b|\\bgit\\s+checkout\\b|\\bgit\\s+rebase\\b|\\bgit\\s+stash\\b|\\bnpm\\s+install\\b|\\bbun\\s+install\\b|\\bbun\\s+add\\b|\\bbun\\s+-e\\b|\\bbun\\s+--eval\\b|\\bnode\\s+-e\\b|\\bnode\\s+--eval\\b|\\bdeno\\s+eval\\b|\\bpython3?\\s+-c\\b|\\bperl\\s+-e\\b|\\bruby\\s+-e\\b'; then   echo '{\"decision\":\"block\",\"reason\":\"coordinator agents cannot modify files — this command is not allowed\"}';   exit 0; fi;"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; [ -z \"$OVERSTORY_TASK_ID\" ] && exit 0; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '^\\s*(sd|bd)\\s+close\\s'; then   ISSUE_ID=$(echo \"$CMD\" | sed -E 's/^[[:space:]]*(sd|bd)[[:space:]]+close[[:space:]]+([^ ]+).*/\\2/');   if [ \"$ISSUE_ID\" != \"$OVERSTORY_TASK_ID\" ]; then     echo \"{\\\"decision\\\":\\\"block\\\",\\\"reason\\\":\\\"Cannot close issue $ISSUE_ID — agents may only close their own task ($OVERSTORY_TASK_ID). Report completion via worker_done mail to your parent instead.\\\"}\";     exit 0;   fi; fi; if echo \"$CMD\" | grep -qE '^\\s*(sd|bd)\\s+update\\s.*--status'; then   ISSUE_ID=$(echo \"$CMD\" | sed -E 's/^[[:space:]]*(sd|bd)[[:space:]]+update[[:space:]]+([^ ]+).*/\\2/');   if [ \"$ISSUE_ID\" != \"$OVERSTORY_TASK_ID\" ]; then     echo \"{\\\"decision\\\":\\\"block\\\",\\\"reason\\\":\\\"Cannot update issue $ISSUE_ID — agents may only update their own task ($OVERSTORY_TASK_ID).\\\"}\";     exit 0;   fi; fi;"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-start --agent coordinator --stdin"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; read -r INPUT; CMD=$(echo \"$INPUT\" | sed 's/.*\"command\": *\"\\([^\"]*\\)\".*/\\1/'); if echo \"$CMD\" | grep -qE '\\bgit\\s+push\\b'; then echo '{\"decision\":\"block\",\"reason\":\"git push is blocked — use ov merge to integrate changes, push manually when ready\"}'; exit 0; fi;"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-end --agent coordinator --stdin"
+          },
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 500"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 30000"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; if echo \"$INPUT\" | grep -qE '\\bgit\\s+commit\\b'; then ml diff HEAD~1 >/dev/null 2>&1 || true; fi; exit 0;"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "read -r INPUT; if echo \"$INPUT\" | grep -q 'git commit'; then mulch diff HEAD~1 2>/dev/null || true; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log session-end --agent coordinator --stdin"
+          },
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ml learn"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator --compact"
+          }
+        ]
+      }
+    ]
+  }
 }

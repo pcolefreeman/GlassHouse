@@ -12,8 +12,10 @@ from ghv4.config import (
     BAUD_RATE,
     BREATHING_SLIDE_N,
     BREATHING_WINDOW_S,
-    BREATHING_PATH_MAP,
+    BREATHING_WINDOW_N,
     BREATHING_CONFIDENCE_THRESHOLD,
+    BREATHING_MIN_PATHS_TOTAL,
+    PI_DISPLAY_FPS,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
@@ -44,11 +46,15 @@ def _print_console(scores: dict, path_conf: dict):
     for k in sorted(path_conf):
         parts.append(f"S{k[0]}↔S{k[1]}={path_conf[k]*100:.0f}%")
     lines.append(f"Path confidence: {' '.join(parts)}")
-    detected = [f"S{k[0]}↔S{k[1]}" for k, c in path_conf.items() if c > BREATHING_CONFIDENCE_THRESHOLD]
-    if detected:
-        lines.append(f"Status: BREATHING DETECTED ({', '.join(detected)})")
+    active_paths = len(path_conf)
+    if active_paths < BREATHING_MIN_PATHS_TOTAL:
+        lines.append(f"Status: WARNING — insufficient paths ({active_paths}/{BREATHING_MIN_PATHS_TOTAL})")
     else:
-        lines.append("Status: No breathing detected")
+        detected = [f"S{k[0]}↔S{k[1]}" for k, c in path_conf.items() if c > BREATHING_CONFIDENCE_THRESHOLD]
+        if detected:
+            lines.append(f"Status: BREATHING DETECTED ({', '.join(detected)})")
+        else:
+            lines.append("Status: No breathing detected")
     print("\n".join(lines))
 
 
@@ -65,7 +71,6 @@ def _run_console_loop(port: str, detector: BreathingDetector):
     """Console-only live mode."""
     import serial as pyserial
     from ghv4.serial_io import SerialReader
-    from ghv4.config import BREATHING_WINDOW_N
 
     frame_queue = queue.Queue()
     ser = pyserial.Serial(port, BAUD_RATE, timeout=1.0)
@@ -121,7 +126,6 @@ def _run_pygame_loop(port, detector, fullscreen, demo):
         print("ERROR: pygame is required for --display pygame. Install with: pip install pygame")
         sys.exit(1)
 
-    from ghv4.config import PI_DISPLAY_FPS
     import pygame
 
     result_queue = queue.Queue()
