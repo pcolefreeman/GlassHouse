@@ -59,24 +59,20 @@ MAX_LOG_LINES = 500
 
 # ── Pi Display ────────────────────────────────────────────────
 PI_DISPLAY_FPS         = 10                  # 10 Hz redraw
-PI_DISPLAY_BG          = (13, 13, 13)        # #0d0d0d (matches viz.py dark bg)
-PI_CELL_ACTIVE         = (255, 107, 53)      # #FF6B35 rescue orange (matches viz.py)
-PI_CELL_INACTIVE       = (26, 26, 26)        # #1a1a1a (matches viz.py)
+PI_DISPLAY_BG          = (13, 13, 13)        # #0d0d0d dark bg
+PI_CELL_ACTIVE         = (255, 107, 53)      # #FF6B35 rescue orange
+PI_CELL_INACTIVE       = (26, 26, 26)        # #1a1a1a
 PI_CELL_BORDER         = (68, 68, 68)        # #444444
 PI_TEXT_ACTIVE         = (255, 255, 255)     # white
 PI_TEXT_INACTIVE       = (102, 102, 102)     # #666666
 PI_SCREEN_SIZE         = (800, 480)          # Standard Pi 7" DSI LCD
 
-# SAR / Pi display layout (shared by breathing.py and pi_display.py)
+# SAR display layout (shared by breathing.py and run_sar.py)
 SAR_DISPLAY_TITLE_H    = 44
 SAR_DISPLAY_STATUS_H   = 40
 SAR_DISPLAY_GRID_PAD   = 24
 SAR_DISPLAY_CELL_GAP   = 4
 SAR_DISPLAY_MARGIN     = 14
-
-# ── EDA constants ──────────────────────────────────────────────
-META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col", "activity"]
-EXPECTED_COLS = 5134
 
 # ── Signal hardening (RuView-inspired) ───────────────────────
 HAMPEL_WINDOW = 11                        # Sliding window size for Hampel filter

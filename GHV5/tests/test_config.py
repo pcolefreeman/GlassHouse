@@ -9,8 +9,6 @@ from ghv5.config import (
     NULL_SUBCARRIER_INDICES,
     PAIR_KEYS,
     SUBCARRIERS,
-    META_COLS,
-    EXPECTED_COLS,
     BAUD_RATE,
     MAGIC_LISTENER,
     MAGIC_SHOUTER,
@@ -84,11 +82,6 @@ def test_magic_bytes_are_two_bytes():
         ("MAGIC_CSI_SNAP", MAGIC_CSI_SNAP),
     ]:
         assert len(val) == 2, f"{name} is {len(val)} bytes, expected 2"
-
-
-def test_meta_cols_count():
-    """META_COLS has exactly 6 entries (activity column added)."""
-    assert len(META_COLS) == 6
 
 
 def test_baud_rate_positive():
