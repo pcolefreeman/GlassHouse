@@ -250,6 +250,8 @@ def main():
     parser.add_argument("--port", help="Serial port for live mode (e.g., COM3)")
     parser.add_argument("--display", choices=["console", "pygame"], default="console",
                         help="Output display mode (default: console)")
+    parser.add_argument("--console", action="store_true",
+                        help="Force console output (overrides --display pygame)")
     parser.add_argument("--demo", action="store_true",
                         help="Demo mode: synthetic breathing without hardware")
     parser.add_argument("--fullscreen", action="store_true",
@@ -275,6 +277,9 @@ def main():
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             _log.error("Failed to load layout file %s: %s", args.layout, exc)
             sys.exit(1)
+
+    if args.console:
+        args.display = "console"
 
     detector = BreathingDetector(path_map=path_map)
 
