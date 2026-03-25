@@ -41,3 +41,11 @@ GHV4/docs/
 *.CSV
 GHV4\EMPTYROOMBASELINE_run_sar.txt
 GHV4\EMPTYROOMBASELINE_run_sar.txt
+
+# ── AI Agent Tooling (os-eco) ────────────────────────────────────────────────
+.mulch/
+.seeds/
+.canopy/
+.overstory/
+.claude/worktrees/
+overstory-issue-79-comment.md
