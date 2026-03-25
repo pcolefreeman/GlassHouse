@@ -32,7 +32,17 @@
       "Bash(echo \"STALE_EXIT:$?\")",
       "Bash(grep -rn '\"\"amp\"\"' ghv5/ run_sar.py tests/)",
       "Bash(echo \"AMP_EXIT:$?\")",
-      "Bash(echo \"HELP_EXIT:$?\")"
+      "Bash(echo \"HELP_EXIT:$?\")",
+      "Bash(find /c/GlassHouse/GHV4 -not -path */__pycache__/* -not -path *.egg-info* -type d)",
+      "Bash(find /c/GlassHouse/GHV5 -not -path */__pycache__/* -not -path *.egg-info* -type d)",
+      "Bash(python3 -c \":*)",
+      "Bash(py -3 -c \":*)",
+      "Bash(py -3:*)",
+      "Bash(python -m pytest tests/ --tb=no -q)",
+      "Bash(python -m pytest tests/test_pi_display.py --tb=short)",
+      "Bash(python -m pytest tests/ --tb=short -q)",
+      "Bash(python -m pytest tests/ --tb=short -q --co)",
+      "Bash(python -m pytest tests/test_config.py tests/test_csi_parser.py tests/test_serial_io.py tests/test_cell_logic.py tests/test_pi_display.py -v --tb=short)"
     ]
   }
 }
