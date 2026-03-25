@@ -18,7 +18,7 @@ from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import GroupKFold, cross_val_predict
 
-from ghv4.config import DISTANCE_MAX_TREES, PAIR_KEYS, DISTANCE_FEATURE_COUNT
+from ghv4.config import DISTANCE_MAX_TREES, PAIR_KEYS, DISTANCE_FEATURE_COUNT, DISTANCE_CV_FOLDS
 
 _log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def train_pair_model(
     X: np.ndarray,
     y: np.ndarray,
     groups: np.ndarray,
-    n_splits: int = 3,
+    n_splits: int = DISTANCE_CV_FOLDS,
 ) -> Tuple[Any, Dict[str, float]]:
     """Train a regressor for one shouter pair.
 

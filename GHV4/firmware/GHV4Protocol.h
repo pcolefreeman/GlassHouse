@@ -114,3 +114,17 @@ typedef struct __attribute__((packed)) {
     uint16_t csi_len;        // bytes in csi[]
     uint8_t  csi[CSI_SNAP_MAX];
 } csi_snap_pkt_t;            // 8 + 384 = 392 bytes max
+
+// ── Per-path CSI baseline (stored in SPIFFS) ─────────────────────────────────
+// Stores average empty-room CSI amplitude per subcarrier for one shouter pair.
+// Used by SAR breathing/presence detection to subtract static environment.
+// 128 subcarriers × 2 bytes (amplitude) = 256 bytes of CSI data.
+#define BASELINE_N_SUBCARRIERS  128
+
+typedef struct __attribute__((packed)) {
+    uint8_t  reporter_id;    // shouter that captured the CSI
+    uint8_t  peer_id;        // shouter that sent the beacon
+    uint16_t n_samples;      // number of frames averaged into this baseline
+    uint32_t timestamp_ms;   // millis() when baseline was captured
+    float    amplitude[BASELINE_N_SUBCARRIERS];  // mean |CSI| per subcarrier (float for averaging)
+} csi_baseline_t;            // 2 + 2 + 4 + 128*4 = 520 bytes

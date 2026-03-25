@@ -17,11 +17,11 @@ import serial
 import time
 
 from ghv4 import csi_parser
-from ghv4.config import PAIR_KEYS, BAUD_RATE, SPACING_FEATURE_NAMES
+from ghv4.config import PAIR_KEYS, BAUD_RATE, SPACING_FEATURE_NAMES, SPACING_JSON_REFRESH_S
 
 _log = logging.getLogger(__name__)
 
-SPACING_REFRESH_S = 5
+SPACING_REFRESH_S = SPACING_JSON_REFRESH_S
 
 
 def load_preprocessor(processed_dir: str):

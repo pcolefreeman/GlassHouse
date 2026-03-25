@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include "esp_wifi.h"
+#include "SPIFFS.h"
 #include "../GHV4Protocol.h"
 
 // ── Configuration ──────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@
 #define RANGING_COOLDOWN_MS    30000   // minimum ms between ranging phases; prevents re-ranging on brief dropout
 #define RANGING_STABILITY_MS    5000   // all 4 shouters must be registered this long before ranging starts
 #define SNAP_DRAIN_MS           2000   // per-shouter drain window: 35 snaps × 3 peers × 15ms + margin
+#define SNAP_DRAIN_WINDOW_MS    8   // brief drain window after poll response for incoming CSI snaps
 #define USE_BROADCAST_POLL  1     // 1 = broadcast + stagger; 0 = sequential (fallback)
 #define STAGGER_MS         40     // per-shouter stagger delay for broadcast polling
 
@@ -25,10 +27,10 @@ static bool      shouter_ready[5] = {};  // true once HELLO received
 // MAC → ID lookup table. Populate with actual MACs from `esptool.py read_mac`.
 // If a MAC doesn't match, assign next available ID as fallback.
 static const uint8_t known_macs[4][6] = {
-    {0x68, 0xFE, 0x71, 0x90, 0x60, 0xA0},  // ID 1
+    {0x20, 0xE7, 0xC8, 0xEC, 0xF5, 0xDC},  // ID 1
     {0x68, 0xFE, 0x71, 0x90, 0x68, 0x14},  // ID 2
     {0x68, 0xFE, 0x71, 0x90, 0x6B, 0x90},  // ID 3
-    {0x20, 0xE7, 0xC8, 0xEC, 0xF5, 0xDC},  // ID 4
+    {0x68, 0xFE, 0x71, 0x90, 0x60, 0xA0},  // ID 4
 };
 
 // ── Listener CSI ring buffer — callback stores here; loop drains to Serial ────
@@ -72,6 +74,7 @@ static volatile uint32_t csi_overflow_count = 0;
 static uint32_t lst_poll_count = 0;
 static uint16_t consecutive_miss[5] = {};  // index 1-4; tracks consecutive poll misses
 static bool     miss_warned[5] = {};       // true once warning emitted; reset on hit
+static uint8_t  poll_start_offset = 0;     // stagger rotation: starting shouter index rotates each round
 
 // ── Ranging state machine ────────────────────────────────────────────────────
 enum RangingState {
@@ -489,6 +492,7 @@ void loop() {
     pkt.poll_seq    = poll_seq;
     pkt.listener_ms = millis();
     memset(pkt.pad, 0xA5, POLL_PAD_SIZE);
+    pkt.pad[0] = poll_start_offset;  // stagger rotation offset for shouters
     udp.beginPacket(IPAddress(192, 168, 4, 255), SHOUTER_PORT);
     udp.write((uint8_t*)&pkt, sizeof(pkt));
     udp.endPacket();
@@ -523,11 +527,28 @@ void loop() {
             }
         }
     }
+
+    // Snap priority drain window: process incoming CSI snap frames after broadcast responses
+    {
+        unsigned long snap_drain_end = millis() + SNAP_DRAIN_WINDOW_MS;
+        while (millis() < snap_drain_end) {
+            drain_listener_csi();
+            response_pkt_t snap_dummy;
+            handle_incoming_udp(&snap_dummy);
+            delayMicroseconds(100);
+        }
+    }
+
+    // Stagger rotation: advance for next broadcast round
+    poll_start_offset = (poll_start_offset + 1) % 4;
+
     bool polled_any = true;
 
 #else
     bool polled_any = false;
-    for (uint8_t id = 1; id <= 4; id++) {
+    // Stagger rotation: rotate starting shouter each round (round-robin)
+    for (uint8_t step = 0; step < 4; step++) {
+        uint8_t id = ((poll_start_offset + step) % 4) + 1;  // 1-based ID, rotated
         if (!shouter_ready[id]) continue;
         polled_any = true;
 
@@ -574,9 +595,19 @@ void loop() {
             }
         }
 
+        // Snap priority drain window: process incoming CSI snap frames before next poll
+        unsigned long snap_drain_end = millis() + SNAP_DRAIN_WINDOW_MS;
+        while (millis() < snap_drain_end) {
+            drain_listener_csi();
+            response_pkt_t snap_dummy;
+            handle_incoming_udp(&snap_dummy);  // process any CSI snap frames
+            delayMicroseconds(100);
+        }
+
         unsigned long gap_end = millis() + INTER_SHOUTER_GAP_MS;
         while (millis() < gap_end) drain_listener_csi();
     }
+    poll_start_offset = (poll_start_offset + 1) % 4;  // rotate for next round
 #endif
 
     drain_listener_csi();
@@ -589,4 +620,89 @@ void loop() {
         }
     }
     last_cycle_ms = millis();
+}
+
+// ── Per-path baseline calibration stubs (SPIFFS) ────────────────────────────
+// Storage infrastructure for per-shouter-pair CSI baselines.
+// Actual calibration logic NOT implemented — these are stubs only.
+
+#define BASELINE_PATH_PREFIX "/baseline"  // SPIFFS path: /baseline_1_2.bin etc.
+#define BASELINE_CSI_LEN     256          // 128 subcarriers × 2 bytes (I/Q)
+
+// In-memory baseline storage (loaded from SPIFFS at boot)
+static csi_baseline_t path_baselines[5][5];  // [reporter_id][peer_id], indices 1-4 valid
+static bool           baseline_valid[5][5] = {};
+
+// Initialize SPIFFS for baseline storage. Call from setup() when calibration is enabled.
+bool baseline_spiffs_init() {
+    if (!SPIFFS.begin(true)) {  // true = format on first use
+        Serial.println("[LST] WARN: SPIFFS mount failed — baselines disabled");
+        return false;
+    }
+    Serial.println("[LST] SPIFFS mounted for baseline storage");
+    return true;
+}
+
+// Load a single per-path baseline from SPIFFS. Returns true if file exists and was loaded.
+bool baseline_load(uint8_t reporter_id, uint8_t peer_id) {
+    if (reporter_id < 1 || reporter_id > 4 || peer_id < 1 || peer_id > 4) return false;
+    char path[32];
+    snprintf(path, sizeof(path), "%s_%d_%d.bin", BASELINE_PATH_PREFIX, reporter_id, peer_id);
+    File f = SPIFFS.open(path, "r");
+    if (!f) return false;
+    size_t read_len = f.read((uint8_t*)&path_baselines[reporter_id][peer_id],
+                             sizeof(csi_baseline_t));
+    f.close();
+    if (read_len == sizeof(csi_baseline_t)) {
+        baseline_valid[reporter_id][peer_id] = true;
+        Serial.printf("[LST] Baseline loaded: path %d→%d\n", reporter_id, peer_id);
+        return true;
+    }
+    return false;
+}
+
+// Save a single per-path baseline to SPIFFS. Returns true on success.
+bool baseline_save(uint8_t reporter_id, uint8_t peer_id) {
+    if (reporter_id < 1 || reporter_id > 4 || peer_id < 1 || peer_id > 4) return false;
+    char path[32];
+    snprintf(path, sizeof(path), "%s_%d_%d.bin", BASELINE_PATH_PREFIX, reporter_id, peer_id);
+    File f = SPIFFS.open(path, "w");
+    if (!f) {
+        Serial.printf("[LST] WARN: Failed to open %s for writing\n", path);
+        return false;
+    }
+    size_t written = f.write((uint8_t*)&path_baselines[reporter_id][peer_id],
+                             sizeof(csi_baseline_t));
+    f.close();
+    if (written == sizeof(csi_baseline_t)) {
+        Serial.printf("[LST] Baseline saved: path %d→%d\n", reporter_id, peer_id);
+        return true;
+    }
+    return false;
+}
+
+// Load all baselines from SPIFFS. Call after baseline_spiffs_init().
+void baseline_load_all() {
+    uint8_t loaded = 0;
+    for (uint8_t r = 1; r <= 4; r++) {
+        for (uint8_t p = 1; p <= 4; p++) {
+            if (r == p) continue;  // no self-path
+            if (baseline_load(r, p)) loaded++;
+        }
+    }
+    Serial.printf("[LST] Loaded %d/%d path baselines from SPIFFS\n", loaded, 12);
+}
+
+// Clear all stored baselines from SPIFFS.
+void baseline_clear_all() {
+    for (uint8_t r = 1; r <= 4; r++) {
+        for (uint8_t p = 1; p <= 4; p++) {
+            if (r == p) continue;
+            char path[32];
+            snprintf(path, sizeof(path), "%s_%d_%d.bin", BASELINE_PATH_PREFIX, r, p);
+            SPIFFS.remove(path);
+            baseline_valid[r][p] = false;
+        }
+    }
+    Serial.println("[LST] All baselines cleared");
 }

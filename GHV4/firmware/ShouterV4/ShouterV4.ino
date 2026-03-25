@@ -26,6 +26,7 @@ static volatile int       ring_count = 0;
 static portMUX_TYPE       ring_mux   = portMUX_INITIALIZER_UNLOCKED;
 static volatile uint32_t  csi_overflow_count = 0;
 static uint32_t           sht_resp_count = 0;
+static uint32_t           bcn_rx_count[5] = {};  // beacons received per peer ID (indices 1-4)
 
 // ── CSI snapshot buffer (ranging phase) ───────────────────────────────────
 #define N_SNAP 35
@@ -138,6 +139,7 @@ void on_esp_now_recv(const esp_now_recv_info_t *recv_info,
         bcn->magic[1] != RANGE_BCN_MAGIC_1) return;
     uint8_t sid = bcn->shouter_id;
     if (sid < 1 || sid > 4 || sid == my_id) return;
+    bcn_rx_count[sid]++;
     int8_t rssi = (int8_t)recv_info->rx_ctrl->rssi;
     portENTER_CRITICAL(&peer_mux);
     if (peer_table[sid].valid) {
@@ -295,6 +297,9 @@ void send_poll_response(poll_pkt_t *poll) {
     sht_resp_count++;
     if (sht_resp_count % 100 == 0) {
         Serial.printf("[SHT] csi_overflow=%lu\n", (unsigned long)csi_overflow_count);
+        Serial.printf("[SHT] bcn_rx: S1=%lu S2=%lu S3=%lu S4=%lu\n",
+            (unsigned long)bcn_rx_count[1], (unsigned long)bcn_rx_count[2],
+            (unsigned long)bcn_rx_count[3], (unsigned long)bcn_rx_count[4]);
     }
 
     // Transmit buffered CSI snapshots to listener.
@@ -353,11 +358,15 @@ void loop() {
         listener_warning_sent = true;
     }
 
-    // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (10 Hz)
+    // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (~20 Hz)
+    // Jitter: random interval 42-58ms (base 50ms ± 8ms) to reduce ESP-NOW collisions
+    // between shouters that would otherwise beacon at synchronized intervals.
     static uint32_t last_beacon_ms = 0;
     static uint32_t cont_bcn_seq = 0;
-    if (my_id > 0 && millis() - last_beacon_ms >= 100) {
+    static uint32_t next_beacon_interval = 50;  // ms until next beacon
+    if (my_id > 0 && millis() - last_beacon_ms >= next_beacon_interval) {
         last_beacon_ms = millis();
+        next_beacon_interval = 42 + (esp_random() % 17);  // 42-58ms (50 ± 8ms jitter)
         range_bcn_pkt_t bcn;
         bcn.magic[0]   = RANGE_BCN_MAGIC_0;
         bcn.magic[1]   = RANGE_BCN_MAGIC_1;
@@ -460,13 +469,20 @@ void loop() {
     }
     if (poll->target_id != my_id && poll->target_id != 0xFF) return;
 
-    // For broadcast polls, stagger response by (my_id - 1) * STAGGER_MS
-    if (poll->target_id == 0xFF && my_id > 1) {
-        stagger_pending = true;
-        stagger_target_ms = millis() + (uint32_t)(my_id - 1) * STAGGER_MS;
-        memcpy(&stagger_poll, poll, sizeof(poll_pkt_t));
-        return;  // response sent from loop() after stagger delay
+    // For broadcast polls, stagger response using rotation offset from listener.
+    // pad[0] contains the rotation offset (0-3); shouter computes its position
+    // in the rotated order: position = (my_id - 1 - offset + 4) % 4.
+    // Position 0 responds immediately; others stagger by position * STAGGER_MS.
+    if (poll->target_id == 0xFF) {
+        uint8_t offset = poll->pad[0] % 4;
+        uint8_t position = ((my_id - 1) - offset + 4) % 4;
+        if (position > 0) {
+            stagger_pending = true;
+            stagger_target_ms = millis() + (uint32_t)position * STAGGER_MS;
+            memcpy(&stagger_poll, poll, sizeof(poll_pkt_t));
+            return;  // response sent from loop() after stagger delay
+        }
     }
-    // Direct poll or first shouter in broadcast — respond immediately
+    // Direct poll or first in rotated broadcast order — respond immediately
     send_poll_response(poll);
 }

@@ -5,10 +5,18 @@
 - **Canonical firmware is in `GHV4/firmware/`** — `ListenerV4/` and `ShouterV4/` directories. `GHV3/firmware/` contains identical copies but is not the active working set.
 - **12 firmware improvements implemented (2026-03-22)** — see `docs/superpowers/plans/2026-03-21-firmware-12-improvements.md` for the full plan. All tasks complete; hardware testing deferred.
 - **Design spec** at `~/.claude/plans/transient-leaping-rabin.md` — detailed design with review fixes applied.
-- **Continuous shouter beacons (implemented, hardware test pending)** — 10 Hz ESP-NOW beacons
-  from each shouter for breathing/heart rate CSI. Replaces one-shot ranging for SAR mode.
+- **Continuous shouter beacons — now 20 Hz (50 ms interval)** — changed from 10 Hz to improve
+  snap fill rates on slow paths. Replaces one-shot ranging for SAR mode.
   Spec: `docs/superpowers/specs/2026-03-23-continuous-shouter-beacons-design.md`.
   Plan: `docs/superpowers/plans/2026-03-23-continuous-shouter-beacons.md`.
+- **Snap rate asymmetry (S1-X paths always faster)** — S1 has no stagger delay so it delivers
+  snap data first every poll cycle. Non-S1 pairs (e.g. S2-S3, S3-S4) require BOTH shouters to
+  receive each other's ESP-NOW beacons directly; if either link is weak, fill rate halves.
+  Listener physical position does NOT affect snap rates — confirmed by physical test. Root cause
+  is inter-shouter ESP-NOW link quality for that specific room corner pair.
+- **`bcn_rx_count` diagnostic** — ShouterV4 prints `[SHT] bcn_rx: S1=N S2=N S3=N S4=N` every
+  100 poll cycles (cumulative totals). A peer showing 10× lower count than others confirms a
+  broken or attenuated ESP-NOW link on that path. Added 2026-03-25.
 
 ## Serial Frame Types (listener COM port → PC)
 ```
@@ -103,6 +111,7 @@ text          — [LST] debug lines    pure ASCII, newline-terminated
   silently returns `ESP_ERR_ESPNOW_NOT_FOUND`. Use `bcast_peer.channel = 0` (not 6) to avoid
   `ESP_ERR_ESPNOW_CHAN`. `on_esp_now_recv` runs in WiFi task context (Core 0) — use
   `portENTER_CRITICAL` (not ISR variant). `ifidx = WIFI_IF_STA` required in STA mode.
+- **Snap rate asymmetry is systemic, not S3-specific** — all non-S1 pairs are slow (3–10/s vs 14–16/s). Three contributing factors: (1) fixed stagger order gives S1 first serial bandwidth, (2) synchronized 50ms beacon intervals cause ESP-NOW collisions, (3) no dedicated snap drain window after polls. Fix designed: stagger rotation + beacon jitter + snap priority drain (spec `docs/superpowers/specs/2026-03-25-sar-connectivity-effectiveness-design.md`).
 - **Test room geometry** — perfect 25ft square. Shouter corners: 1=bottom-left, 2=top-left,
   3=top-right, 4=bottom-right. Sides (7.62m): 1-2, 2-3, 3-4, 4-1. Diagonals (10.78m): 1-3, 2-4.
 - **RSSI-based ranging accuracy** — Log-distance path loss model; `ranging_config.json` hot-reloads
