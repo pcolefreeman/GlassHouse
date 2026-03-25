@@ -43,10 +43,14 @@ from ghv4.config import (
     MODELS_DIR,
     CELL_LABELS,
     GRID_POS,
+    CV_FOLDS,
+    RF_ESTIMATORS_FAST,
+    RF_ESTIMATORS_FULL,
+    GBT_ESTIMATORS_FAST,
+    GBT_ESTIMATORS_FULL,
 )
 
 PROCESSED_DIR = str(DATA_PROCESSED_DIR)
-CV_FOLDS = 5
 
 
 # ── SAR spatial metrics ────────────────────────────────────────────────────────
@@ -77,8 +81,8 @@ def make_base_estimators(fast: bool) -> list[tuple[str, object]]:
     Returns (name, estimator) pairs used as base models everywhere.
     `fast=True` cuts tree counts for slower hardware (Pi 4B).
     """
-    rf_trees  = 100 if fast else 300
-    gbt_trees = 50  if fast else 200
+    rf_trees  = RF_ESTIMATORS_FAST if fast else RF_ESTIMATORS_FULL
+    gbt_trees = GBT_ESTIMATORS_FAST if fast else GBT_ESTIMATORS_FULL
 
     return [
         ("logreg", Pipeline([

@@ -32,6 +32,7 @@ NULL_PDIFF_INDICES = frozenset({0, 1, 2, 31, 32, 62, 63, 64, 65})
 # ── Timing ─────────────────────────────────────────────────────
 BUCKET_MS = 200
 POLL_INTERVAL_MIN_MS = 50
+SPACING_JSON_REFRESH_S = 5
 
 # ── Shouters & grid ────────────────────────────────────────────
 ACTIVE_SHOUTER_IDS = [1, 2, 3, 4]
@@ -41,6 +42,10 @@ GRID_POS = {i: (i // 3, i % 3) for i in range(9)}
 
 # ── Feature contract ──────────────────────────────────────────
 SPACING_FEATURE_NAMES = [f"dist_{k}" for k in PAIR_KEYS]
+
+# ── WiFi RF ──────────────────────────────────────────────────
+WIFI_CHANNEL6_CENTER_HZ   = 2_437_000_000.0
+WIFI_SUBCARRIER_SPACING_HZ = 312_500.0
 
 # ── MUSIC estimator ───────────────────────────────────────────
 MUSIC_TAU_MAX_S = 100e-9      # 30 m search range
@@ -62,13 +67,27 @@ PI_TEXT_ACTIVE         = (255, 255, 255)     # white
 PI_TEXT_INACTIVE       = (102, 102, 102)     # #666666
 PI_SCREEN_SIZE         = (800, 480)          # Standard Pi 7" DSI LCD
 
+# SAR / Pi display layout (shared by breathing.py and pi_display.py)
+SAR_DISPLAY_TITLE_H    = 44
+SAR_DISPLAY_STATUS_H   = 40
+SAR_DISPLAY_GRID_PAD   = 24
+SAR_DISPLAY_CELL_GAP   = 4
+SAR_DISPLAY_MARGIN     = 14
+
+# ── ML Training ──────────────────────────────────────────────
+CV_FOLDS               = 5
+RF_ESTIMATORS_FAST     = 100
+RF_ESTIMATORS_FULL     = 300
+GBT_ESTIMATORS_FAST    = 50
+GBT_ESTIMATORS_FULL    = 200
+
 # ── EDA constants ──────────────────────────────────────────────
 META_COLS = ["timestamp_ms", "label", "zone_id", "grid_row", "grid_col", "activity"]
 EXPECTED_COLS = 5134
 
-# ---------------------------------------------------------------------------
-# ML Distance Estimation
-# ---------------------------------------------------------------------------
+# ── ML Distance Estimation ────────────────────────────────────
+DISTANCE_CV_FOLDS      = 3
+
 VALID_SUBCARRIER_COUNT = SUBCARRIERS - len(NULL_SUBCARRIER_INDICES)  # 121
 DISTANCE_FEATURE_COUNT = VALID_SUBCARRIER_COUNT * 2 * 2             # 484
 

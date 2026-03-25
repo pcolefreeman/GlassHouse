@@ -42,6 +42,11 @@ from ghv4.config import (
     PRESENCE_LOGSIGMOID_SCALE,
     PRESENCE_LOGSIGMOID_MIDPOINT,
     PRESENCE_RANK_DIVISOR,
+    SAR_DISPLAY_TITLE_H,
+    SAR_DISPLAY_STATUS_H,
+    SAR_DISPLAY_GRID_PAD,
+    SAR_DISPLAY_CELL_GAP,
+    SAR_DISPLAY_MARGIN,
 )
 from ghv4.csi_parser import parse_csi_bytes
 from ghv4.signal_hardening import hampel_filter, gate_frame, select_subcarriers
@@ -989,10 +994,10 @@ try:
     class BreathingDisplay:
         """Pygame heatmap display for SAR breathing detection."""
 
-        TITLE_H = 44
-        STATUS_H = 40
-        GRID_PAD = 24
-        CELL_GAP = 4
+        TITLE_H = SAR_DISPLAY_TITLE_H
+        STATUS_H = SAR_DISPLAY_STATUS_H
+        GRID_PAD = SAR_DISPLAY_GRID_PAD
+        CELL_GAP = SAR_DISPLAY_CELL_GAP
 
         def __init__(self, screen_size=None, fullscreen=False):
             from ghv4.config import PI_SCREEN_SIZE
@@ -1046,7 +1051,7 @@ try:
                     y = grid_top + row * (cell_h + self.CELL_GAP)
                     self._cell_rects[(row, col)] = _pygame.Rect(x, y, cell_w, cell_h)
 
-            margin = 14
+            margin = SAR_DISPLAY_MARGIN
             self._shouter_positions = {
                 2: (grid_left - margin, grid_top - margin),
                 3: (grid_left + grid_w + margin, grid_top - margin),

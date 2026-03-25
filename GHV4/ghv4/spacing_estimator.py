@@ -35,16 +35,16 @@ from ghv4.config import (
     MUSIC_MIN_SNAP,
     MUSIC_MAX_SNAP,
     CSI_NOISE_FLOOR,
+    WIFI_CHANNEL6_CENTER_HZ,
+    WIFI_SUBCARRIER_SPACING_HZ,
 )
 
 _PAIR_INDICES = [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
 
-# MUSIC CSI ranging constants
-CH6_CENTER_HZ         = 2_437_000_000.0
-SUBCARRIER_SPACING_HZ = 312_500.0
+# MUSIC CSI ranging derived constants
 VALID_INDICES         = [k for k in range(SUBCARRIERS) if k not in NULL_SUBCARRIER_INDICES]
 SUBCARRIER_FREQS      = np.array([
-    CH6_CENTER_HZ + (k - 64) * SUBCARRIER_SPACING_HZ for k in VALID_INDICES
+    WIFI_CHANNEL6_CENTER_HZ + (k - 64) * WIFI_SUBCARRIER_SPACING_HZ for k in VALID_INDICES
 ])
 
 
