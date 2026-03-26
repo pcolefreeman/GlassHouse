@@ -5,8 +5,14 @@ Uses CSI Ratio (conjugate multiply between subcarrier pairs) to cancel
 CFO/clock drift, then FFT to detect breathing-band (0.1-0.5 Hz) power.
 """
 import logging
+import time as _time_mod
 
 import numpy as np
+
+from enum import Enum
+
+# Monotonic clock for staleness tracking (testable via override)
+_time_func = _time_mod.monotonic
 
 from ghv5.config import (
     SUBCARRIERS,
@@ -17,12 +23,33 @@ from ghv5.config import (
     BREATHING_CONFIDENCE_THRESHOLD,
     BREATHING_PATH_MAP,
     BREATHING_SNAP_HZ,
-    BREATHING_PCA_COMPONENTS,
+    BREATHING_CONTRAST_CEILING,
+    BREATHING_MIN_PATHS_FOR_CONTRAST,
+    BREATHING_MIN_PATHS_TOTAL,
+    BREATHING_CONFIDENCE_BETA,
+    BREATHING_CONFIRM_WINDOWS,
+    BREATHING_RELEASE_WINDOWS,
+    BREATHING_BASELINE_ALPHA,
+    BREATHING_BASELINE_WARMUP,
+    BREATHING_STALE_TIMEOUT_S,
     CELL_LABELS,
-    PRESENCE_VARIANCE_MIDPOINT,
-    PRESENCE_VARIANCE_STEEPNESS,
+    HEARTRATE_CONFIDENCE_THRESHOLD,
+    HAMPEL_WINDOW,
+    HAMPEL_THRESHOLD,
+    COHERENCE_THRESHOLD,
+    SUBCARRIER_TOP_K,
+    SUBCARRIER_MIN_K,
+    PRESENCE_LOGSIGMOID_SCALE,
+    PRESENCE_LOGSIGMOID_MIDPOINT,
+    PRESENCE_RANK_DIVISOR,
+    SAR_DISPLAY_TITLE_H,
+    SAR_DISPLAY_STATUS_H,
+    SAR_DISPLAY_GRID_PAD,
+    SAR_DISPLAY_CELL_GAP,
+    SAR_DISPLAY_MARGIN,
 )
 from ghv5.csi_parser import parse_csi_bytes
+from ghv5.signal_hardening import hampel_filter, gate_frame, select_subcarriers
 
 _log = logging.getLogger(__name__)
 
@@ -50,8 +77,15 @@ class CSIRingBuffer:
         return self._count >= self._capacity
 
     def push(self, csi_complex: np.ndarray) -> None:
-        """Add one frame of complex CSI data to the buffer."""
-        self._buf[self._head] = csi_complex[:self._n_sub]
+        """Add one frame of complex CSI data to the buffer.
+
+        Non-finite values (NaN/inf) are replaced with 0 before storage.
+        """
+        frame = csi_complex[:self._n_sub]
+        if not np.all(np.isfinite(frame)):
+            _log.debug("CSIRingBuffer.push: non-finite values replaced with 0")
+            frame = np.where(np.isfinite(frame), frame, 0.0 + 0j)
+        self._buf[self._head] = frame
         self._head = (self._head + 1) % self._capacity
         self._count += 1
 
@@ -61,6 +95,377 @@ class CSIRingBuffer:
             return None
         # Roll so oldest is row 0
         return np.roll(self._buf, -self._head, axis=0).copy()
+
+
+class CSIRatioExtractor:
+    """Select subcarrier pairs and compute CSI ratio phase.
+
+    CSI Ratio: R(t) = H(t, k1) * conj(H(t, k2))
+    The conjugate multiply cancels CFO/clock drift (common-mode between subcarriers).
+    Only differential phase from physical motion (breathing) remains.
+    """
+
+    def __init__(self, n_subcarriers: int = SUBCARRIERS,
+                 n_pairs: int = BREATHING_NPAIRS,
+                 null_indices: frozenset = NULL_SUBCARRIER_INDICES):
+        valid = sorted(set(range(n_subcarriers)) - set(null_indices))
+        # Select n_pairs+1 evenly spaced subcarriers, then pair adjacent ones
+        # to get exactly n_pairs pairs
+        n_select = n_pairs + 1
+        step = max(1, len(valid) // (n_select + 1))
+        selected = [valid[step * (i + 1)] for i in range(n_select)
+                    if step * (i + 1) < len(valid)]
+        # Pair adjacent selected subcarriers
+        self.pair_indices = [(selected[i], selected[i + 1])
+                            for i in range(min(n_pairs, len(selected) - 1))]
+
+    def extract(self, window: np.ndarray) -> np.ndarray:
+        """Compute CSI ratio phase for each time step and pair.
+
+        Args:
+            window: (n_time, n_subcarriers) complex64 array.
+
+        Returns:
+            (n_time, n_pairs) float32 array of ratio phases in radians.
+
+        Raises:
+            ValueError: If window is not 2-D or has zero time steps.
+        """
+        if window.ndim != 2:
+            raise ValueError(
+                f"CSIRatioExtractor.extract expects 2-D array, got shape {window.shape}")
+        n_time = window.shape[0]
+        if n_time == 0:
+            return np.empty((0, len(self.pair_indices)), dtype=np.float32)
+        n_pairs = len(self.pair_indices)
+        if n_pairs == 0:
+            return np.empty((n_time, 0), dtype=np.float32)
+        result = np.empty((n_time, n_pairs), dtype=np.float32)
+        for j, (k1, k2) in enumerate(self.pair_indices):
+            ratio = window[:, k1] * np.conj(window[:, k2])
+            result[:, j] = np.angle(ratio)
+        return result
+
+
+class BreathingAnalyzer:
+    """Detrend + Hanning window + FFT + breathing band power.
+
+    Analyzes ratio phase time series to detect breathing-band (0.1-0.5 Hz) energy.
+    Returns a confidence score (0.0-1.0) representing the fraction of spectral
+    energy in the breathing band vs total energy.
+    """
+
+    def __init__(self, sample_rate_hz: float = BREATHING_SNAP_HZ,
+                 band_hz: tuple = BREATHING_BAND_HZ):
+        self._fs = sample_rate_hz
+        self._band_hz = band_hz
+
+    def analyze(self, ratio_phases: np.ndarray) -> float:
+        """Compute breathing confidence from ratio phase time series.
+
+        Args:
+            ratio_phases: (n_time, n_pairs) float array of CSI ratio phases.
+
+        Returns:
+            Confidence score 0.0-1.0 (max breathing power ratio across pairs).
+        """
+        if ratio_phases.ndim != 2:
+            raise ValueError(
+                f"BreathingAnalyzer.analyze expects 2-D array, got shape {ratio_phases.shape}")
+        n_time, n_pairs = ratio_phases.shape
+        if n_time < 2 or n_pairs == 0:
+            return 0.0
+
+        freq_resolution = self._fs / n_time
+        # Bin indices for breathing band
+        bin_lo = max(1, int(np.ceil(self._band_hz[0] / freq_resolution)))
+        bin_hi = min(n_time // 2, int(np.floor(self._band_hz[1] / freq_resolution)))
+        if bin_lo >= bin_hi:
+            _log.debug("BreathingAnalyzer: window too short for breathing band resolution")
+            return 0.0
+
+        pair_ratios = []
+        for j in range(n_pairs):
+            signal = ratio_phases[:, j].astype(np.float64)
+            # Replace any NaN/inf before processing
+            if not np.all(np.isfinite(signal)):
+                _log.debug("BreathingAnalyzer: non-finite values in pair %d, zeroing", j)
+                signal = np.where(np.isfinite(signal), signal, 0.0)
+            # Detrend: subtract linear fit
+            x = np.arange(n_time, dtype=np.float64)
+            coeffs = np.polyfit(x, signal, 1)
+            signal -= np.polyval(coeffs, x)
+            # Hanning window
+            signal *= np.hanning(n_time)
+            # FFT
+            spectrum = np.fft.rfft(signal)
+            power = np.abs(spectrum) ** 2
+            # Breathing band power ratio (exclude DC bin 0)
+            total_power = np.sum(power[1:])
+            if total_power < 1e-12:
+                pair_ratios.append(0.0)
+                continue
+            breathing_power = np.sum(power[bin_lo:bin_hi + 1])
+            pair_ratios.append(float(breathing_power / total_power))
+
+        if not pair_ratios:
+            return 0.0
+        return float(np.median(pair_ratios))
+
+
+class HeartRateAnalyzer:
+    """Detect heart rate (0.8-2.0 Hz) using CSI ratio + FFT.
+
+    Same pipeline as BreathingAnalyzer but targeting the heartbeat band.
+    Uses peak prominence instead of band power ratio for more reliable
+    detection of the weaker cardiac signal.
+    """
+
+    def __init__(self, sample_rate_hz: float = BREATHING_SNAP_HZ,
+                 band_hz: tuple | None = None,
+                 peak_prominence: float | None = None):
+        from ghv5.config import HEARTRATE_BAND_HZ, HEARTRATE_PEAK_PROMINENCE
+        self._fs = sample_rate_hz
+        self._band_hz = band_hz if band_hz is not None else HEARTRATE_BAND_HZ
+        self._prominence = peak_prominence if peak_prominence is not None else HEARTRATE_PEAK_PROMINENCE
+
+    def analyze(self, ratio_phases: np.ndarray) -> tuple[float, float]:
+        """Compute heart rate confidence and estimated BPM.
+
+        Args:
+            ratio_phases: (n_time, n_pairs) float array of CSI ratio phases.
+
+        Returns:
+            (confidence_0_to_1, estimated_bpm). BPM is 0.0 if not detected.
+        """
+        if ratio_phases.ndim != 2:
+            raise ValueError(
+                f"HeartRateAnalyzer.analyze expects 2-D array, got shape {ratio_phases.shape}")
+        n_time, n_pairs = ratio_phases.shape
+        if n_time < 2 or n_pairs == 0:
+            return 0.0, 0.0
+
+        freq_resolution = self._fs / n_time
+        bin_lo = max(1, int(np.ceil(self._band_hz[0] / freq_resolution)))
+        bin_hi = min(n_time // 2, int(np.floor(self._band_hz[1] / freq_resolution)))
+
+        if bin_lo >= bin_hi:
+            return 0.0, 0.0
+
+        pair_confidences = []
+        pair_peak_bins = []
+
+        for j in range(n_pairs):
+            signal = ratio_phases[:, j].astype(np.float64)
+            # Replace NaN/inf before processing
+            if not np.all(np.isfinite(signal)):
+                _log.debug("HeartRateAnalyzer: non-finite values in pair %d, zeroing", j)
+                signal = np.where(np.isfinite(signal), signal, 0.0)
+            # Detrend
+            x = np.arange(n_time, dtype=np.float64)
+            coeffs = np.polyfit(x, signal, 1)
+            signal -= np.polyval(coeffs, x)
+            # Hanning window
+            signal *= np.hanning(n_time)
+            # FFT
+            spectrum = np.fft.rfft(signal)
+            power = np.abs(spectrum) ** 2
+
+            # Extract HR band
+            hr_power = power[bin_lo:bin_hi + 1]
+            total_power = np.sum(power[1:])
+            if total_power < 1e-12:
+                pair_confidences.append(0.0)
+                pair_peak_bins.append(bin_lo)
+                continue
+
+            # Peak prominence
+            peak_idx = np.argmax(hr_power)
+            peak_val = hr_power[peak_idx]
+            band_mean = (np.sum(hr_power) - peak_val) / max(1, len(hr_power) - 1)
+            if band_mean < 1e-12:
+                prominence = float(peak_val > 0)
+            else:
+                prominence = float(peak_val / band_mean)
+
+            band_ratio = float(np.sum(hr_power) / total_power)
+            conf = min(1.0, band_ratio * prominence) if prominence > self._prominence else 0.0
+            pair_confidences.append(conf)
+            pair_peak_bins.append(bin_lo + peak_idx)
+
+        if not pair_confidences:
+            return 0.0, 0.0
+
+        confidence = float(np.median(pair_confidences))
+        if confidence < 1e-6:
+            return 0.0, 0.0
+
+        median_bin = int(np.median(pair_peak_bins))
+        bpm = float(median_bin * freq_resolution * 60.0)
+        return confidence, bpm
+
+
+class PresenceScorer:
+    """Score human presence per path using cross-path ranking + amplitude variance.
+
+    Two independent signals fused with max():
+    - Cross-path ranking: compare each path's mean amplitude against median of all paths
+    - Amplitude variance: 75th-percentile variance over window, mapped through log-sigmoid
+    """
+
+    def score(self, ring_buffers: dict[tuple, 'CSIRingBuffer']) -> dict[tuple, float]:
+        """Return {(min_id, max_id): presence_0_to_1} for all paths with full buffers."""
+        if not ring_buffers:
+            return {}
+
+        ready = {}
+        for key, buf in ring_buffers.items():
+            window = buf.get_window()
+            if window is not None:
+                ready[key] = window
+
+        if not ready:
+            return {key: 0.0 for key in ring_buffers}
+
+        # Cross-path ranking: mean amplitude per path
+        mean_amps = {}
+        for key, w in ready.items():
+            amp = np.abs(w)
+            # Handle all-zero windows
+            mean_val = float(np.mean(amp))
+            if not np.isfinite(mean_val):
+                mean_val = 0.0
+            mean_amps[key] = mean_val
+
+        all_means = list(mean_amps.values())
+        median_amp = float(np.median(all_means)) if all_means else 1.0
+        if median_amp < 1e-6:
+            median_amp = 1e-6
+
+        # Amplitude variance per path (75th percentile across subcarriers)
+        var_scores = {}
+        for key, window in ready.items():
+            amp = np.abs(window).astype(np.float64)
+            # Replace non-finite values before variance
+            if not np.all(np.isfinite(amp)):
+                amp = np.where(np.isfinite(amp), amp, 0.0)
+            per_sub_var = np.var(amp, axis=0)
+            var_75 = float(np.percentile(per_sub_var, 75))
+            # Log-sigmoid mapping using config constants
+            var_scores[key] = float(
+                1.0 / (1.0 + np.exp(
+                    -PRESENCE_LOGSIGMOID_SCALE * (np.log1p(var_75) - PRESENCE_LOGSIGMOID_MIDPOINT)
+                ))
+            )
+
+        scores = {}
+        for key in ring_buffers:
+            if key not in ready:
+                scores[key] = 0.0
+                continue
+            # Rank score: how much this path deviates above median
+            rank_score = float(np.clip(
+                (mean_amps[key] / median_amp - 1.0) / PRESENCE_RANK_DIVISOR, 0.0, 1.0))
+            scores[key] = max(rank_score, var_scores[key])
+        return scores
+
+
+class TemporalState(Enum):
+    """Per-path detection state for the temporal consistency filter."""
+    QUIET = "quiet"
+    PENDING = "pending"
+    DETECTED = "detected"
+    RELEASING = "releasing"
+
+
+class TemporalFilter:
+    """Per-path temporal consistency filter to eliminate transient ghost detections.
+
+    State machine per path:
+        QUIET    --[conf > threshold]--> PENDING (counter=1)
+        PENDING  --[conf > threshold]--> PENDING (counter++) -> DETECTED when counter >= confirm_n
+        PENDING  --[conf <= threshold]-> QUIET
+        DETECTED --[conf <= threshold]-> RELEASING (counter=1)
+        RELEASING--[conf <= threshold]-> RELEASING (counter++) -> QUIET when counter >= release_n
+        RELEASING--[conf > threshold]--> DETECTED
+    """
+
+    def __init__(self, threshold: float = BREATHING_CONFIDENCE_THRESHOLD,
+                 confirm_n: int = BREATHING_CONFIRM_WINDOWS,
+                 release_n: int = BREATHING_RELEASE_WINDOWS):
+        self._threshold = threshold
+        self._confirm_n = confirm_n
+        self._release_n = release_n
+        self._states: dict[tuple, TemporalState] = {}
+        self._counters: dict[tuple, int] = {}
+
+    def get_state(self, path: tuple) -> TemporalState:
+        return self._states.get(path, TemporalState.QUIET)
+
+    def reset_path(self, path: tuple) -> None:
+        """Reset a path to QUIET (e.g. on staleness timeout)."""
+        self._states[path] = TemporalState.QUIET
+        self._counters[path] = 0
+
+    def update(self, path_confidences: dict[tuple, float]) -> dict[tuple, float]:
+        """Apply temporal filter to smoothed per-path confidences.
+
+        Returns filtered confidences: 0.0 for QUIET/PENDING, smoothed value for
+        DETECTED/RELEASING.
+        """
+        filtered = {}
+        for path, conf in path_confidences.items():
+            state = self._states.get(path, TemporalState.QUIET)
+            counter = self._counters.get(path, 0)
+            above = conf > self._threshold
+
+            if state == TemporalState.QUIET:
+                if above:
+                    state = TemporalState.PENDING
+                    counter = 1
+                # else: stay QUIET
+
+            elif state == TemporalState.PENDING:
+                if above:
+                    counter += 1
+                    if counter >= self._confirm_n:
+                        state = TemporalState.DETECTED
+                        counter = 0
+                else:
+                    state = TemporalState.QUIET
+                    counter = 0
+
+            elif state == TemporalState.DETECTED:
+                if above:
+                    pass  # stay DETECTED
+                else:
+                    state = TemporalState.RELEASING
+                    counter = 1
+
+            elif state == TemporalState.RELEASING:
+                if above:
+                    state = TemporalState.DETECTED
+                    counter = 0
+                else:
+                    counter += 1
+                    if counter >= self._release_n:
+                        state = TemporalState.QUIET
+                        counter = 0
+
+            self._states[path] = state
+            self._counters[path] = counter
+
+            if state in (TemporalState.DETECTED, TemporalState.RELEASING):
+                filtered[path] = conf
+            else:
+                filtered[path] = 0.0
+
+        return filtered
+
+    def get_active_paths(self) -> set[tuple]:
+        """Return paths currently in DETECTED or RELEASING state."""
+        return {p for p, s in self._states.items()
+                if s in (TemporalState.DETECTED, TemporalState.RELEASING)}
 
 
 class GridProjector:
@@ -74,7 +479,7 @@ class GridProjector:
     def __init__(self, path_map: dict | None = None):
         self.path_map = path_map if path_map is not None else BREATHING_PATH_MAP
 
-    def project(self, path_confidences: dict[tuple[int, int], float]) -> dict[str, float | None]:
+    def project(self, path_confidences: dict[int, float]) -> dict[str, float | None]:
         """Project path confidences onto grid cells.
 
         Args:
@@ -94,9 +499,45 @@ class GridProjector:
                     scores[cell] = value
         return scores
 
+    def corroborate(self, grid_scores: dict[str, float | None],
+                    active_paths: set[tuple]) -> dict[str, str | None]:
+        """Classify each cell as 'confirmed', 'uncertain', or None based on path diversity.
+
+        A cell needs 2+ distinct active paths contributing to it for 'confirmed'.
+        When fewer than 4 total active paths exist system-wide, the requirement
+        relaxes to 1 path (graceful degradation).
+
+        Args:
+            grid_scores: {cell_label: score_0_to_100_or_None} from project().
+            active_paths: set of (min_id, max_id) tuples in DETECTED/RELEASING state.
+
+        Returns:
+            {cell_label: 'confirmed' | 'uncertain' | None}
+        """
+        min_paths_for_confirmed = 2 if len(active_paths) >= 4 else 1
+        result: dict[str, str | None] = {}
+        for cell in CELL_LABELS:
+            score = grid_scores.get(cell)
+            if score is None or score <= 0:
+                result[cell] = None
+                continue
+            # Count how many distinct active paths contribute to this cell
+            n_active = sum(1 for path in active_paths
+                          if path in self.path_map and cell in self.path_map[path])
+            if n_active >= min_paths_for_confirmed:
+                result[cell] = 'confirmed'
+            elif n_active >= 1:
+                result[cell] = 'uncertain'
+            else:
+                result[cell] = None
+        return result
+
 
 class BreathingDetector:
-    """Orchestrator: feeds csi_snap frames into ring buffers, runs analysis pipeline.
+    """Orchestrator: feeds csi_snap frames into ring buffers, runs hardened analysis pipeline.
+
+    Pipeline: coherence gate → ring buffer → Hampel filter → subcarrier selection
+    → CSI ratio → BreathingAnalyzer + HeartRateAnalyzer → PresenceScorer → dual-band fusion.
 
     Usage:
         det = BreathingDetector()
@@ -111,15 +552,36 @@ class BreathingDetector:
             key: CSIRingBuffer() for key in self._path_map
         }
         self._projector = GridProjector(path_map=self._path_map)
+        self._analyzer = BreathingAnalyzer()
+        self._hr_analyzer = HeartRateAnalyzer()
+        self._presence_scorer = PresenceScorer()
+        self._last_path_conf: dict[tuple, float] = {}
+        self._last_raw_path_conf: dict[tuple, float] = {}
+        self._last_hr_conf: dict[tuple, tuple[float, float]] = {}
+        self._last_presence: dict[tuple, float] = {}
+        self._last_corroboration: dict[str, str | None] = {}
+        self._rejected_frames = 0
+        self._accepted_frames = 0
+        # Detection hardening state
+        self._smoothed_conf: dict[tuple, float] = {k: 0.0 for k in self._path_map}
+        self._baseline: dict[tuple, float] = {k: 0.0 for k in self._path_map}
+        self._baseline_count: dict[tuple, int] = {k: 0 for k in self._path_map}
+        self._temporal_filter = TemporalFilter()
+        self._last_frame_time: dict[tuple, float] = {}  # monotonic timestamps
 
     def feed_frame(self, frame_type: str, frame_dict: dict) -> None:
         """Feed a parsed frame into the detector.
+
+        Applies coherence gate at ingestion — noisy frames are rejected.
 
         Args:
             frame_type: 'csi_snap' (other types are ignored)
             frame_dict: parsed frame dict with 'reporter_id', 'peer_id', 'csi'
         """
         if frame_type != 'csi_snap':
+            return
+        if not isinstance(frame_dict, dict):
+            _log.warning("feed_frame: expected dict, got %s", type(frame_dict).__name__)
             return
         reporter = frame_dict.get('reporter_id')
         peer = frame_dict.get('peer_id')
@@ -131,14 +593,37 @@ class BreathingDetector:
         csi_raw = frame_dict.get('csi', b'')
         if not csi_raw:
             return
-        csi_complex = parse_csi_bytes(csi_raw)
+        try:
+            csi_complex = parse_csi_bytes(csi_raw)
+        except Exception as exc:
+            _log.warning("feed_frame: failed to parse CSI bytes for S%d↔S%d: %s",
+                         key[0], key[1], exc)
+            return
         csi_array = np.array(csi_complex, dtype=np.complex64)
+        if csi_array.size == 0:
+            _log.debug("feed_frame: empty CSI array for S%d↔S%d", key[0], key[1])
+            return
         # Pad/truncate to SUBCARRIERS
         if len(csi_array) < SUBCARRIERS:
             csi_array = np.pad(csi_array, (0, SUBCARRIERS - len(csi_array)))
         else:
             csi_array = csi_array[:SUBCARRIERS]
+        # Replace NaN/inf before coherence check
+        if not np.all(np.isfinite(csi_array)):
+            _log.debug("feed_frame: non-finite CSI values for S%d↔S%d, replacing with 0",
+                       key[0], key[1])
+            csi_array = np.where(np.isfinite(csi_array), csi_array, 0.0 + 0j)
+        # Reject all-zero frames (no useful signal)
+        if np.all(csi_array == 0):
+            self._rejected_frames += 1
+            return
+        # Coherence gate: reject noisy frames
+        if not gate_frame(csi_array, threshold=COHERENCE_THRESHOLD):
+            self._rejected_frames += 1
+            return
+        self._accepted_frames += 1
         self._buffers[key].push(csi_array)
+        self._last_frame_time[key] = _time_func()
 
     def is_ready(self) -> bool:
         """True if at least one path has a full buffer."""
@@ -149,186 +634,187 @@ class BreathingDetector:
         return {key: buf.count / BREATHING_WINDOW_N
                 for key, buf in self._buffers.items()}
 
-    def get_grid_scores(self) -> dict[str, float | None]:
-        """Run presence analysis on all ready paths and project onto grid.
-
-        Uses a two-pass approach: Pass 1 collects per-path mean amplitudes
-        for cross-path ranking context; Pass 2 scores each path.
-        """
-        # Pass 1: collect mean amplitudes for cross-path ranking
-        all_path_means: dict[tuple, float] = {}
-        ready_windows: dict[tuple, np.ndarray] = {}
-        for key, buf in self._buffers.items():
-            if not buf.is_full():
-                continue
-            window = buf.get_window()
-            ready_windows[key] = window
-            valid = sorted(set(range(window.shape[1])) - set(NULL_SUBCARRIER_INDICES))
-            amp = np.abs(window[:, valid]).astype(np.float64)
-            all_path_means[key] = float(np.median(np.mean(amp, axis=0)))
-
-        # Pass 2: score each path
-        presence_confidences: dict[tuple, float] = {}
-        for key, window in ready_windows.items():
-            confidence = self._presence_score(window, all_path_means)
-            _log.info("Path S%d↔S%d presence=%.3f", key[0], key[1], confidence)
-            presence_confidences[key] = confidence
-
-        return self._projector.project(presence_confidences)
-
-    @staticmethod
-    def _pca_score(window: np.ndarray, k: int = BREATHING_PCA_COMPONENTS) -> float:
-        """Per-subcarrier amplitude PCA + FFT, scored as breathing-band SNR."""
-        from sklearn.decomposition import PCA
-
-        n_time, n_subs = window.shape
-        freq_res = BREATHING_SNAP_HZ / n_time
-        bin_lo = max(1, int(np.ceil(BREATHING_BAND_HZ[0] / freq_res)))
-        bin_hi = min(n_time // 2, int(np.floor(BREATHING_BAND_HZ[1] / freq_res)))
-        n_band = bin_hi - bin_lo + 1
-        ref_lo = bin_hi + 1
-        ref_hi = min(n_time // 2, ref_lo + n_band - 1)
-
-        valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
-        k = min(k, len(valid))
-        if k == 0:
-            return 0.0
-
-        amp = np.abs(window[:, valid]).astype(np.float64)
-
-        # Vectorised linear detrend
-        x = np.arange(n_time, dtype=np.float64)
-        xm = x - x.mean()
-        xvar = float(np.dot(xm, xm))
-        if xvar == 0:
-            return 0.0
-        slopes = (xm @ amp) / xvar
-        intercepts = amp.mean(axis=0) - slopes * x.mean()
-        amp -= x[:, None] * slopes + intercepts
-
-        # Hanning taper
-        amp *= np.hanning(n_time)[:, None]
-
-        # PCA: project to k principal components
-        components = PCA(n_components=k).fit_transform(amp)  # (n_time, k)
-
-        # FFT power spectra
-        power = np.abs(np.fft.rfft(components, axis=0)) ** 2  # (n_freq, k)
-
-        # Per-component breathing-band SNR
-        snr_vals = []
-        for j in range(k):
-            ref_j = float(np.mean(power[ref_lo:ref_hi + 1, j]))
-            if ref_j <= 1e-12:
-                continue
-            breath_j = float(np.mean(power[bin_lo:bin_hi + 1, j]))
-            snr_vals.append(breath_j / ref_j)
-
-        if not snr_vals:
-            return 0.0
-
-        snr_max = float(max(snr_vals))
-        _log.debug("  pca_snr_max=%.3f", snr_max)
-
-        log_snr = np.log(max(snr_max, 1e-6))
-        score = 1.0 / (1.0 + np.exp(-3.0 * (log_snr - np.log(3.0))))
-        return float(score)
-
-    @staticmethod
-    def _presence_score(window: np.ndarray,
-                        all_path_means: dict | None = None) -> float:
-        """Zero-calibration presence score: cross-path ranking + amplitude variance.
-
-        Signal 1 — cross-path ranking (requires 3+ paths):
-          Compares this path's mean amplitude against the group median.
-          A body attenuates specific paths; those paths score higher.
-          rank_score = (group_median - this_mean) / group_median, clamped [0, 1].
-
-        Signal 2 — per-path amplitude variance (always available):
-          A person (even stationary) causes involuntary motion that increases
-          amplitude variance vs an empty, static environment.
-          Mapped through a log-sigmoid; midpoint tuned via PRESENCE_VARIANCE_MIDPOINT.
-
-        Final score: max(rank_score, variance_score).
-
-        Args:
-            window: (n_time, n_subcarriers) complex64 CSI array.
-            all_path_means: {(s1, s2): mean_amp} for all ready paths (for ranking).
-                            If None or fewer than 3 entries, rank signal is skipped.
-
-        Returns:
-            Presence confidence 0.0–1.0.
-        """
-        n_time, n_subs = window.shape
-        valid = sorted(set(range(n_subs)) - set(NULL_SUBCARRIER_INDICES))
-        amp = np.abs(window[:, valid]).astype(np.float64)  # (n_time, n_valid)
-
-        # ── Signal 1: cross-path amplitude ranking ──────────────────────────
-        rank_score = 0.0
-        if all_path_means is not None and len(all_path_means) >= 3:
-            this_mean = float(np.median(np.mean(amp, axis=0)))
-            group_median = float(np.median(list(all_path_means.values())))
-            if group_median > 1e-9:
-                rank_score = float(np.clip(
-                    (group_median - this_mean) / group_median, 0.0, 1.0
-                ))
-            _log.debug("  path_mean=%.3f group_median=%.3f rank_score=%.3f",
-                       this_mean, group_median, rank_score)
-
-        # ── Signal 2: per-path amplitude variance ───────────────────────────
-        var_per_sub = np.var(amp, axis=0)                   # variance over time
-        path_var = float(np.percentile(var_per_sub, 75))    # 75th pct across subcarriers
-        _log.debug("  path_var=%.6f", path_var)
-
-        log_var = np.log(max(path_var, 1e-12))
-        log_mid = np.log(max(PRESENCE_VARIANCE_MIDPOINT, 1e-12))
-        variance_score = float(1.0 / (1.0 + np.exp(
-            -PRESENCE_VARIANCE_STEEPNESS * (log_var - log_mid)
-        )))
-        _log.debug("  variance_score=%.3f", variance_score)
-
-        presence = float(max(rank_score, variance_score))
-        _log.debug("  presence=%.3f", presence)
-        return presence
-
-    def get_all_scores(self, k: int = BREATHING_PCA_COMPONENTS) -> dict:
-        """Run presence and PCA scoring on all ready path buffers.
-
-        Returns:
-            {
-              "presence":  {cell: score_0_to_100_or_None},
-              "pca":       {cell: score_0_to_100_or_None},
-              "path_conf": {(s1, s2): presence_confidence_0_to_1},
-            }
-        """
-        # Pass 1: collect mean amplitudes for cross-path ranking
-        all_path_means: dict[tuple, float] = {}
-        ready_windows: dict[tuple, np.ndarray] = {}
-        for key, buf in self._buffers.items():
-            if not buf.is_full():
-                continue
-            window = buf.get_window()
-            ready_windows[key] = window
-            valid = sorted(set(range(window.shape[1])) - set(NULL_SUBCARRIER_INDICES))
-            amp = np.abs(window[:, valid]).astype(np.float64)
-            all_path_means[key] = float(np.median(np.mean(amp, axis=0)))
-
-        # Pass 2: score each path
-        presence_confidences: dict[tuple, float] = {}
-        pca_confidences: dict[tuple, float] = {}
-        for key, window in ready_windows.items():
-            p_conf = self._presence_score(window, all_path_means)
-            pca_conf = self._pca_score(window, k=k)
-            presence_confidences[key] = p_conf
-            pca_confidences[key] = pca_conf
-            _log.info("Path S%d↔S%d presence=%.3f pca=%.3f",
-                      key[0], key[1], p_conf, pca_conf)
-
+    def get_frame_stats(self) -> dict:
+        """Return frame acceptance/rejection statistics."""
+        total = self._accepted_frames + self._rejected_frames
         return {
-            "presence":  self._projector.project(presence_confidences),
-            "pca":       self._projector.project(pca_confidences),
-            "path_conf": presence_confidences,
+            "accepted": self._accepted_frames,
+            "rejected": self._rejected_frames,
+            "rejection_pct": (self._rejected_frames / total * 100) if total > 0 else 0.0,
         }
+
+    def _check_staleness(self) -> None:
+        """Reset state for paths with no data for BREATHING_STALE_TIMEOUT_S."""
+        now = _time_func()
+        for key in list(self._last_frame_time):
+            if now - self._last_frame_time[key] > BREATHING_STALE_TIMEOUT_S:
+                _log.info("Path S%d↔S%d stale (>%ds no data), resetting state",
+                          key[0], key[1], BREATHING_STALE_TIMEOUT_S)
+                self._smoothed_conf[key] = 0.0
+                self._baseline[key] = 0.0
+                self._baseline_count[key] = 0
+                self._temporal_filter.reset_path(key)
+                del self._last_frame_time[key]
+
+    def get_grid_scores(self) -> dict[str, float | None]:
+        """Run hardened dual-band analysis on all ready paths and project onto grid.
+
+        Pipeline per path:
+        1. Hampel filter on amplitude data (temporal outlier rejection)
+        2. Variance-ranked subcarrier selection (top-K most informative)
+        3. CSI ratio → BreathingAnalyzer (0.1-0.5 Hz)
+        4. CSI ratio → HeartRateAnalyzer (0.8-2.0 Hz)
+        5. PresenceScorer across all paths (cross-path ranking + variance)
+        6. Dual-band fusion: confidence = max(presence, breathing, heartrate)
+        7. Per-path adaptive baseline (§2.3): contrast against own history
+        8. Confidence EMA smoothing (§2.1)
+        9. Temporal consistency filter (§2.2): QUIET→PENDING→DETECTED→RELEASING
+        10. Grid projection + path diversity corroboration (§2.4)
+        """
+        # Staleness check
+        self._check_staleness()
+
+        # Step 1-4: per-path breathing + HR analysis with hardening
+        breathing_scores: dict[tuple, float] = {}
+        path_mean_amps: dict[tuple, float] = {}
+        for key, buf in self._buffers.items():
+            if not buf.is_full():
+                continue
+            window = buf.get_window()
+            if window is None:
+                continue
+
+            try:
+                # Hardening: Hampel filter on amplitudes
+                amp = np.abs(window).astype(np.float64)
+                amp_clean = hampel_filter(amp, window=HAMPEL_WINDOW, threshold=HAMPEL_THRESHOLD)
+
+                # Track mean amplitude for per-path baseline
+                path_mean_amps[key] = float(np.mean(amp_clean))
+
+                # Subcarrier selection on cleaned amplitudes
+                selected_idx = select_subcarriers(
+                    amp_clean, top_k=SUBCARRIER_TOP_K, min_k=SUBCARRIER_MIN_K)
+
+                if len(selected_idx) == 0:
+                    breathing_scores[key] = 0.0
+                    self._last_hr_conf[key] = (0.0, 0.0)
+                    continue
+
+                # CSI ratio on selected subcarriers (null_indices empty — already filtered)
+                window_selected = window[:, selected_idx]
+                n_pairs = min(BREATHING_NPAIRS, len(selected_idx) - 1)
+                if n_pairs < 1:
+                    breathing_scores[key] = 0.0
+                    self._last_hr_conf[key] = (0.0, 0.0)
+                    continue
+                extractor = CSIRatioExtractor(
+                    n_subcarriers=len(selected_idx),
+                    n_pairs=n_pairs,
+                    null_indices=frozenset(),
+                )
+                ratio_phases = extractor.extract(window_selected)
+
+                # Breathing analysis
+                breathing_scores[key] = self._analyzer.analyze(ratio_phases)
+
+                # Heart rate analysis
+                hr_conf, hr_bpm = self._hr_analyzer.analyze(ratio_phases)
+                self._last_hr_conf[key] = (hr_conf, hr_bpm)
+            except Exception as exc:
+                _log.error("get_grid_scores: analysis failed for S%d↔S%d: %s",
+                           key[0], key[1], exc)
+                breathing_scores[key] = 0.0
+                self._last_hr_conf[key] = (0.0, 0.0)
+
+        if not breathing_scores:
+            self._last_corroboration = {}
+            return self._projector.project({})
+
+        # Step 5: presence scoring across all paths
+        presence = self._presence_scorer.score(self._buffers)
+        self._last_presence = presence
+
+        # Step 6: dual-band fusion per path → raw confidence
+        raw_confidences: dict[tuple, float] = {}
+        for key in breathing_scores:
+            br = breathing_scores[key]
+            hr_c = self._last_hr_conf.get(key, (0.0, 0.0))[0]
+            pres = presence.get(key, 0.0)
+            vital = max(br, hr_c)
+            confidence = max(pres, vital)
+            raw_confidences[key] = confidence
+
+        self._last_raw_path_conf = dict(raw_confidences)
+
+        # Step 7: per-path adaptive baseline contrast (§2.3)
+        # During quiet/pending: update baseline EMA with mean amplitude
+        # Compute contrast = mean_amp / baseline (or use raw confidence if warmup)
+        all_mean_amps = list(path_mean_amps.values())
+        median_amp = float(np.median(all_mean_amps)) if all_mean_amps else 1.0
+        if median_amp < 1e-6:
+            median_amp = 1e-6
+
+        for key in raw_confidences:
+            state = self._temporal_filter.get_state(key)
+            mean_amp = path_mean_amps.get(key, 0.0)
+
+            # Update baseline during quiet/pending periods only
+            if state in (TemporalState.QUIET, TemporalState.PENDING):
+                if mean_amp > 0:
+                    alpha = BREATHING_BASELINE_ALPHA
+                    self._baseline[key] = (alpha * mean_amp
+                                           + (1 - alpha) * self._baseline.get(key, 0.0))
+                    self._baseline_count[key] = self._baseline_count.get(key, 0) + 1
+
+            # Compute contrast-adjusted confidence
+            bl_count = self._baseline_count.get(key, 0)
+            bl_val = self._baseline.get(key, 0.0)
+
+            if bl_count >= BREATHING_BASELINE_WARMUP and bl_val > 1e-6:
+                # Per-path baseline available: contrast = mean_amp / baseline
+                contrast = mean_amp / bl_val
+            elif len(all_mean_amps) >= BREATHING_MIN_PATHS_FOR_CONTRAST:
+                # Fallback: cross-path median during warmup
+                contrast = mean_amp / median_amp if mean_amp > 0 else 0.0
+            else:
+                # Too few paths — skip contrast, use raw confidence
+                contrast = 0.0
+
+            if contrast > 0:
+                # Map contrast to 0-1: values < 1 → 0, values up to ceiling → 1
+                contrast_score = float(np.clip(
+                    (contrast - 1.0) / (BREATHING_CONTRAST_CEILING - 1.0), 0.0, 1.0))
+                # Combine: max of contrast-adjusted and raw confidence
+                raw_confidences[key] = max(raw_confidences[key], contrast_score)
+
+        # Step 8: EMA smoothing (§2.1)
+        for key, raw_conf in raw_confidences.items():
+            prev = self._smoothed_conf.get(key, 0.0)
+            self._smoothed_conf[key] = (BREATHING_CONFIDENCE_BETA * raw_conf
+                                        + (1 - BREATHING_CONFIDENCE_BETA) * prev)
+
+        # Step 9: temporal consistency filter (§2.2)
+        filtered = self._temporal_filter.update(self._smoothed_conf)
+
+        # Log per-path details
+        for key in sorted(raw_confidences):
+            raw = self._last_raw_path_conf.get(key, 0.0)
+            smoothed = self._smoothed_conf.get(key, 0.0)
+            filt = filtered.get(key, 0.0)
+            state = self._temporal_filter.get_state(key)
+            _log.info("Path S%d↔S%d raw=%.3f smoothed=%.3f filtered=%.3f state=%s",
+                      key[0], key[1], raw, smoothed, filt, state.value)
+
+        # Use filtered confidences for grid projection
+        self._last_path_conf = filtered
+        grid_scores = self._projector.project(filtered)
+
+        # Step 10: path diversity corroboration (§2.4)
+        active = self._temporal_filter.get_active_paths()
+        self._last_corroboration = self._projector.corroborate(grid_scores, active)
+
+        return grid_scores
 
 
 def reconstruct_csi_from_csv_row(row, shouter_id: int,
@@ -381,7 +867,12 @@ class BreathingThread(threading.Thread):
         from ghv5.config import BREATHING_SLIDE_N
 
         frame_queue = _queue.Queue()
-        ser = pyserial.Serial(self._port, self._baud, timeout=1.0)
+        try:
+            ser = pyserial.Serial(self._port, self._baud, timeout=1.0)
+        except (pyserial.SerialException, OSError) as exc:
+            self._q.put({"type": "status",
+                          "msg": f"Cannot open {self._port}: {exc}"})
+            return
         reader = SerialReader(ser, frame_queue)
         reader.start()
         self._q.put({"type": "status", "msg": f"Connected: {self._port}"})
@@ -401,6 +892,11 @@ class BreathingThread(threading.Thread):
                         last_fill_report = now
                         fill = self._detector.get_buffer_fill()
                         self._q.put({"type": "fill", "fill": fill})
+                    # Detect serial disconnect
+                    if not ser.is_open:
+                        self._q.put({"type": "status",
+                                      "msg": f"Serial port {self._port} disconnected"})
+                        break
                     continue
                 frame_type, frame_dict = item
                 self._detector.feed_frame(frame_type, frame_dict)
@@ -434,18 +930,21 @@ class BreathingThread(threading.Thread):
 
                 if frames_since_update >= BREATHING_SLIDE_N and self._detector.is_ready():
                     frames_since_update = 0
-                    all_scores = self._detector.get_all_scores()
-                    self._q.put({
-                        "type":          "scores",
-                        "presence_grid": all_scores["presence"],
-                        "pca_grid":      all_scores["pca"],
-                        "path_conf":     all_scores["path_conf"],
-                    })
+                    scores = self._detector.get_grid_scores()
+                    path_conf = self._detector._last_path_conf
+                    hr_conf = self._detector._last_hr_conf
+                    corroboration = self._detector._last_corroboration
+                    self._q.put({"type": "scores", "grid": scores,
+                                  "path_conf": path_conf, "hr_conf": hr_conf,
+                                  "corroboration": corroboration})
         except Exception as e:
             self._q.put({"type": "status", "msg": f"Error: {e}"})
         finally:
             reader.stop()
-            ser.close()
+            try:
+                ser.close()
+            except Exception:
+                pass
 
 
 class SARDemoThread(threading.Thread):
@@ -464,19 +963,20 @@ class SARDemoThread(threading.Thread):
         while not self._stop.is_set():
             # Rotate which path has highest confidence
             path_conf = {}
+            hr_conf = {}
             for i, key in enumerate(path_keys):
-                # Sinusoidal confidence cycling with phase offset per path
                 t = step * 0.05
                 phase_offset = i * (2 * np.pi / len(path_keys))
+                # Breathing confidence (cycling sinusoid)
                 conf = 0.5 + 0.4 * np.sin(2 * np.pi * 0.25 * t + phase_offset)
                 path_conf[key] = float(conf)
+                # Simulated heart rate (weaker, different phase)
+                hr_c = 0.3 + 0.2 * np.sin(2 * np.pi * 0.15 * t + phase_offset + 1.0)
+                hr_bpm = 60 + 20 * np.sin(2 * np.pi * 0.05 * t + phase_offset)
+                hr_conf[key] = (float(max(0, hr_c)), float(hr_bpm))
             grid = projector.project(path_conf)
-            self._q.put({
-                "type":          "scores",
-                "presence_grid": grid,
-                "pca_grid":      grid,   # demo mode: duplicate presence projection
-                "path_conf":     path_conf,
-            })
+            self._q.put({"type": "scores", "grid": grid, "path_conf": path_conf,
+                          "hr_conf": hr_conf})
             step += 1
             # ~1 Hz update rate
             for _ in range(10):
@@ -494,20 +994,21 @@ try:
     class BreathingDisplay:
         """Pygame heatmap display for SAR breathing detection."""
 
-        TITLE_H = 44
-        STATUS_H = 40
-        GRID_PAD = 24
-        CELL_GAP = 4
+        TITLE_H = SAR_DISPLAY_TITLE_H
+        STATUS_H = SAR_DISPLAY_STATUS_H
+        GRID_PAD = SAR_DISPLAY_GRID_PAD
+        CELL_GAP = SAR_DISPLAY_CELL_GAP
 
         def __init__(self, screen_size=None, fullscreen=False):
             from ghv5.config import PI_SCREEN_SIZE
             self._screen_size = screen_size or PI_SCREEN_SIZE
             self._fullscreen = fullscreen
-            self._presence_grid = {cell: None for cell in CELL_LABELS}
-            self._pca_grid = {cell: None for cell in CELL_LABELS}
+            self._grid_scores = {cell: None for cell in CELL_LABELS}
             self._path_conf = {}
             self._path_fill = {}
+            self._corroboration = {}
             self._status_msg = "Waiting..."
+            self._hr_conf = {}
             self._cell_rects = {}
             self._shouter_positions = {}
 
@@ -518,7 +1019,7 @@ try:
             _pygame.init()
             flags = _pygame.FULLSCREEN if self._fullscreen else 0
             self._screen = _pygame.display.set_mode(self._screen_size, flags)
-            _pygame.display.set_caption("GlassHouse V5 — SAR Breathing Detection")
+            _pygame.display.set_caption("GlassHouse V4 — SAR Breathing Detection")
             try:
                 self._font_cell = _pygame.font.SysFont("monospace", 28, bold=True)
                 self._font_conf = _pygame.font.SysFont("monospace", 20)
@@ -550,7 +1051,7 @@ try:
                     y = grid_top + row * (cell_h + self.CELL_GAP)
                     self._cell_rects[(row, col)] = _pygame.Rect(x, y, cell_w, cell_h)
 
-            margin = 14
+            margin = SAR_DISPLAY_MARGIN
             self._shouter_positions = {
                 2: (grid_left - margin, grid_top - margin),
                 3: (grid_left + grid_w + margin, grid_top - margin),
@@ -567,14 +1068,21 @@ try:
             return tuple(int(lo + t * (hi - lo))
                          for lo, hi in zip(PI_CELL_INACTIVE, PI_CELL_ACTIVE))
 
-        def update(self, presence_grid, pca_grid, path_conf):
-            self._presence_grid = presence_grid
-            self._pca_grid = pca_grid
+        def update(self, grid_scores, path_conf):
+            self._grid_scores = grid_scores
             self._path_conf = path_conf
+
+        def update_hr(self, hr_conf):
+            """Update heart rate confidence per path."""
+            self._hr_conf = hr_conf
 
         def update_fill(self, fill):
             """Update per-path buffer fill fractions {(s1,s2): 0.0-1.0}."""
             self._path_fill = fill
+
+        def update_corroboration(self, corroboration):
+            """Update path diversity corroboration {cell: 'confirmed'|'uncertain'|None}."""
+            self._corroboration = corroboration
 
         def set_status(self, msg):
             self._status_msg = msg
@@ -589,7 +1097,7 @@ try:
             # Title
             w = self._screen_size[0]
             title = self._font_title.render(
-                "GlassHouse V5 — SAR Breathing Detection", True, PI_TEXT_ACTIVE)
+                "GlassHouse V4 — SAR Breathing Detection", True, PI_TEXT_ACTIVE)
             self._screen.blit(title, title.get_rect(center=(w // 2, self.TITLE_H // 2)))
             _pygame.draw.line(self._screen, PI_CELL_BORDER,
                               (0, self.TITLE_H - 1), (w, self.TITLE_H - 1))
@@ -606,33 +1114,39 @@ try:
             # Grid cells
             for (row, col), rect in self._cell_rects.items():
                 label = f"r{row}c{col}"
-                amp_score = self._presence_grid.get(label)
-                pca_score = self._pca_grid.get(label)
-                cfill = cell_fill.get(label, 0.0)
-
-                if amp_score is not None:
-                    bg = self._cell_color(amp_score)
-                    text_color = PI_TEXT_ACTIVE
-                    amp_text = f"Pr:{amp_score:.0f}%"
-                elif cfill > 0:
-                    bg = PI_CELL_INACTIVE
-                    text_color = PI_TEXT_INACTIVE
-                    amp_text = f"fill {cfill*100:.0f}%"
+                score = self._grid_scores.get(label)
+                cell_status = self._corroboration.get(label)
+                if score is not None and score > 0:
+                    if cell_status == 'uncertain':
+                        # 50% alpha blend between active and inactive for uncertain
+                        active_bg = self._cell_color(score)
+                        bg = tuple((a + i) // 2 for a, i in zip(active_bg, PI_CELL_INACTIVE))
+                        text_color = PI_TEXT_ACTIVE
+                        score_text = f"{score:.0f}?"
+                    else:
+                        bg = self._cell_color(score)
+                        text_color = PI_TEXT_ACTIVE
+                        score_text = f"{score:.0f}%"
                 else:
                     bg = PI_CELL_INACTIVE
                     text_color = PI_TEXT_INACTIVE
-                    amp_text = "Pr:--"
-
-                pca_text = f"P:{pca_score:.0f}%" if pca_score is not None else "P:--"
-
+                    # Show fill progress instead of bare "--"
+                    cfill = cell_fill.get(label, 0.0)
+                    if cfill > 0:
+                        score_text = f"fill {cfill*100:.0f}%"
+                    else:
+                        score_text = "--"
                 _pygame.draw.rect(self._screen, bg, rect, border_radius=6)
-                _pygame.draw.rect(self._screen, PI_CELL_BORDER, rect, width=2, border_radius=6)
+                _pygame.draw.rect(self._screen, PI_CELL_BORDER, rect, width=2,
+                                  border_radius=6)
+                # Label
                 lbl = self._font_cell.render(label, True, text_color)
-                self._screen.blit(lbl, lbl.get_rect(center=(rect.centerx, rect.centery - 18)))
-                amp_surf = self._font_conf.render(amp_text, True, text_color)
-                self._screen.blit(amp_surf, amp_surf.get_rect(center=(rect.centerx, rect.centery + 2)))
-                pca_surf = self._font_conf.render(pca_text, True, PI_TEXT_INACTIVE)
-                self._screen.blit(pca_surf, pca_surf.get_rect(center=(rect.centerx, rect.centery + 20)))
+                self._screen.blit(lbl, lbl.get_rect(
+                    center=(rect.centerx, rect.centery - 12)))
+                # Score
+                sc = self._font_conf.render(score_text, True, text_color)
+                self._screen.blit(sc, sc.get_rect(
+                    center=(rect.centerx, rect.centery + 16)))
 
             # Shouter markers + path lines
             cyan = (0, 200, 200)
@@ -650,6 +1164,19 @@ try:
                     color = tuple(int(c * alpha) for c in cyan)
                     _pygame.draw.line(self._screen, color, s1_pos, s2_pos, 2)
 
+            # HR indicators on paths with heartbeat detected
+            for key, (hr_c, hr_bpm) in self._hr_conf.items():
+                if hr_c > HEARTRATE_CONFIDENCE_THRESHOLD:
+                    s1_pos = self._shouter_positions.get(key[0])
+                    s2_pos = self._shouter_positions.get(key[1])
+                    if s1_pos and s2_pos:
+                        mid_x = (s1_pos[0] + s2_pos[0]) // 2
+                        mid_y = (s1_pos[1] + s2_pos[1]) // 2
+                        hr_label = self._font_shouter.render(
+                            f"HR {hr_bpm:.0f}", True, (255, 80, 80))
+                        self._screen.blit(hr_label,
+                            hr_label.get_rect(center=(mid_x, mid_y - 10)))
+
             # Status bar
             h = self._screen_size[1]
             bar_y = h - self.STATUS_H
@@ -666,13 +1193,29 @@ try:
                              for k, v in sorted(self._path_fill.items()) if v > 0]
                 if fill_strs:
                     parts.append("Fill: " + " ".join(fill_strs))
-            detected = [f"S{k[0]}↔S{k[1]}"
-                        for k, v in self._path_conf.items()
-                        if v > BREATHING_CONFIDENCE_THRESHOLD]
-            if detected:
-                parts.append(f"DETECTED ({', '.join(detected)})")
+            # Check how many paths are currently active/reporting
+            active_paths = len(self._path_conf)
+            
+            if active_paths < BREATHING_MIN_PATHS_TOTAL:
+                # Refuse to guess if we are below the minimum safety threshold
+                parts.append(f"WARNING: Insufficient paths ({active_paths}/{BREATHING_MIN_PATHS_TOTAL})")
             else:
-                parts.append("No breathing detected")
+                # We have enough paths, proceed with detection guesses
+                detected = [f"S{k[0]}↔S{k[1]}"
+                            for k, v in self._path_conf.items()
+                            if v > BREATHING_CONFIDENCE_THRESHOLD]
+                if detected:
+                    parts.append(f"DETECTED ({', '.join(detected)})")
+                else:
+                    parts.append("No breathing detected")
+
+            # HR readings in status bar
+            hr_parts = []
+            for k, (hr_c, hr_bpm) in sorted(self._hr_conf.items()):
+                if hr_c > 0.2 and hr_bpm > 0:
+                    hr_parts.append(f"S{k[0]}↔S{k[1]}:{hr_bpm:.0f}bpm")
+            if hr_parts:
+                parts.append("HR: " + " ".join(hr_parts))
 
             status = self._font_status.render("  |  ".join(parts), True, PI_TEXT_INACTIVE)
             self._screen.blit(status, status.get_rect(
