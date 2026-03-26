@@ -5,20 +5,22 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- Test count: ~264 passing + 1 skipped (2026-03-24)
-- Exe: no longer used (data collection phase complete)
+- GHV4 test count: ~264 passing (unchanged, ML positioning codebase)
+- GHV5 test count: ~235 passing, 0 failures (2026-03-25) — FFT-only SAR breathing detection
 - Active branch: main
-- Unstaged changes: all previous + signal hardening + heartrate + presence scorer + dual-band fusion
+- Unstaged changes: all previous + GHV5 rebuild
 - Done: SAR vital sign detector implementation (2026-03-24) — signal hardening, HeartRateAnalyzer, PresenceScorer, dual-band fusion, BreathingDetector rewrite
 - Done: Overstory setup (2026-03-24) — quality gates fixed for Python, os-eco files removed from git tracking
 - Done: Continuous shouter beacons firmware (2026-03-24) — ranging disabled, 10 Hz beacons added
 - Done: Continuous snap breathing detection spec (2026-03-24) — design approved, spec reviewed
 - Done: Empty-room baseline validated 2026-03-24 — root cause of false positives identified (listener proximity to paths)
 - Done: SAR connectivity + effectiveness design spec (2026-03-25) — stagger rotation, beacon jitter, temporal filter, per-path baseline, path diversity
-- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
+- Done: GHV5 rebuilt from GHV4 (2026-03-25) — all ML removed, FFT-only; kept breathing, signal_hardening, spacing_estimator, serial_io, csi_parser, debug UI
+- Done: GHV5 first live hardware run (2026-03-25) — system working, two issues found (see GHV5 section below)
+- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset) — GHV4 only
 - Done: `ov sling` Windows fix (2026-03-24) — 3 patches to installed overstory-cli package (see Overstory section)
 - Done: Reported Windows/psmux bugs to upstream overstory issue #83 (jayminwest/overstory) — markdown at overstory-issue-79-comment.md
-- Next session: Build overstory orchestrator to improve firmware + software based on hardware constraints and goals
+- Next session: Fix firmware false positives + diagonal path starvation in GHV5
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -98,13 +100,16 @@ firmware/
 ```
 
 ### GHV5 — Breathing Detection Only (`C:\GlassHouse\GHV5\`)
-Standalone project: FFT + PCA dual-score breathing detection, no ML positioning.
-- Package: `ghv5/` (config, csi_parser, serial_io, breathing)
-- Entry point: `run_sar.py` (console + pygame dual-grid display)
-- Tests: 51 passing + 1 skipped (pygame import guard)
+Standalone project: FFT-only SAR breathing detection, zero ML. Rebuilt 2026-03-25 from GHV4.
+- Package: `ghv5/` (config, csi_parser, serial_io, breathing, signal_hardening, spacing_estimator, ui/)
+- Entry point: `run_sar.py --port COM3 --display pygame` or `--console` or `--demo`
+- Tests: ~235 passing, 0 failures (2026-03-25)
 - Firmware: copied from GHV4 unchanged
-- Specs/plans: `GHV4/docs/superpowers/specs/2026-03-23-ghv5-creation-design.md`
-- SAR test results: `GHV5/SAR Results/` (empty_room.txt, person_center.txt)
+- ML files removed: train, preprocess, inference, distance_*, eda_utils, viz, cell_logic, pi_display, capture_tab
+- Known hardware issues (2026-03-25 live run):
+  1. **False positives**: `raw=1.000` on all paths in empty room — temporal filter too permissive (`BREATHING_CONFIRM_WINDOWS`)
+  2. **Diagonal path starvation**: S1↔S3 and S2↔S4 getting 0.1–0.3/s instead of ~5/s; sync_errors up to 31/5s window
+  3. **Center cell (r1c1) no data**: depends on starved diagonal paths — fix #2 fixes this
 
 ## Subsystem Details
 Detailed gotchas, protocols, and conventions are in local CLAUDE.md files
@@ -141,6 +146,7 @@ Three patches applied to `~/.bun/install/global/node_modules/@os-eco/overstory-c
 - If a task is ambiguous, ask one clarifying question before proceeding
 - Prefer incremental changes — one change at a time
 - After any source file change, remind the user to rebuild the executable
+- After any large agent-driven file migration, verify syntax: `cd /c/GlassHouse/GHV5 && python -m pytest tests/ --collect-only -q` before running the full suite
 - Before generating Word/Excel/PDF/PPTX output, check the relevant skill
 
 ## Keeping Subsystem Docs Current
