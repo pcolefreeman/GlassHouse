@@ -328,6 +328,10 @@ class TestBreathingDetectorE2E:
     def test_synthetic_breathing_one_hot_path(self):
         """Feed breathing on one path, static on others — hot path cells detected.
 
+        Uses differential phase modulation across subcarriers (the physical
+        mechanism of breathing detection via CSI ratio). Amplitude modulation
+        alone produces zero CSI ratio phase.
+
         Note: With hardening (EMA + temporal filter), detection requires multiple
         scoring windows. We call get_grid_scores() 8 times to let the pipeline confirm.
         """
@@ -341,8 +345,14 @@ class TestBreathingDetectorE2E:
         static_csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(n_sub))
 
         for step in range(n_time):
-            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
-            breath_csi = b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+            # Phase-modulated CSI: differential phase shift across subcarriers
+            # simulates the physical effect of breathing on WiFi propagation
+            pairs = []
+            for sc in range(n_sub):
+                phase = 0.5 * np.sin(2 * np.pi * 0.25 * t[step]) * (sc / n_sub)
+                c = 1000 * np.exp(1j * phase)
+                pairs.append(struct.pack('<hh', int(c.real), int(c.imag)))
+            breath_csi = b''.join(pairs)
             for key in BREATHING_PATH_MAP:
                 csi = breath_csi if key == hot_path else static_csi
                 det.feed_frame('csi_snap', {
@@ -357,10 +367,9 @@ class TestBreathingDetectorE2E:
     def test_all_paths_uniform_detected_not_localized(self):
         """All paths with identical breathing → detection on all paths, no localization.
 
-        With the new dual-band pipeline (PresenceScorer + BreathingAnalyzer),
-        uniform breathing across all paths IS detected (someone is present).
-        The system correctly detects vital signs but cannot localize — all paths
-        show similar confidence.
+        With the vital-sign gated fusion, uniform phase-modulated breathing across
+        all paths IS detected (someone is present). The system correctly detects
+        vital signs but cannot localize — all paths show similar confidence.
         """
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
@@ -369,8 +378,13 @@ class TestBreathingDetectorE2E:
         t = np.arange(n_time) / BREATHING_SNAP_HZ
 
         for step in range(n_time):
-            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
-            csi_bytes = b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+            # Phase-modulated CSI: same breathing signal on all paths
+            pairs = []
+            for sc in range(n_sub):
+                phase = 0.5 * np.sin(2 * np.pi * 0.25 * t[step]) * (sc / n_sub)
+                c = 1000 * np.exp(1j * phase)
+                pairs.append(struct.pack('<hh', int(c.real), int(c.imag)))
+            csi_bytes = b''.join(pairs)
             for key in BREATHING_PATH_MAP:
                 det.feed_frame('csi_snap', {
                     'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
@@ -399,6 +413,49 @@ class TestBreathingDetectorE2E:
         for cell, score in scores.items():
             if score is not None:
                 assert score < 30.0, f"Cell {cell} had {score}% with static signal"
+
+    def test_noisy_static_signal_no_detection(self):
+        """Random-amplitude CSI (no periodic signal) on all 6 paths → all cells 0%.
+
+        This is the core false-positive regression test for D001. In an empty room,
+        CSI amplitude varies randomly frame-to-frame due to multipath, HVAC, and
+        clock drift, but the *phase structure* per subcarrier is stable (slowly
+        drifting, not random). The old max(presence, vital) fusion allowed
+        PresenceScorer's amplitude variance to independently trigger detection.
+        With the gated fusion (vital * (1 + pres * PRESENCE_BOOST_MAX)), vital=0
+        forces confidence=0 regardless of presence score.
+        """
+        from ghv4.config import BREATHING_WINDOW_N
+        det = BreathingDetector()
+        rng = np.random.default_rng(2026)
+
+        # Generate stable per-path phase profiles (realistic empty room)
+        # Each path has a fixed phase per subcarrier with small random drift
+        path_base_phases = {}
+        for key in BREATHING_PATH_MAP:
+            path_base_phases[key] = rng.uniform(-np.pi, np.pi, size=128)
+
+        for _ in range(BREATHING_WINDOW_N):
+            for key in BREATHING_PATH_MAP:
+                # Random amplitude variation (HVAC, multipath) but stable phase
+                amps = rng.uniform(800, 1200, size=128)
+                # Small phase drift (clock jitter) — NOT random per frame
+                phase_drift = rng.normal(0, 0.01, size=128)
+                phases = path_base_phases[key] + phase_drift
+                csi_bytes = b''.join(
+                    struct.pack('<hh', int(a * np.cos(p)), int(a * np.sin(p)))
+                    for a, p in zip(amps, phases)
+                )
+                det.feed_frame('csi_snap', {
+                    'reporter_id': key[0], 'peer_id': key[1], 'csi': csi_bytes
+                })
+
+        scores = _run_multiple_windows(det)
+        for cell, score in scores.items():
+            if score is not None:
+                assert score == 0.0, \
+                    f"Cell {cell} had {score}% with noisy static signal — " \
+                    f"expected 0% (presence alone should not trigger detection)"
 
     def test_breathing_analyzer_detects_025hz(self):
         """BreathingAnalyzer detects 0.25 Hz phase modulation (replaces old _phase_score test)."""
@@ -474,10 +531,13 @@ class TestBreathingDetectorE2E:
         static_csi = b''.join(struct.pack('<hh', 1000, 0) for _ in range(n_sub))
         breath_csi_frames = []
         for step in range(n_time):
-            amp = int(1000 + 800 * np.sin(2 * np.pi * 0.25 * t[step]))
-            breath_csi_frames.append(
-                b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
-            )
+            # Phase-modulated CSI for breathing detection
+            pairs = []
+            for sc in range(n_sub):
+                phase = 0.5 * np.sin(2 * np.pi * 0.25 * t[step]) * (sc / n_sub)
+                c = 1000 * np.exp(1j * phase)
+                pairs.append(struct.pack('<hh', int(c.real), int(c.imag)))
+            breath_csi_frames.append(b''.join(pairs))
 
         path_keys = list(BREATHING_PATH_MAP.keys())
         hot_path = path_keys[0]  # (1, 2)
@@ -517,9 +577,18 @@ class TestDualBandFusionInDetector:
 
     @staticmethod
     def _make_csi_bytes_modulated(n_sub, t_val, freq):
-        """Generate CSI bytes with amplitude modulation at given frequency."""
-        amp = int(1000 + 800 * np.sin(2 * np.pi * freq * t_val))
-        return b''.join(struct.pack('<hh', amp, 0) for _ in range(n_sub))
+        """Generate CSI bytes with phase modulation at given frequency.
+
+        Produces differential phase across subcarriers — the physical signal
+        that CSI ratio extraction detects. Amplitude-only modulation produces
+        zero CSI ratio phase and is invisible to the breathing/HR analyzers.
+        """
+        pairs = []
+        for sc in range(n_sub):
+            phase = 0.5 * np.sin(2 * np.pi * freq * t_val) * (sc / n_sub)
+            c = 1000 * np.exp(1j * phase)
+            pairs.append(struct.pack('<hh', int(c.real), int(c.imag)))
+        return b''.join(pairs)
 
     def test_hr_only_path_detected(self):
         """Path with HR-band modulation (1.0 Hz) but no breathing should still be detected."""
@@ -562,9 +631,11 @@ class TestDualBandFusionInDetector:
         assert total == 1
         assert "rejection_pct" in stats
 
-    def test_dual_band_fusion_uses_max(self):
-        """Dual-band fusion takes max(presence, breathing, heartrate) per path.
-        Verify by feeding two paths: one with breathing, one with HR."""
+    def test_dual_band_fusion_gated_by_vital(self):
+        """Dual-band fusion gates presence behind vital signs (D001).
+        Verify by feeding two paths: one with breathing, one with HR.
+        Both should be detected via their vital-sign channels; presence
+        only amplifies, never independently triggers."""
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
         n_time = BREATHING_WINDOW_N
@@ -669,8 +740,8 @@ class TestFewPathsFallback:
         assert isinstance(scores, dict)
         assert len(scores) == 9
 
-    def test_single_path_still_produces_scores(self):
-        """Even with 1 ready path, get_grid_scores should return valid dict."""
+    def test_single_path_suppressed_until_all_ready(self):
+        """With only 1 path ready, get_grid_scores must return all-None (no partial guesses)."""
         from ghv4.config import BREATHING_WINDOW_N, BREATHING_SNAP_HZ
         det = BreathingDetector()
         n_time = BREATHING_WINDOW_N
@@ -683,9 +754,9 @@ class TestFewPathsFallback:
             })
         scores = det.get_grid_scores()
         assert isinstance(scores, dict)
-        # Path (1,2) covers r0c0, r1c0, r2c0
-        for cell in BREATHING_PATH_MAP[(1, 2)]:
-            assert scores[cell] is not None
+        # All cells must be None — detection suppressed until all 6 paths are ready
+        for cell in scores:
+            assert scores[cell] is None
 
 
 class TestCombinedACScoring:

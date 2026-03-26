@@ -303,7 +303,12 @@ void send_poll_response(poll_pkt_t *poll) {
     }
 
     // Transmit buffered CSI snapshots to listener.
-    for (uint8_t peer = 1; peer <= 4; peer++) {
+    // Rotate drain start peer using poll's stagger offset to prevent S1 from
+    // always getting first UDP bandwidth.  Without this, every shouter drains
+    // peer 1 first, giving S1 paths a systematic fill-rate advantage.
+    uint8_t drain_start = poll->pad[0] % 4;  // same rotation offset as stagger
+    for (uint8_t step = 0; step < 4; step++) {
+        uint8_t peer = ((drain_start + step) % 4) + 1;  // 1-based, rotated
         if (peer == my_id) continue;
         portENTER_CRITICAL(&snap_mux);
         uint8_t n = csi_snap_count[peer];

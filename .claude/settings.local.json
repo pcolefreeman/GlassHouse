@@ -124,7 +124,69 @@
       "Bash(bun -e \"console.log\\(process.platform\\)\")",
       "Bash(psmux -L overstory new-session -d -s test-coord -c \"C:\\\\Users\\\\incre\\\\Class\\\\Capstone\\\\Claude\\\\ESP32Work\\\\GlassHouseRepo\" -- cmd /c \"SET \"\"CLAUDECODE=\"\" && SET \"\"CLAUDE_CODE_SSE_PORT=\"\" && SET \"\"CLAUDE_CODE_ENTRYPOINT=\"\" && SET \"\"OVERSTORY_AGENT_NAME=coordinator\"\" && echo hello && timeout /t 5\")",
       "Bash(ov mail:*)",
-      "Bash(ov nudge:*)"
+      "Bash(ov nudge:*)",
+      "Bash(python -m pytest tests/ -q --ignore=tests/test_breathing.py)",
+      "Bash(sd list:*)",
+      "Bash(mulch learn:*)",
+      "Bash(mulch add:*)",
+      "Bash(mulch record:*)",
+      "Bash(mulch sync:*)",
+      "Bash(python -m pytest tests/test_breathing.py --tb=short)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''tests/test_breathing.py''\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''tests/test_breathing.py''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(python -m pytest tests/ --tb=short -q)",
+      "Bash(python -m pytest tests/test_breathing.py::TestRawAmplitudeEnergyEdgeCases -v --tb=long)",
+      "Bash(python -m pytest tests/test_breathing.py -v --tb=short -q)",
+      "Bash(tmux -L overstory list-panes -t overstory-GlassHouse-lead-1dcf-retry -F \"#{pane_pid} #{pane_dead}\")",
+      "Bash(tmux -L overstory capture-pane -t overstory-GlassHouse-lead-1dcf-retry -p)",
+      "Bash(for s:*)",
+      "Bash(tmux -L overstory capture-pane -t \"$s\" -p)",
+      "Bash(tmux -L overstory kill-server)",
+      "Bash(tmux -L overstory list-panes -t overstory-GlassHouse-psmux-test-01 -F \"#{pane_pid} #{pane_dead}\")",
+      "Bash(tmux -L overstory capture-pane -t overstory-GlassHouse-psmux-test-01 -p)",
+      "Bash(python -m pytest tests/ -x -v)",
+      "Bash(git checkout:*)",
+      "Bash(sd close:*)",
+      "Bash(taskkill //PID 20004 //F)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(tasklist)",
+      "Bash(find . -name *.md -path */docs/*)",
+      "Bash(find . -name *spec* -o -name *breathing*plan*)",
+      "Bash(cn list:*)",
+      "Bash(psmux --version)",
+      "Bash(psmux new-session:*)",
+      "Bash(psmux -L overstory list-sessions)",
+      "Bash(psmux -L overstory list-panes -t overstory-GlassHouse-coordinator -F \"#{pane_pid}\")",
+      "Bash(psmux -L overstory capture-pane -t overstory-GlassHouse-coordinator -p)",
+      "Bash(psmux -L overstory kill-session -t overstory-GlassHouse-coordinator)",
+      "Bash(python3 -c \":*)",
+      "Bash(psmux -L overstory has-session -t overstory-GlassHouse-coordinator)",
+      "Bash(psmux -L overstory capture-pane -t overstory-GlassHouse-breathing-hardening -p)",
+      "Bash(python3 -c \"import sqlite3; db=sqlite3.connect\\(''.overstory/sessions.db''\\); rows=db.execute\\(''SELECT agent_name, state FROM sessions''\\).fetchall\\(\\); print\\(f''{len\\(rows\\)} rows''\\); [print\\(r\\) for r in rows]; db.close\\(\\)\")",
+      "Bash(ls -la .overstory/sessions.db*)",
+      "Bash(export OVERSTORY_AGENT_NAME=coordinator)",
+      "Bash(export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Bash(ov log:*)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(ov dashboard:*)",
+      "Bash(bash -c 'read -r INPUT; if echo \"\"\"\"$INPUT\"\"\"\" | grep -q \"\"\"\"git commit\"\"\"\"; then mulch diff HEAD~1 2>/dev/null || true; fi')",
+      "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")",
+      "Bash(ls .overstory/logs/coordinator/*/)",
+      "Bash(find .overstory/logs -name *.log)",
+      "Bash(psmux -L overstory new-session -d -s test-session)",
+      "Bash(psmux -L overstory kill-session -t test-session)",
+      "Bash(NODE_DEBUG=*)",
+      "Bash(bun run:*)",
+      "Bash(bun check:*)",
+      "Bash(bun build:*)",
+      "Bash(DEBUG=\"*\" timeout 20 ov coordinator start)",
+      "Bash(timeout 10 bun -e \":*)",
+      "Bash(timeout 10 bun -e \"console.log\\(''hello from bun''\\)\")",
+      "Bash(timeout 15 bun -e \":*)",
+      "Bash(echo \"PPID=$PPID, PID=$$\")",
+      "Bash(python -m pytest tests/test_breathing.py -x -q)",
+      "Bash(python -m pytest tests/test_breathing.py::TestFewPathsFallback -v -q)",
+      "Bash(python -m pytest tests/test_breathing.py -x -q --ignore-glob=\"*test_help*\" -k \"not test_help_flag\")"
     ]
   },
   "hooks": {
@@ -134,11 +196,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator"
           },
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
           }
         ]
       }
@@ -149,7 +211,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator"
           }
         ]
       }
@@ -358,7 +420,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-start --agent coordinator --stdin"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-start --agent coordinator --stdin"
           }
         ]
       },
@@ -378,11 +440,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-end --agent coordinator --stdin"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log tool-end --agent coordinator --stdin"
           },
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 500"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 500"
           }
         ]
       },
@@ -391,7 +453,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 30000"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov mail check --inject --agent coordinator --debounce 30000"
           }
         ]
       },
@@ -400,7 +462,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; if echo \"$INPUT\" | grep -qE '\\bgit\\s+commit\\b'; then ml diff HEAD~1 >/dev/null 2>&1 || true; fi; exit 0;"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; read -r INPUT; if echo \"$INPUT\" | grep -qE '\\bgit\\s+commit\\b'; then ml diff HEAD~1 >/dev/null 2>&1 || true; fi; exit 0;"
           }
         ]
       },
@@ -420,11 +482,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log session-end --agent coordinator --stdin"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov log session-end --agent coordinator --stdin"
           },
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ml learn"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ml learn"
           }
         ]
       }
@@ -435,7 +497,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator --compact"
+            "command": "export PATH=\"$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && export OVERSTORY_AGENT_NAME=\"$(cat .claude/.overstory-agent-name 2>/dev/null)\"; [ -z \"$OVERSTORY_AGENT_NAME\" ] && exit 0; ov prime --agent coordinator --compact"
           }
         ]
       }

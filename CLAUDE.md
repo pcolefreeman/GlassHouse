@@ -5,22 +5,20 @@ corners + one listener ESP32 collect CSI/RSSI across a 3×3 grid. A
 scikit-learn classifier maps each 200 ms bucket of signal data to a grid cell.
 
 ## Quick Status
-- GHV4 test count: ~264 passing (unchanged, ML positioning codebase)
-- GHV5 test count: ~235 passing, 0 failures (2026-03-25) — FFT-only SAR breathing detection
+- Test count: ~264 passing + 1 skipped (2026-03-24)
+- Exe: no longer used (data collection phase complete)
 - Active branch: main
-- Unstaged changes: all previous + GHV5 rebuild
+- Unstaged changes: all previous + signal hardening + heartrate + presence scorer + dual-band fusion
 - Done: SAR vital sign detector implementation (2026-03-24) — signal hardening, HeartRateAnalyzer, PresenceScorer, dual-band fusion, BreathingDetector rewrite
 - Done: Overstory setup (2026-03-24) — quality gates fixed for Python, os-eco files removed from git tracking
 - Done: Continuous shouter beacons firmware (2026-03-24) — ranging disabled, 10 Hz beacons added
 - Done: Continuous snap breathing detection spec (2026-03-24) — design approved, spec reviewed
 - Done: Empty-room baseline validated 2026-03-24 — root cause of false positives identified (listener proximity to paths)
 - Done: SAR connectivity + effectiveness design spec (2026-03-25) — stagger rotation, beacon jitter, temporal filter, per-path baseline, path diversity
-- Done: GHV5 rebuilt from GHV4 (2026-03-25) — all ML removed, FFT-only; kept breathing, signal_hardening, spacing_estimator, serial_io, csi_parser, debug UI
-- Done: GHV5 first live hardware run (2026-03-25) — system working, two issues found (see GHV5 section below)
-- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset) — GHV4 only
+- Trained model: `models/rf_best.pkl` (RF, 99.93% train accuracy on 35K×2894 dataset)
 - Done: `ov sling` Windows fix (2026-03-24) — 3 patches to installed overstory-cli package (see Overstory section)
 - Done: Reported Windows/psmux bugs to upstream overstory issue #83 (jayminwest/overstory) — markdown at overstory-issue-79-comment.md
-- Next session: Fix firmware false positives + diagonal path starvation in GHV5
+- Next session: Build overstory orchestrator to improve firmware + software based on hardware constraints and goals
 
 ## Version Control
 Git repo: remote at https://github.com/pcolefreeman/GlassHouse.git, branch `main`.
@@ -126,8 +124,8 @@ Detailed gotchas, protocols, and conventions are in local CLAUDE.md files
 - Agent roles: scout (Haiku), builder/reviewer/merger/monitor (Sonnet), lead/coordinator/orchestrator (Opus)
 - Commands: `ov status`, `ov sling <agent>`, `ov mail check`, `ov doctor`, `ov dashboard`
 
-### Windows / psmux Compatibility (FIXED 2026-03-24)
-Three patches applied to `~/.bun/install/global/node_modules/@os-eco/overstory-cli/src/`:
+### Windows / psmux Compatibility (FIXED 2026-03-25)
+Four patches applied to `~/.bun/install/global/node_modules/@os-eco/overstory-cli/src/`:
 
 **Root cause**: psmux is a native Windows ConPTY multiplexer; it cannot resolve `/bin/bash` (Unix path) and MSYS2 bash intermittently dies when starting as the ConPTY process.
 
@@ -137,8 +135,54 @@ Three patches applied to `~/.bun/install/global/node_modules/@os-eco/overstory-c
 
 **Patch 3 — `runtimes/claude.ts` (detectReady)**: psmux's `capture-pane` strips column-padding spaces from TUI output, so "WARNING: Claude Code running..." becomes "WARNING:ClaudeCode...". Added spaceless-form checks for the bypass permissions dialog and "bypasspermissions" for the status bar.
 
+**Patch 4 — `worktree/tmux.ts` (createSession PID race)**: On cold-start psmux, `list-panes` returns exit code 0 but empty stdout (ConPTY pane not registered yet). Fix: change retry loop break condition from `exitCode === 0` to `exitCode === 0 && stdout.trim().length > 0`. Applied 2026-03-25, verified: lead session survived 7m12s to completion.
+
+**Patch 5 — `commands/clean.ts` (sessions.db WAL lock on Windows)**: `wipeSqliteDb` uses `unlink()` which fails silently when Bun's SQLite WAL mode keeps file handles open within the same process. Fix: before `wipeSqliteDb`, open the DB directly via `bun:sqlite`, DELETE all rows from all tables, PRAGMA wal_checkpoint(TRUNCATE), PRAGMA journal_mode=DELETE, then close. If file deletion still fails, check row count and report success if 0. Also deletes `.claude/.overstory-agent-name` marker file (Patch 6). Applied 2026-03-24.
+
+**Patch 6 — `agents/hooks-deployer.ts` (OVERSTORY_AGENT_NAME env var not reaching hooks on Windows)**: Claude Code on Windows doesn't pass custom env vars from the psmux/cmd.exe parent process to hook subprocesses (bash). All overstory hooks exited at the `ENV_GUARD` (`[ -z "$OVERSTORY_AGENT_NAME" ] && exit 0;`), preventing booting→working transition and session-end metrics. Fix: split the guard mechanism into two constants:
+- `MARKER_GUARD` (for template hooks — logging, mail, prime): falls back to reading agent name from `.claude/.overstory-agent-name` marker file when env var is empty. These hooks are non-destructive and safe to fire in the user's own session during coordinator overlap.
+- `ENV_GUARD` (for capability guards — Write/Edit blocks, bash restrictions): unchanged, stays env-var-only. No-ops on Windows, which means no defense-in-depth for capability restrictions, but critically does NOT block the user's own Write/Edit/Bash tools.
+- `deployHooks()` writes the marker file to `.claude/.overstory-agent-name` during hook deployment.
+- `ov clean --all` deletes the marker file.
+Applied 2026-03-25, verified: coordinator auto-transitions booting→working, metrics.db populated with 1 session + 3 token snapshots.
+
 **Note**: These patches are in the installed bun package and will be lost on `bun upgrade` of overstory. Re-apply if overstory is upgraded.
 **Upstream tracking**: jayminwest/overstory issue #83 — "Native Windows support via mprocs/psmux (no WSL required)"
+
+### Coordinator Agent Customizations (2026-03-24)
+- **AGENT_TOOL_BYPASS fix**: Coordinator agent def (`.overstory/agent-defs/coordinator.md`) updated to prohibit Claude Code's built-in `Agent` tool — all spawning must use `ov sling` for proper feed/mail/inspect visibility. Without this, agents run as invisible local subagents.
+- **psmux lead session reliability (RESOLVED 2026-03-25)**: Root cause was Patch 4 (list-panes race). After applying, lead sessions survive to completion. Workaround (still useful if sessions fail for other reasons): coordinator checks worktree for commits and re-dispatches failed leads with `--name <name>-retry` to avoid branch name collision.
+- **Merging agent branches**: Always `git stash` → merge → `git stash pop` when local uncommitted changes exist. Commit stash pop results before attempting a second merge. Untracked files that conflict need `mv file file.local` before merge.
+
+### Coordinator Dispatch Pattern (2026-03-26)
+- `ov coordinator start` then `ov coordinator send --body "<objective>"`
+- Objective MUST include: "Dispatch a lead via ov sling — do NOT implement code yourself"
+- Let the coordinator create its own seeds issues — do NOT pre-create tasks for it
+- Include spec file path in the objective so the lead can reference it
+- Include "Use bash timeout of 600000 for test runs" — breathing tests take ~5.5 minutes
+
+### psmux Socket Isolation (discovered 2026-03-24)
+- Overstory runs all sessions on a dedicated socket: `psmux -L overstory`
+- **`psmux list-sessions`** (bare) shows NOTHING — must use `psmux -L overstory list-sessions`
+- Same for `has-session`, `capture-pane`, `kill-session` — always include `-L overstory`
+- `ov status` queries the correct socket internally, but manual psmux debugging requires the flag
+
+### sessions.db Zombie State (discovered 2026-03-24, FIXED by Patch 5)
+- **Root cause**: `wipeSqliteDb` uses `unlink()` which fails silently on Windows when Bun's SQLite WAL mode keeps file handles open within the same process
+- **Fix (Patch 5)**: `ov clean --all` now purges all rows via SQL + checkpoints WAL before attempting file deletion. Even if `unlink` fails, data is cleared
+- **Patch location**: `~/.bun/install/global/node_modules/@os-eco/overstory-cli/src/commands/clean.ts` — added `Database` import, SQL DELETE + PRAGMA wal_checkpoint(TRUNCATE) + PRAGMA journal_mode=DELETE before `wipeSqliteDb`
+- Manual fix no longer needed — `ov clean --all` handles everything
+
+### Full Coordinator Launch Sequence (updated 2026-03-24, Patch 5)
+1. Clean overstory: `ov clean --all` (now properly clears sessions.db on Windows)
+2. Start: `ov coordinator start`
+3. Send objective: `ov coordinator send --body "<objective>"`
+4. Monitor: `psmux -L overstory capture-pane -t overstory-GlassHouse-coordinator -p | tail -30`
+
+Note: Steps 3 (manual SQL purge) and 5 (manual state fix) from the old 7-step sequence are no longer needed — Patch 5 fixes `ov clean --all` to properly clear sessions.db on Windows, and Patch 6 fixes the MARKER_GUARD so the PreToolUse hook fires and transitions booting→working automatically.
+
+### Test Timeouts
+- Breathing test suite (`tests/test_breathing.py`): ~5.5 minutes — use `timeout=600000` in bash
 
 ## Behavioral Rules
 - Do NOT run any git commands (commit, add, push, pull, checkout) — user handles all git operations

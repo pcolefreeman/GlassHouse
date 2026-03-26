@@ -102,7 +102,7 @@ DISTANCE_MAX_TREES     = 200      # max estimators per GB/RF model (Pi memory bu
 # ── Signal hardening (RuView-inspired) ───────────────────────
 HAMPEL_WINDOW = 11                        # Sliding window size for Hampel filter
 HAMPEL_THRESHOLD = 3.0                    # MAD multiplier for outlier rejection
-COHERENCE_THRESHOLD = 0.3                 # Min coherence score to accept frame
+COHERENCE_THRESHOLD = 0.15                # Lowered from 0.3 — diagonal paths rejected too aggressively
 SUBCARRIER_TOP_K = 30                     # Number of subcarriers to select per path
 SUBCARRIER_MIN_K = 10                     # Never select fewer than this many subcarriers
 
@@ -115,9 +115,11 @@ HEARTRATE_PEAK_PROMINENCE = 0.05          # FFT peak prominence threshold
 PRESENCE_LOGSIGMOID_SCALE = 2.0           # Steepness of log-sigmoid mapping
 PRESENCE_LOGSIGMOID_MIDPOINT = 0.5        # log1p(var) midpoint for sigmoid
 PRESENCE_RANK_DIVISOR = 2.0               # Normalizer: (mean/median - 1) / divisor → 0-1
+PRESENCE_BOOST_MAX = 0.3                  # Max amplification of vital-sign confidence by presence
+                                          # fusion: vital * (1 + pres * PRESENCE_BOOST_MAX)
 
 # ── Breathing detection ───────────────────────────────────────
-BREATHING_WINDOW_S    = 15
+BREATHING_WINDOW_S    = 10    # reduced from 15 — diagonal paths fill too slowly at 15s
 BREATHING_SNAP_HZ     = 20
 BREATHING_WINDOW_N    = int(BREATHING_WINDOW_S * BREATHING_SNAP_HZ)  # 600 frames
 BREATHING_SLIDE_N     = 20        # 20 frames at 20 Hz = 1s between updates
@@ -127,7 +129,7 @@ BREATHING_CONFIDENCE_THRESHOLD = 0.30  # raised from 0.05; contrast makes empty 
 BREATHING_CONTRAST_CEILING    = 3.0   # contrast ratio at which confidence saturates to 1.0
                                        # (contrast = path_snr_eig / median_all_snr_eig)
 BREATHING_MIN_PATHS_FOR_CONTRAST = 3   # need 3+ paths for meaningful median; fewer → phase only
-BREATHING_MIN_PATHS_TOTAL     = 2      # Absolute minimum active paths required to attempt a guess
+BREATHING_MIN_PATHS_TOTAL     = 6      # ALL paths must be filled before any detection (no partial guesses)
 
 # ── Detection hardening (anti-ghost, temporal persistence) ────
 BREATHING_CONFIDENCE_BETA     = 0.3    # EMA smoothing factor for per-path confidence (~3s time constant)

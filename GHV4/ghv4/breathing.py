@@ -42,6 +42,7 @@ from ghv4.config import (
     PRESENCE_LOGSIGMOID_SCALE,
     PRESENCE_LOGSIGMOID_MIDPOINT,
     PRESENCE_RANK_DIVISOR,
+    PRESENCE_BOOST_MAX,
     SAR_DISPLAY_TITLE_H,
     SAR_DISPLAY_STATUS_H,
     SAR_DISPLAY_GRID_PAD,
@@ -727,7 +728,10 @@ class BreathingDetector:
                 breathing_scores[key] = 0.0
                 self._last_hr_conf[key] = (0.0, 0.0)
 
-        if not breathing_scores:
+        if not breathing_scores or len(breathing_scores) < BREATHING_MIN_PATHS_TOTAL:
+            if breathing_scores:
+                _log.info("Waiting for all paths: %d/%d ready",
+                          len(breathing_scores), BREATHING_MIN_PATHS_TOTAL)
             self._last_corroboration = {}
             return self._projector.project({})
 
@@ -735,14 +739,16 @@ class BreathingDetector:
         presence = self._presence_scorer.score(self._buffers)
         self._last_presence = presence
 
-        # Step 6: dual-band fusion per path → raw confidence
+        # Step 6: vital-sign gated fusion per path → raw confidence
+        # Presence alone cannot trigger detection (D001) — it only amplifies
+        # an existing vital-sign (breathing or heartrate) signal.
         raw_confidences: dict[tuple, float] = {}
         for key in breathing_scores:
             br = breathing_scores[key]
             hr_c = self._last_hr_conf.get(key, (0.0, 0.0))[0]
             pres = presence.get(key, 0.0)
             vital = max(br, hr_c)
-            confidence = max(pres, vital)
+            confidence = vital * (1.0 + pres * PRESENCE_BOOST_MAX)
             raw_confidences[key] = confidence
 
         self._last_raw_path_conf = dict(raw_confidences)
