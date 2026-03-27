@@ -36,9 +36,9 @@
 #define WIFI_CHANNEL      11         // must match receiver
 #define TX_INTERVAL_MS    50         // ~20 Hz broadcast rate
 
-// Custom MAC address — MUST match SENDER_MAC in csi_receiver.ino
-// This is {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC}
-static uint8_t CUSTOM_MAC[6] = {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC};
+// Factory MAC of this sender board (Board 3) — MUST match SENDER_MAC in csi_receiver.ino
+// No custom MAC override needed — we use the board's real MAC
+static const uint8_t SENDER_MAC[6] = {0x68, 0xFE, 0x71, 0x90, 0x6B, 0x90};
 
 // Broadcast address for ESP-NOW (all 0xFF = broadcast to all peers)
 static uint8_t BROADCAST_ADDR[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -78,10 +78,8 @@ void setup() {
     // Disconnect from any AP (safety measure)
     WiFi.disconnect();
 
-    // Set custom MAC address so receiver can filter by known MAC
+    // No custom MAC — using factory MAC (Board 3: 68:FE:71:90:6B:90)
     esp_err_t err;
-    err = esp_wifi_set_mac(WIFI_IF_STA, CUSTOM_MAC);
-    Serial.printf("Custom MAC set: %s\n", err == ESP_OK ? "OK" : "FAIL");
 
     // Set fixed WiFi channel — must match receiver
     err = esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
