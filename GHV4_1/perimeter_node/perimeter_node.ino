@@ -9,16 +9,23 @@
  *
  *   RX mode (another node's turn): Capture CSI from the transmitting
  *     node's stimulus packet, then relay the CSI data to the coordinator
- *     via unicast ESP-NOW (CSI_REPORT).
+ *     via UDP unicast (CSI_REPORT).
+ *
+ * Transport: WiFi STA + UDP (replaced ESP-NOW in M002)
+ *   - Coordinator runs as AP (SSID: CSI_NET, channel 11)
+ *   - Perimeter nodes connect as STA clients
+ *   - Turn commands received on UDP broadcast port 4211
+ *   - CSI reports sent to coordinator at 192.168.4.1:4210
+ *   - CSI_TX stimulus broadcast to 192.168.4.255:4211
  *
  * Protocol:
- *   1. Coordinator broadcasts TURN_CMD [0x01, node_id] to designate
+ *   1. Coordinator broadcasts TURN_CMD [0x01, node_id] via UDP to designate
  *      which node transmits next.
  *   2. Designated node broadcasts CSI_TX [0x02, node_id, seq_hi, seq_lo, ...]
- *      after a brief settling delay.
+ *      via UDP after a brief settling delay.
  *   3. Other nodes capture CSI from that stimulus, then unicast
  *      CSI_REPORT [0x03, tx_id, rx_id, rssi, len_hi, len_lo, csi...]
- *      to the coordinator.
+ *      to the coordinator via UDP.
  *
  * Flash instructions:
  *   Change NODE_ID below before flashing each board:
@@ -29,16 +36,16 @@
  */
 
 #include <WiFi.h>
-#include <esp_now.h>
+#include <WiFiUdp.h>
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
 #include "esp_err.h"
 
 // ===========================================================================
 // *** CHANGE THIS BEFORE FLASHING EACH BOARD ***
-// 0 = Node A, 1 = Node B, 2 = Node C, 3 = Node D
+// 0 = TL, 1 = TR, 2 = BL, 3 = BR
 // ===========================================================================
-#define NODE_ID  0
+#define NODE_ID  1
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -58,23 +65,44 @@
 #define MSG_CSI_REPORT  0x03
 
 // ---------------------------------------------------------------------------
-// MAC addresses — must match coordinator and all perimeter nodes
+// Network configuration — must match coordinator exactly
 // ---------------------------------------------------------------------------
 
-// Per-node custom MACs:  A=01, B=02, C=03, D=04
+#define CSI_NET_SSID     "CSI_NET"
+#define CSI_NET_PASS     "csi12345"
+
+#define UDP_REPORT_PORT  4210        // CSI reports: perimeter → coordinator
+#define UDP_CMD_PORT     4211        // Turn commands: coordinator → all nodes
+                                     // Also used for CSI_TX stimulus broadcast
+
+// Coordinator AP IP (always 192.168.4.1 for ESP32 SoftAP)
+static const IPAddress COORDINATOR_IP(192, 168, 4, 1);
+
+// Subnet broadcast address for UDP broadcasts
+static const IPAddress BROADCAST_IP(192, 168, 4, 255);
+
+// WiFi connection parameters
+#define WIFI_CONNECT_TIMEOUT_MS   10000   // 10 seconds initial connect timeout
+#define WIFI_RECONNECT_DELAY_MS   2000    // 2 seconds between reconnect attempts
+
+// ---------------------------------------------------------------------------
+// MAC addresses — factory MACs, must match coordinator.ino exactly
+// ---------------------------------------------------------------------------
+
+// Per-node factory MACs — must match coordinator.ino exactly
 static const uint8_t NODE_MACS[NUM_NODES][6] = {
-    {0x24, 0x6F, 0x28, 0xAA, 0x00, 0x01},  // Node A (ID 0)
-    {0x24, 0x6F, 0x28, 0xAA, 0x00, 0x02},  // Node B (ID 1)
-    {0x24, 0x6F, 0x28, 0xAA, 0x00, 0x03},  // Node C (ID 2)
-    {0x24, 0x6F, 0x28, 0xAA, 0x00, 0x04},  // Node D (ID 3)
+    {0x68, 0xFE, 0x71, 0x90, 0x68, 0x14},  // Node A (ID 0) — Board 2, Top-Left
+    {0x68, 0xFE, 0x71, 0x90, 0x6B, 0x90},  // Node B (ID 1) — Board 3, Top-Right
+    {0x68, 0xFE, 0x71, 0x90, 0x60, 0xA0},  // Node C (ID 2) — Board 1, Bottom-Left
+    {0x20, 0xE7, 0xC8, 0xEC, 0xF5, 0xDC},  // Node D (ID 3) — Board 4, Bottom-Right
 };
 
-// Coordinator MAC — unicast target for CSI_REPORT
-// String form: 24:6F:28:AA:00:00
-static const uint8_t COORDINATOR_MAC[6] = {0x24, 0x6F, 0x28, 0xAA, 0x00, 0x00};
+// ---------------------------------------------------------------------------
+// UDP instances
+// ---------------------------------------------------------------------------
 
-// Broadcast address for ESP-NOW (hearing TURN commands + sending CSI_TX)
-static const uint8_t BROADCAST_ADDR[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+WiFiUDP reportUdp;    // Sends CSI reports to coordinator on UDP_REPORT_PORT
+WiFiUDP cmdUdp;       // Listens for turn commands on UDP_CMD_PORT
 
 // ---------------------------------------------------------------------------
 // Node identity (derived from NODE_ID at compile time)
@@ -87,9 +115,13 @@ static const char NODE_LABELS[NUM_NODES] = {'A', 'B', 'C', 'D'};
 // State machine
 // ---------------------------------------------------------------------------
 
-static volatile bool   is_my_turn      = false;   // set by ESP-NOW recv callback
+static volatile bool   is_my_turn      = false;   // set by turn command handler
 static volatile uint8_t current_tx_id  = 0xFF;    // who is currently transmitting
 static uint16_t        tx_seq_counter  = 0;        // sequence for CSI_TX packets
+
+// WiFi reconnect state
+static unsigned long   last_reconnect_attempt = 0;
+static bool            wifi_connected         = false;
 
 // ---------------------------------------------------------------------------
 // CSI capture buffer (written by callback, read by loop)
@@ -158,22 +190,30 @@ static void csi_rx_callback(void *ctx, wifi_csi_info_t *info) {
 }
 
 // ---------------------------------------------------------------------------
-// ESP-NOW receive callback — runs in WiFi task context, minimal work only
+// Turn command state (set by UDP handler in loop())
 // ---------------------------------------------------------------------------
 
-static volatile bool  turn_cmd_received = false;
-static volatile bool  turn_is_mine      = false;
-static volatile uint8_t turn_node_id    = 0xFF;
+static bool     turn_cmd_received = false;
+static bool     turn_is_mine      = false;
+static uint8_t  turn_node_id      = 0xFF;
 
-void on_espnow_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
-    const uint8_t *mac = info->src_addr;
-    if (data == NULL || len < 1) return;
+// ---------------------------------------------------------------------------
+// Check for turn commands via UDP on port 4211
+// ---------------------------------------------------------------------------
 
-    uint8_t msg_type = data[0];
+static void check_turn_commands() {
+    int packetSize = cmdUdp.parsePacket();
+    if (packetSize < 2) return;
 
-    if (msg_type == MSG_TURN_CMD && len >= 2) {
+    uint8_t buf[8];
+    int bytesRead = cmdUdp.read(buf, sizeof(buf));
+    if (bytesRead < 2) return;
+
+    uint8_t msg_type = buf[0];
+
+    if (msg_type == MSG_TURN_CMD) {
         // TURN_CMD: [0x01, node_id]
-        uint8_t target_id = data[1];
+        uint8_t target_id = buf[1];
         turn_node_id = target_id;
         current_tx_id = target_id;
 
@@ -188,12 +228,10 @@ void on_espnow_recv(const esp_now_recv_info_t *info, const uint8_t *data, int le
         }
         turn_cmd_received = true;
     }
-    // CSI_TX packets (0x02) are received over-the-air and generate CSI
-    // via the CSI callback — we don't need to parse them in ESP-NOW recv
 }
 
 // ---------------------------------------------------------------------------
-// Build and send CSI_REPORT to coordinator
+// Build and send CSI_REPORT to coordinator via UDP
 // ---------------------------------------------------------------------------
 
 static void send_csi_report(const csi_frame_t *frame) {
@@ -203,9 +241,9 @@ static void send_csi_report(const csi_frame_t *frame) {
 
     uint16_t valid_len = frame->data_len - offset;
 
-    // ESP-NOW max payload is 250 bytes
-    // Header: [type, tx_id, rx_id, rssi, len_hi, len_lo] = 6 bytes
-    // Max CSI data: 250 - 6 = 244 bytes
+    // UDP packet: header (6 bytes) + CSI data
+    // Header: [type, tx_id, rx_id, rssi, len_hi, len_lo]
+    // Max CSI data: 244 bytes (same limit as before for consistency)
     uint16_t csi_copy_len = valid_len;
     if (csi_copy_len > 244) {
         csi_copy_len = 244;
@@ -224,12 +262,14 @@ static void send_csi_report(const csi_frame_t *frame) {
 
     uint16_t total_len = 6 + csi_copy_len;
 
-    // Unicast to coordinator
-    esp_now_send(COORDINATOR_MAC, report, total_len);
+    // Unicast to coordinator via UDP
+    reportUdp.beginPacket(COORDINATOR_IP, UDP_REPORT_PORT);
+    reportUdp.write(report, total_len);
+    reportUdp.endPacket();
 }
 
 // ---------------------------------------------------------------------------
-// Broadcast CSI_TX stimulus packet
+// Broadcast CSI_TX stimulus packet via UDP
 // ---------------------------------------------------------------------------
 
 static void send_csi_tx_stimulus() {
@@ -243,8 +283,69 @@ static void send_csi_tx_stimulus() {
     pkt[6] = 0;
     pkt[7] = 0;
 
-    esp_now_send(BROADCAST_ADDR, pkt, sizeof(pkt));
+    // Broadcast on the subnet so other nodes' promiscuous CSI capture sees it
+    reportUdp.beginPacket(BROADCAST_IP, UDP_CMD_PORT);
+    reportUdp.write(pkt, sizeof(pkt));
+    reportUdp.endPacket();
+
     tx_seq_counter++;
+}
+
+// ---------------------------------------------------------------------------
+// WiFi connection management
+// ---------------------------------------------------------------------------
+
+static void wifi_connect() {
+    Serial.printf("Connecting to AP: %s ...\n", CSI_NET_SSID);
+    WiFi.begin(CSI_NET_SSID, CSI_NET_PASS);
+
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED) {
+        if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
+            Serial.println("WiFi connect timeout — will retry in loop");
+            return;
+        }
+        delay(250);
+        Serial.print(".");
+    }
+    Serial.println();
+    Serial.printf("Connected! IP: %s\n", WiFi.localIP().toString().c_str());
+    wifi_connected = true;
+
+    // Start UDP listeners after WiFi is connected
+    cmdUdp.begin(UDP_CMD_PORT);
+    Serial.printf("UDP command listener on port %d: OK\n", UDP_CMD_PORT);
+
+    // Report socket — used for sending, but bind it too
+    reportUdp.begin(0);  // ephemeral port for sending
+    Serial.println("UDP report sender: OK");
+}
+
+static void wifi_check_reconnect() {
+    if (WiFi.status() == WL_CONNECTED) {
+        if (!wifi_connected) {
+            // Reconnected
+            wifi_connected = true;
+            Serial.printf("Reconnected! IP: %s\n", WiFi.localIP().toString().c_str());
+
+            // Re-start UDP listeners
+            cmdUdp.begin(UDP_CMD_PORT);
+            reportUdp.begin(0);
+        }
+        return;
+    }
+
+    // Not connected — attempt reconnect with backoff
+    wifi_connected = false;
+    unsigned long now = millis();
+    if (now - last_reconnect_attempt < WIFI_RECONNECT_DELAY_MS) {
+        return;  // wait before retrying
+    }
+    last_reconnect_attempt = now;
+
+    Serial.println("WiFi disconnected — attempting reconnect...");
+    WiFi.disconnect();
+    WiFi.begin(CSI_NET_SSID, CSI_NET_PASS);
 }
 
 // ---------------------------------------------------------------------------
@@ -255,26 +356,26 @@ void setup() {
     Serial.begin(SERIAL_BAUD);
     delay(1000);
 
-    Serial.printf("=== Perimeter Node %c (ID %d) Starting ===\n",
+    Serial.printf("=== Perimeter Node %c (ID %d) Starting (STA + UDP) ===\n",
                   NODE_LABELS[NODE_ID], NODE_ID);
 
-    // Set own MAC from the node table
+    // Set own MAC from the node table (for identity reference)
     memcpy(my_mac, NODE_MACS[NODE_ID], 6);
 
-    // Initialize WiFi in STA mode — no AP connection
+    // Initialize WiFi in STA mode and connect to coordinator's AP
     WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    Serial.println("WiFi mode: STA (no connection)");
 
-    // Set custom MAC address
-    esp_err_t err;
-    err = esp_wifi_set_mac(WIFI_IF_STA, my_mac);
-    Serial.printf("Custom MAC set (%02X:%02X:%02X:%02X:%02X:%02X): %s\n",
+    // Print factory MAC
+    Serial.printf("Node %c MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                  NODE_LABELS[NODE_ID],
                   my_mac[0], my_mac[1], my_mac[2],
-                  my_mac[3], my_mac[4], my_mac[5],
-                  err == ESP_OK ? "OK" : "FAIL");
+                  my_mac[3], my_mac[4], my_mac[5]);
 
-    // Set WiFi channel
+    // Connect to coordinator's SoftAP
+    wifi_connect();
+
+    // Set WiFi channel explicitly (matches coordinator AP channel)
+    esp_err_t err;
     err = esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
     Serial.printf("WiFi channel %d: %s\n", WIFI_CHANNEL,
                   err == ESP_OK ? "OK" : "FAIL");
@@ -284,17 +385,17 @@ void setup() {
     Serial.printf("Promiscuous mode: %s\n",
                   err == ESP_OK ? "ENABLED" : "FAIL");
 
-    // Configure CSI — LLTF only (same as S01 receiver)
+    // Configure CSI — LLTF + HT-LTF for better subcarrier resolution
     wifi_csi_config_t csi_config;
     csi_config.lltf_en           = true;
-    csi_config.htltf_en          = false;
-    csi_config.stbc_htltf2_en    = false;
-    csi_config.ltf_merge_en      = true;
+    csi_config.htltf_en          = true;
+    csi_config.stbc_htltf2_en    = true;
+    csi_config.ltf_merge_en      = false;
     csi_config.channel_filter_en = false;
     csi_config.manu_scale        = false;
 
     err = esp_wifi_set_csi_config(&csi_config);
-    Serial.printf("CSI config (LLTF): %s\n",
+    Serial.printf("CSI config (LLTF+HT-LTF): %s\n",
                   err == ESP_OK ? "OK" : "FAIL");
 
     // Register CSI callback
@@ -307,39 +408,6 @@ void setup() {
     Serial.printf("CSI collection: %s\n",
                   err == ESP_OK ? "ENABLED" : "FAIL");
 
-    // Initialize ESP-NOW
-    err = esp_now_init();
-    Serial.printf("ESP-NOW init: %s\n",
-                  err == ESP_OK ? "OK" : "FAIL");
-
-    // Register ESP-NOW receive callback
-    esp_now_register_recv_cb(on_espnow_recv);
-    Serial.println("ESP-NOW recv callback: registered");
-
-    // Add broadcast peer (for hearing TURN commands and sending CSI_TX)
-    esp_now_peer_info_t bcast_peer;
-    memset(&bcast_peer, 0, sizeof(bcast_peer));
-    memcpy(bcast_peer.peer_addr, BROADCAST_ADDR, 6);
-    bcast_peer.channel = WIFI_CHANNEL;
-    bcast_peer.encrypt = false;
-
-    err = esp_now_add_peer(&bcast_peer);
-    Serial.printf("Broadcast peer: %s\n",
-                  err == ESP_OK ? "OK" : "FAIL");
-
-    // Add coordinator as unicast peer (for sending CSI_REPORT)
-    esp_now_peer_info_t coord_peer;
-    memset(&coord_peer, 0, sizeof(coord_peer));
-    memcpy(coord_peer.peer_addr, COORDINATOR_MAC, 6);
-    coord_peer.channel = WIFI_CHANNEL;
-    coord_peer.encrypt = false;
-
-    err = esp_now_add_peer(&coord_peer);
-    Serial.printf("Coordinator peer (%02X:%02X:%02X:%02X:%02X:%02X): %s\n",
-                  COORDINATOR_MAC[0], COORDINATOR_MAC[1], COORDINATOR_MAC[2],
-                  COORDINATOR_MAC[3], COORDINATOR_MAC[4], COORDINATOR_MAC[5],
-                  err == ESP_OK ? "OK" : "FAIL");
-
     Serial.printf("=== Perimeter Node %c Ready — waiting for TURN commands ===\n",
                   NODE_LABELS[NODE_ID]);
 }
@@ -349,6 +417,18 @@ void setup() {
 // ---------------------------------------------------------------------------
 
 void loop() {
+    // ---- WiFi reconnect check ----
+    wifi_check_reconnect();
+
+    // Don't process commands or send reports if not connected
+    if (!wifi_connected) {
+        delay(100);
+        return;
+    }
+
+    // ---- Check for TURN commands via UDP ----
+    check_turn_commands();
+
     // ---- Handle TURN command ----
     if (turn_cmd_received) {
         turn_cmd_received = false;

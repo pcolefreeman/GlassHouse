@@ -22,6 +22,7 @@
  */
 
 #include <WiFi.h>
+#include <esp_now.h>
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
 #include "esp_err.h"
@@ -34,8 +35,8 @@
 #define WIFI_CHANNEL      11
 #define CSI_BUF_SIZE      384   // max CSI data bytes (generous for LLTF)
 
-// Sender MAC address — MUST match the MAC set in csi_sender.ino
-static const uint8_t SENDER_MAC[6] = {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC};
+// Sender factory MAC (Board 3) — MUST match the actual MAC of the sender board
+static const uint8_t SENDER_MAC[6] = {0x68, 0xFE, 0x71, 0x90, 0x6B, 0x90};
 
 // ---------------------------------------------------------------------------
 // Global CSI data buffer (written by callback, read by loop)
@@ -57,15 +58,23 @@ static uint32_t         seq_counter = 0;
 // CSI Callback — runs in WiFi task context, keep it minimal
 // ---------------------------------------------------------------------------
 
+static volatile uint32_t debug_pkt_count = 0;  // count all CSI callbacks
+static volatile uint8_t last_seen_mac[6] = {0}; // last MAC seen (for debug)
+
 static void csi_rx_callback(void *ctx, wifi_csi_info_t *info) {
     if (info == NULL || info->buf == NULL || info->len == 0) {
         return;
     }
 
+    // Debug: count every packet and save the MAC
+    debug_pkt_count++;
+    memcpy((void *)last_seen_mac, info->mac, 6);
+
+    // DEBUG: temporarily accept ALL packets to find sender
     // Filter by sender MAC address to ignore ambient traffic
-    if (memcmp(info->mac, SENDER_MAC, 6) != 0) {
-        return;
-    }
+    // if (memcmp(info->mac, SENDER_MAC, 6) != 0) {
+    //     return;
+    // }
 
     // If a previous frame hasn't been consumed yet, drop this one
     // (avoids corrupting buffer while loop() is reading it)
@@ -143,6 +152,26 @@ void setup() {
     Serial.printf("CSI collection: %s\n",
                   err == ESP_OK ? "ENABLED" : "FAIL");
 
+    // Initialize ESP-NOW — required so that incoming ESP-NOW frames
+    // from the sender trigger the CSI callback
+    err = esp_now_init();
+    Serial.printf("ESP-NOW init: %s\n", err == ESP_OK ? "OK" : "FAIL");
+
+    // Add sender as ESP-NOW peer so its frames are processed
+    esp_now_peer_info_t peer;
+    memset(&peer, 0, sizeof(peer));
+    memcpy(peer.peer_addr, SENDER_MAC, 6);
+    peer.channel = WIFI_CHANNEL;
+    peer.encrypt = false;
+    err = esp_now_add_peer(&peer);
+    Serial.printf("Sender peer added: %s\n", err == ESP_OK ? "OK" : "FAIL");
+
+    // Debug: verify actual channel after all init
+    uint8_t primary_ch;
+    wifi_second_chan_t second_ch;
+    esp_wifi_get_channel(&primary_ch, &second_ch);
+    Serial.printf("Actual WiFi channel: %d\n", primary_ch);
+
     // Print expected sender MAC
     Serial.printf("Filtering for sender MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
                   SENDER_MAC[0], SENDER_MAC[1], SENDER_MAC[2],
@@ -156,6 +185,8 @@ void setup() {
 // ---------------------------------------------------------------------------
 
 void loop() {
+    loop_debug();  // print debug stats every 3s
+
     if (!csi_data_ready) {
         return;  // nothing to do — tight poll
     }
@@ -189,4 +220,17 @@ void loop() {
 
     seq_counter++;
     csi_data_ready = false;
+}
+
+// Debug: print packet stats every 3 seconds
+static unsigned long last_debug_ms = 0;
+void loop_debug() {
+    unsigned long now = millis();
+    if (now - last_debug_ms >= 3000) {
+        last_debug_ms = now;
+        Serial.printf("[DEBUG] Total CSI callbacks: %u | Last MAC seen: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                      debug_pkt_count,
+                      last_seen_mac[0], last_seen_mac[1], last_seen_mac[2],
+                      last_seen_mac[3], last_seen_mac[4], last_seen_mac[5]);
+    }
 }
