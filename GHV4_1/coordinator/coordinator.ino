@@ -87,7 +87,8 @@ static volatile uint8_t ring_read_idx  = 0;
 // ESP-NOW receive callback — runs in WiFi task, ZERO Serial I/O
 // ---------------------------------------------------------------------------
 
-void on_espnow_recv(const uint8_t *mac, const uint8_t *data, int len) {
+void on_espnow_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
+    const uint8_t *mac = info->src_addr;
     if (data == NULL || len < 1) return;
 
     uint8_t msg_type = data[0];

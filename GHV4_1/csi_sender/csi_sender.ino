@@ -54,7 +54,7 @@ static unsigned long last_tx_time = 0;
 // ESP-NOW send callback — runs quickly, Serial.println is OK here
 // ---------------------------------------------------------------------------
 
-void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+void on_data_sent(const esp_now_send_info_t *tx_info, esp_now_send_status_t status) {
     // Intentionally minimal — just log success/fail
     if (status != ESP_NOW_SEND_SUCCESS) {
         Serial.printf("ESP-NOW TX FAIL at seq %u\n", seq_counter - 1);

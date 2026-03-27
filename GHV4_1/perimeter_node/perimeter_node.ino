@@ -165,7 +165,8 @@ static volatile bool  turn_cmd_received = false;
 static volatile bool  turn_is_mine      = false;
 static volatile uint8_t turn_node_id    = 0xFF;
 
-void on_espnow_recv(const uint8_t *mac, const uint8_t *data, int len) {
+void on_espnow_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
+    const uint8_t *mac = info->src_addr;
     if (data == NULL || len < 1) return;
 
     uint8_t msg_type = data[0];
