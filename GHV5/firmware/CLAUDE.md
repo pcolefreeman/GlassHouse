@@ -126,3 +126,13 @@ text          — [LST] debug lines    pure ASCII, newline-terminated
 - **Never call `Serial.printf` inside `portENTER_CRITICAL`** — `Serial.printf` is blocking I/O;
   calling it with interrupts disabled triggers ESP32 watchdog timeout. Capture values inside
   the critical section, print after `portEXIT_CRITICAL`.
+
+## GHV5 SAR Mode — Firmware Gotchas (2026-03-27)
+
+- **Broadcast ESP-NOW is unreliable for distant pairs** — no ACK/retry; at outdoor range (>5m) pairs may never hear each other's broadcast beacon. Always switch to unicast (`esp_now_add_peer` per target MAC) as soon as MACs are known.
+- **`esp_now_add_peer()` is unsafe inside `on_esp_now_recv` callback** — ESP-NOW lock may already be held. Defer registration to `loop()` via a `static volatile bool peer_needs_register[5]` flag array; set the flag in the callback and call `esp_now_add_peer` from `loop()`.
+- **PEER_INFO handler must set `peer_needs_register`** — receiving `[BB][A0]` PEER_INFO gives you all peer MACs; after storing them in `peer_table`, iterate and set `peer_needs_register[sid] = true` for each non-self peer so they get unicast-registered in `loop()`.
+- **Outdoor bootstrap fix** — at outdoor range, shouters may never receive a broadcast beacon from peers, so `peer_table` stays empty and unicast never activates. Fix: listener sends `peer_info_pkt_t` (`[BB][A0]`) to all shouters via UDP immediately after all 4 register. This bypasses broadcast discovery entirely and seeds the peer table with authoritative MACs.
+- **Sequential round-robin polling preferred over broadcast** — broadcast poll sends all 4 shouters' snap packets in a ~260ms burst, peaking at ~100 KB/s vs 921600 baud capacity (~92 KB/s). Use `#define USE_BROADCAST_POLL 0` (sequential). The poll window must NOT break on first RESP — keep the while loop running until deadline so snap packets drain within the dedicated window.
+- **`csi_len` bounds guard required in all serial frame handlers** — without `if (csi_len > 384) { _sync_errors++; return; }` in both `[AA][55]` and `[BB][DD]` handlers, a single misaligned byte causes reads of thousands of bogus bytes, corrupting subsequent frames and inflating sync_errors.
+- **Snap rate log semantics** — per-path rates count frames from both reporter directions symmetrically (key = `(min(r,p), max(r,p))`). A completely absent path means zero ESP-NOW beacon exchange between that pair — not a Python-side parsing issue. Low rates on distant pairs (e.g. S2↔S4, S3↔S4 diagonals) indicate RF propagation limits even with unicast.

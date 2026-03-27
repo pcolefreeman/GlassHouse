@@ -82,6 +82,12 @@ bool get_latest_csi(CsiEntry* out) {
 
 // ── Per-device ID — assigned at runtime by listener via HELLO ACK (MAC-based) ──
 static uint8_t my_id = 0;  // assigned by listener via HELLO ACK; 0 = not yet assigned
+// ESP-NOW send outcome counters — updated from send callback (Core 0)
+static volatile uint32_t espnow_send_ok = 0;
+static volatile uint32_t espnow_send_fail = 0;
+// Deferred ESP-NOW unicast peer registration (set in on_esp_now_recv, consumed in loop())
+// Written from Core 0 WiFi task, read from Core 1 loop() — volatile for coherence.
+static volatile bool peer_needs_register[5] = {};
 #define SSID          "CSI_PRIVATE_AP"
 // NOTE: AP is open (no WPA2 password). WiFi.softAP(SSID, nullptr, CHANNEL) on listener
 //       side explicitly passes nullptr for the password to keep the embedded mesh simple.
@@ -139,18 +145,24 @@ void on_esp_now_recv(const esp_now_recv_info_t *recv_info,
     uint8_t sid = bcn->shouter_id;
     if (sid < 1 || sid > 4 || sid == my_id) return;
     int8_t rssi = (int8_t)recv_info->rx_ctrl->rssi;
+    bool first_contact = false;
     portENTER_CRITICAL(&peer_mux);
-    if (peer_table[sid].valid) {
-        if (peer_table[sid].count == 0) {
-            peer_table[sid].rssi = rssi;           // first sample: no EMA blend
-        } else {
-            peer_table[sid].rssi = (int8_t)(
-                (7 * (int)peer_table[sid].rssi + (int)rssi) / 8
-            );
-        }
+    if (!peer_table[sid].valid) {
+        // First beacon from this peer — record MAC and schedule unicast registration
+        memcpy(peer_table[sid].mac, recv_info->src_addr, 6);
+        peer_table[sid].rssi  = rssi;
+        peer_table[sid].count = 0;
+        peer_table[sid].valid = true;
+        first_contact = true;
+    } else {
+        peer_table[sid].rssi = (peer_table[sid].count == 0)
+            ? rssi
+            : (int8_t)((7 * (int)peer_table[sid].rssi + (int)rssi) / 8);
         if (peer_table[sid].count < 255) peer_table[sid].count++;
     }
     portEXIT_CRITICAL(&peer_mux);
+    // Defer esp_now_add_peer to loop() — unsafe to call from within ESP-NOW callback
+    if (first_contact) peer_needs_register[sid] = true;
     // Passive background beacons (bcn_seq=0xFF) update peer_table RSSI above but
     // are not part of a structured ranging window — skip CSI snapshots for them.
     if (bcn->bcn_seq == 0xFF) return;
@@ -215,6 +227,12 @@ void setup() {
     }
     esp_now_register_recv_cb(on_esp_now_recv);
 
+    // Track ESP-NOW send outcomes to diagnose beacon delivery failures.
+    esp_now_register_send_cb([](const wifi_tx_info_t *info, esp_now_send_status_t status) {
+        if (status == ESP_NOW_SEND_SUCCESS) espnow_send_ok++;
+        else espnow_send_fail++;
+    });
+
     // Broadcast MAC must be registered as a peer before esp_now_send will accept it.
     // Without esp_now_add_peer, send returns ESP_ERR_ESPNOW_NOT_FOUND silently.
     // ifidx = WIFI_IF_STA because shouter is in STA mode.
@@ -229,7 +247,9 @@ void setup() {
             delay(3000); ESP.restart();
         }
     }
-    Serial.println("[SHT] ESP-NOW ready");
+    // Maximize TX power for best inter-shouter ESP-NOW range
+    esp_wifi_set_max_tx_power(84);  // 84 × 0.25 dBm = 21 dBm (hardware max)
+    Serial.println("[SHT] ESP-NOW ready, TX power set to max");
     // NOTE: esp_now_init() must NOT be called again on WiFi dropout/reconnect.
     // ESP-NOW peers persist across reconnects. The WiFi dropout recovery path
     // in loop() calls WiFi.reconnect() only — do not add esp_now_init() there.
@@ -294,7 +314,10 @@ void send_poll_response(poll_pkt_t *poll) {
     tx_seq++;
     sht_resp_count++;
     if (sht_resp_count % 100 == 0) {
-        Serial.printf("[SHT] csi_overflow=%lu\n", (unsigned long)csi_overflow_count);
+        Serial.printf("[SHT] csi_overflow=%lu espnow_ok=%lu espnow_fail=%lu\n",
+            (unsigned long)csi_overflow_count,
+            (unsigned long)espnow_send_ok,
+            (unsigned long)espnow_send_fail);
     }
 
     // Transmit buffered CSI snapshots to listener.
@@ -353,7 +376,25 @@ void loop() {
         listener_warning_sent = true;
     }
 
+    // Register newly discovered unicast ESP-NOW peers (deferred from on_esp_now_recv)
+    for (int p = 1; p <= 4; p++) {
+        if (!peer_needs_register[p]) continue;
+        peer_needs_register[p] = false;
+        portENTER_CRITICAL(&peer_mux);
+        uint8_t pmac[6];
+        memcpy(pmac, peer_table[p].mac, 6);
+        portEXIT_CRITICAL(&peer_mux);
+        esp_now_peer_info_t pi = {};
+        memcpy(pi.peer_addr, pmac, 6);
+        pi.channel = 0;
+        pi.encrypt = false;
+        pi.ifidx   = WIFI_IF_STA;
+        esp_err_t err = esp_now_add_peer(&pi);
+        Serial.printf("[SHT] Unicast ESP-NOW peer sid=%d registered (err=%d)\n", p, err);
+    }
+
     // Continuous ESP-NOW beacons for SAR breathing/heart rate detection (10 Hz)
+    // Unicast to each known peer (with hardware retry/ACK); broadcast as fallback.
     static uint32_t last_beacon_ms = 0;
     static uint32_t cont_bcn_seq = 0;
     if (my_id > 0 && millis() - last_beacon_ms >= 100) {
@@ -365,8 +406,24 @@ void loop() {
         bcn.shouter_id = my_id;
         bcn.bcn_seq    = (uint8_t)(cont_bcn_seq & 0xFE);  // 0-254 even; never 0xFF
         cont_bcn_seq++;
-        static const uint8_t ESPNOW_BROADCAST[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-        esp_now_send(ESPNOW_BROADCAST, (uint8_t *)&bcn, sizeof(bcn));
+        bool used_unicast = false;
+        for (int p = 1; p <= 4; p++) {
+            if (p == (int)my_id) continue;
+            portENTER_CRITICAL(&peer_mux);
+            bool valid = peer_table[p].valid;
+            uint8_t pmac[6];
+            if (valid) memcpy(pmac, peer_table[p].mac, 6);
+            portEXIT_CRITICAL(&peer_mux);
+            if (valid) {
+                esp_now_send(pmac, (uint8_t *)&bcn, sizeof(bcn));
+                used_unicast = true;
+            }
+        }
+        if (!used_unicast) {
+            // Fall back to broadcast until peers are auto-discovered
+            static const uint8_t ESPNOW_BROADCAST[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+            esp_now_send(ESPNOW_BROADCAST, (uint8_t *)&bcn, sizeof(bcn));
+        }
     }
 
     // Process staggered broadcast response
@@ -406,6 +463,14 @@ void loop() {
                 peer_table[sid].valid = true;
             }
             portEXIT_CRITICAL(&peer_mux);
+            // Schedule unicast ESP-NOW registration for all peers learned from PEER_INFO.
+            // This runs even if broadcast discovery never succeeded (e.g. long RF range),
+            // so unicast beacons start immediately after PEER_INFO is received.
+            for (int k = 0; k < pi->n_peers && k < 4; k++) {
+                uint8_t sid = pi->peers[k].shouter_id;
+                if (sid < 1 || sid > 4 || sid == my_id) continue;
+                peer_needs_register[sid] = true;
+            }
             portENTER_CRITICAL(&snap_mux);
             for (int k = 0; k < pi->n_peers && k < 4; k++) {
                 uint8_t sid = pi->peers[k].shouter_id;

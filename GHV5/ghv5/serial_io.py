@@ -62,6 +62,116 @@ class SerialReader(threading.Thread):
         data = self._ser.read(n)
         return data if len(data) == n else None
 
+    def _resync(self):
+        """Discard bytes until finding a valid magic pair (0xAA55, 0xBBDD, 0xEEFF).
+
+        Returns the first byte of the magic pair found, or None on timeout/stop.
+        The second magic byte is consumed; the caller should proceed to header parsing.
+        """
+        MAGIC_STARTS = {0xAA: 0x55, 0xBB: 0xDD, 0xEE: 0xFF}
+        discarded = 0
+        while self._running:
+            b = self._ser.read(1)
+            if not b:
+                return None
+            b0 = b[0]
+            if b0 in MAGIC_STARTS:
+                b1 = self._ser.read(1)
+                if b1 and b1[0] == MAGIC_STARTS[b0]:
+                    if discarded > 0:
+                        _log.debug("[DIAG] resync: discarded %d bytes before magic 0x%02X%02X",
+                                   discarded, b0, b1[0])
+                    return b0
+            discarded += 1
+            if discarded > 2048:
+                _log.warning("[DIAG] resync: gave up after discarding %d bytes", discarded)
+                return None
+        return None
+
+    def _dispatch_after_magic(self, b0):
+        """Parse a frame whose magic pair has already been consumed by _resync."""
+        if b0 == 0xAA:
+            self._parse_listener_body()
+        elif b0 == 0xEE:
+            self._parse_snap_body()
+        elif b0 == 0xBB:
+            self._parse_shouter_body()
+
+    def _parse_listener_body(self):
+        hdr = self._ser.read(20)
+        if len(hdr) < 20:
+            return
+        csi_len = struct.unpack_from('<H', hdr, 18)[0]
+        if csi_len > 384:
+            self._sync_errors += 1
+            magic_byte = self._resync()
+            if magic_byte is not None:
+                self._dispatch_after_magic(magic_byte)
+            return
+        csi = self._ser.read(csi_len)
+        if len(csi) < csi_len:
+            return
+        frame = csi_parser.parse_listener_frame(b'\xAA\x55' + hdr + csi, 0)
+        if frame:
+            self._queue.put(('listener', frame))
+
+    def _parse_snap_body(self):
+        header = self._read_exact(6)
+        if header is None:
+            self._snap_failed += 1
+            return
+        csi_len = struct.unpack_from('<H', header, 4)[0]
+        if csi_len < 1 or csi_len > 384:
+            _log.debug("[DIAG] bad csi_len=%d in snap frame, discarding", csi_len)
+            self._snap_failed += 1
+            self._sync_errors += 1
+            magic_byte = self._resync()
+            if magic_byte is not None:
+                self._dispatch_after_magic(magic_byte)
+            return
+        old_timeout = self._ser.timeout
+        self._ser.timeout = 0.05
+        csi_bytes = self._read_exact(csi_len)
+        self._ser.timeout = old_timeout
+        if csi_bytes is None:
+            self._snap_failed += 1
+            return
+        frame = csi_parser.parse_csi_snap_frame(header + csi_bytes)
+        if frame:
+            if self._music_estimator is not None:
+                self._music_estimator.collect(
+                    frame['reporter_id'], frame['peer_id'], frame['csi']
+                )
+            if self._snap_callback is not None:
+                self._snap_callback(
+                    frame['reporter_id'],
+                    frame['peer_id'],
+                    frame['snap_seq'],
+                    frame['csi'],
+                )
+            self._queue.put(('csi_snap', frame))
+            self._snap_parsed += 1
+        elif frame is None:
+            self._snap_failed += 1
+
+    def _parse_shouter_body(self):
+        hdr = self._ser.read(29)
+        if len(hdr) < 29:
+            return
+        csi_len = struct.unpack_from('<H', hdr, 27)[0]
+        if csi_len > 384:
+            self._sync_errors += 1
+            magic_byte = self._resync()
+            if magic_byte is not None:
+                self._dispatch_after_magic(magic_byte)
+            return
+        csi = self._ser.read(csi_len)
+        if len(csi) < csi_len:
+            return
+        frame = csi_parser.parse_shouter_frame(b'\xBB\xDD' + hdr + csi, 0)
+        if frame:
+            self._queue.put(('shouter', frame))
+
     def _read_one_frame(self):
         b = self._ser.read(1)
         if not b:
@@ -72,70 +182,20 @@ class SerialReader(threading.Thread):
             b1 = self._ser.read(1)
             if not b1 or b1[0] != 0x55:
                 return
-            hdr = self._ser.read(20)
-            if len(hdr) < 20:
-                return
-            csi_len = struct.unpack_from('<H', hdr, 18)[0]
-            csi = self._ser.read(csi_len)
-            if len(csi) < csi_len:
-                return  # short read — drop truncated frame
-            frame = csi_parser.parse_listener_frame(b'\xAA\x55' + hdr + csi, 0)
-            if frame:
-                self._queue.put(('listener', frame))
+            self._parse_listener_body()
 
         elif b0 == 0xEE:
             b1 = self._ser.read(1)
             if not b1 or b1[0] != 0xFF:
                 self._sync_errors += 1
                 return
-            header = self._read_exact(6)
-            if header is None:
-                self._snap_failed += 1
-                return
-            csi_len = struct.unpack_from('<H', header, 4)[0]
-            if csi_len < 1 or csi_len > 384:
-                _log.debug("[DIAG] bad csi_len=%d in snap frame, discarding", csi_len)
-                self._snap_failed += 1
-                return  # return to top-level loop for natural resync
-            old_timeout = self._ser.timeout
-            self._ser.timeout = 0.05  # 50ms read timeout for CSI payload
-            csi_bytes = self._read_exact(csi_len)
-            self._ser.timeout = old_timeout
-            if csi_bytes is None:
-                self._snap_failed += 1
-                return  # partial frame — return to top-level loop
-            frame = csi_parser.parse_csi_snap_frame(header + csi_bytes)
-            if frame:
-                if self._music_estimator is not None:
-                    self._music_estimator.collect(
-                        frame['reporter_id'], frame['peer_id'], frame['csi']
-                    )
-                if self._snap_callback is not None:
-                    self._snap_callback(
-                        frame['reporter_id'],
-                        frame['peer_id'],
-                        frame['snap_seq'],
-                        frame['csi'],
-                    )
-                self._queue.put(('csi_snap', frame))
-                self._snap_parsed += 1
-            elif frame is None:
-                self._snap_failed += 1
+            self._parse_snap_body()
 
         elif b0 == 0xBB:
             b1 = self._ser.read(1)
             if not b1 or b1[0] != 0xDD:
                 return
-            hdr = self._ser.read(29)
-            if len(hdr) < 29:
-                return
-            csi_len = struct.unpack_from('<H', hdr, 27)[0]
-            csi = self._ser.read(csi_len)
-            if len(csi) < csi_len:
-                return  # short read — drop truncated frame
-            frame = csi_parser.parse_shouter_frame(b'\xBB\xDD' + hdr + csi, 0)
-            if frame:
-                self._queue.put(('shouter', frame))
+            self._parse_shouter_body()
 
 
 # ── CSVWriter ──────────────────────────────────────────────────────────────────

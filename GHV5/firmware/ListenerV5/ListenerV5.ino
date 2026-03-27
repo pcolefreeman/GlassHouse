@@ -14,8 +14,9 @@
 #define RANGING_COOLDOWN_MS    30000   // minimum ms between ranging phases; prevents re-ranging on brief dropout
 #define RANGING_STABILITY_MS    5000   // all 4 shouters must be registered this long before ranging starts
 #define SNAP_DRAIN_MS           2000   // per-shouter drain window: 35 snaps × 3 peers × 15ms + margin
-#define USE_BROADCAST_POLL  1     // 1 = broadcast + stagger; 0 = sequential (fallback)
+#define USE_BROADCAST_POLL  0     // 0 = sequential round-robin; 1 = broadcast + stagger
 #define STAGGER_MS         40     // per-shouter stagger delay for broadcast polling
+#define SAR_MODE            1     // 1 = only emit snap frames on serial (skip listener/shouter frames)
 
 // ── Shouter registry ───────────────────────────────────────────────────────────
 static IPAddress shouter_ip[5];          // indices 1–4; [0] unused
@@ -72,6 +73,14 @@ static volatile uint32_t csi_overflow_count = 0;
 static uint32_t lst_poll_count = 0;
 static uint16_t consecutive_miss[5] = {};  // index 1-4; tracks consecutive poll misses
 static bool     miss_warned[5] = {};       // true once warning emitted; reset on hit
+// Deferred disconnect logging — WiFi event fires on Core 0, Serial.printf is NOT
+// safe to call from a different core than loop() (Core 1). Set flag + ID here,
+// print from loop().
+static volatile int8_t  deferred_disconnect_id = -1;
+// One-shot PEER_INFO distribution: sent once after all 4 shouters are registered.
+// Gives each shouter the MAC table so it can register unicast ESP-NOW peers without
+// relying on broadcast beacon discovery (which fails at longer RF distances).
+static bool peer_info_distributed = false;
 
 // ── Ranging state machine ────────────────────────────────────────────────────
 enum RangingState {
@@ -140,10 +149,17 @@ void drain_listener_csi() {
         portENTER_CRITICAL(&lst_ring_mux);
         if (lst_ring_read == lst_ring_write) { portEXIT_CRITICAL(&lst_ring_mux); break; }
         int idx = lst_ring_read % LST_RING_SIZE;
+#if SAR_MODE
+        // SAR mode: discard listener CSI — only snap frames matter for breathing detection.
+        // Still drain the ring to prevent overflow, but skip the serial write.
+        lst_ring_read++;
+        portEXIT_CRITICAL(&lst_ring_mux);
+#else
         LstCsiEntry e = lst_ring[idx];
         lst_ring_read++;
         portEXIT_CRITICAL(&lst_ring_mux);
         emit_listener_frame(&e);
+#endif
     }
 }
 
@@ -152,6 +168,10 @@ void drain_listener_csi() {
 //         poll_seq(4) poll_rssi(1) poll_nf(1) mac(6) csi_len(2) csi[N]
 void emit_shouter_frame(const response_pkt_t* resp, uint8_t id,
                         bool is_hit, uint32_t listener_ms) {
+#if SAR_MODE
+    (void)resp; (void)id; (void)is_hit; (void)listener_ms;
+    return;  // SAR mode: skip shouter frames — only snap frames needed
+#endif
     uint8_t  flags = is_hit ? 0x01 : 0x00;
     uint32_t tx_s  = is_hit ? resp->tx_seq          : 0;
     uint32_t tx_m  = is_hit ? resp->tx_ms           : 0;
@@ -409,17 +429,19 @@ void setup() {
     Serial.println("[LST] UDP listening on 3333");
 
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
+        // IMPORTANT: This callback runs on Core 0 (WiFi task). Calling Serial.printf
+        // here races with Serial.write in loop() (Core 1), corrupting the binary
+        // serial stream. Use deferred_disconnect_id flag instead — printed from loop().
         const uint8_t *mac = info.wifi_ap_stadisconnected.mac;
         for (int i = 1; i <= 4; i++) {
             if (memcmp(shouter_mac[i], mac, 6) == 0) {
                 shouter_ready[i] = false;
                 ranging_done = false;
+                peer_info_distributed = false;  // re-distribute when all 4 reconnect
                 if (rng_state != RNG_IDLE) {
                     rng_state = RNG_IDLE;
-                    Serial.printf("[LST] Ranging aborted — shouter %d disconnected\n", i);
-                } else {
-                    Serial.printf("[LST] Shouter %d disconnected, ranging reset\n", i);
                 }
+                deferred_disconnect_id = (int8_t)i;  // loop() will print the message
                 break;
             }
         }
@@ -442,13 +464,21 @@ void setup() {
         Serial.println("[LST] FATAL: CSI enable failed");
         delay(3000); ESP.restart();
     }
-    Serial.println("[LST] CSI capture enabled");
+    esp_wifi_set_max_tx_power(84);  // 84 × 0.25 dBm = 21 dBm (hardware max)
+    Serial.println("[LST] CSI capture enabled, TX power set to max");
 }
 
 static unsigned long last_cycle_ms = 0;
 
 void loop() {
     unsigned long now = millis();
+
+    // Print deferred disconnect message (set from Core 0 WiFi event handler)
+    int8_t disc_id = deferred_disconnect_id;
+    if (disc_id >= 1) {
+        deferred_disconnect_id = -1;
+        Serial.printf("[LST] Shouter %d disconnected, ranging reset\n", disc_id);
+    }
 
     // Always handle incoming UDP and drain CSI — these run in every state
     response_pkt_t dummy;
@@ -472,6 +502,29 @@ void loop() {
         Serial.printf("[LST] Waiting for shouters (%d/4 registered)\n", registered_shouter_count);
         last_cycle_ms = millis();
         return;
+    }
+
+    // Distribute PEER_INFO once all 4 shouters are registered.
+    // Each shouter learns the MACs of all peers so it can register unicast
+    // ESP-NOW peers immediately, without needing broadcast beacon discovery.
+    // This is critical at longer RF distances where broadcast may not reach.
+    if (!peer_info_distributed) {
+        peer_info_pkt_t pi;
+        pi.magic[0] = PEER_INFO_MAGIC_0;
+        pi.magic[1] = PEER_INFO_MAGIC_1;
+        pi.ver      = 1;
+        pi.n_peers  = 4;
+        for (int i = 0; i < 4; i++) {
+            pi.peers[i].shouter_id = (uint8_t)(i + 1);
+            memcpy(pi.peers[i].mac, shouter_mac[i + 1], 6);
+        }
+        for (int s = 1; s <= 4; s++) {
+            udp.beginPacket(shouter_ip[s], SHOUTER_PORT);
+            udp.write((uint8_t *)&pi, sizeof(pi));
+            udp.endPacket();
+        }
+        peer_info_distributed = true;
+        Serial.println("[LST] PEER_INFO sent to all shouters — unicast ESP-NOW enabled");
     }
 
 #if USE_BROADCAST_POLL
@@ -526,8 +579,13 @@ void loop() {
     bool polled_any = true;
 
 #else
+    // Sequential round-robin poll: each shouter gets a dedicated POLL_TIMEOUT_MS window.
+    // Round-robin start rotates each cycle so no shouter is always polled last.
+    // No break on RESP receipt — window stays open to drain that shouter's snap packets.
+    static uint8_t rr_start = 1;
     bool polled_any = false;
-    for (uint8_t id = 1; id <= 4; id++) {
+    for (uint8_t off = 0; off < 4; off++) {
+        uint8_t id = (rr_start - 1 + off) % 4 + 1;  // 1-4, rotated by rr_start
         if (!shouter_ready[id]) continue;
         polled_any = true;
 
@@ -551,15 +609,18 @@ void loop() {
         unsigned long deadline = millis() + POLL_TIMEOUT_MS;
         bool got_response = false;
         response_pkt_t resp;
+        // Run until deadline — do NOT break on first RESP. Staying in the loop
+        // allows handle_incoming_udp to drain this shouter's snap packets (which
+        // arrive a few ms after the RESP) within its dedicated window.
         while (millis() < deadline) {
             drain_listener_csi();
             if (handle_incoming_udp(&resp)) {
-                if (resp.poll_seq != poll_seq || resp.shouter_id != id) continue;
-                got_response = true;
-                emit_shouter_frame(&resp, id, true, millis());
-                consecutive_miss[id] = 0;
-                miss_warned[id] = false;
-                break;
+                if (resp.poll_seq == poll_seq && resp.shouter_id == id && !got_response) {
+                    got_response = true;
+                    emit_shouter_frame(&resp, id, true, millis());
+                    consecutive_miss[id] = 0;
+                    miss_warned[id] = false;
+                }
             }
             delayMicroseconds(100);
         }
@@ -577,6 +638,7 @@ void loop() {
         unsigned long gap_end = millis() + INTER_SHOUTER_GAP_MS;
         while (millis() < gap_end) drain_listener_csi();
     }
+    rr_start = (rr_start % 4) + 1;  // advance round-robin for next cycle
 #endif
 
     drain_listener_csi();
