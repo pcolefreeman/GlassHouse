@@ -1,0 +1,47 @@
+# ESP32-S3 CSI Node — Default SDK Configuration
+# This file is applied automatically by idf.py when no sdkconfig exists.
+
+# Target: ESP32-S3
+CONFIG_IDF_TARGET="esp32s3"
+
+# Use custom partition table (8MB flash with OTA — ADR-045)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_display.csv"
+
+# Flash configuration: 8MB (Quad SPI)
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="8MB"
+
+# Compiler optimization: optimize for size to reduce binary
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# Enable CSI (Channel State Information) in WiFi driver
+CONFIG_ESP_WIFI_CSI_ENABLED=y
+
+# NVS encryption disabled by default (requires eFuse provisioning).
+# Enable only after burning HMAC key to eFuse block.
+# CONFIG_NVS_ENCRYPTION is not set
+
+# Disable unused features to reduce binary size
+CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# LWIP: enable extended socket options for UDP multicast
+CONFIG_LWIP_SO_RCVBUF=y
+
+# SAR quick-win fix 6: raise lwIP mailbox sizes so the tcpip task and UDP
+# recv queues don't starve the CSI callback → sendto path with ENOMEM at the
+# 50 Hz target.  Paired with the shorter ENOMEM_COOLDOWN_MS in stream_sender.c.
+CONFIG_LWIP_UDP_RECVMBOX_SIZE=32
+CONFIG_LWIP_TCPIP_RECVMBOX_SIZE=64
+
+# FreeRTOS: increase task stack for CSI processing
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Option D fix: raise esp_timer task stack from 3584 to 8192 bytes. Multiple
+# timer callbacks (NDP probe, heartbeat, link_reporter, sar_amp_tick, vitals,
+# wasm on_timer) run on this task. NDP probe calls esp_wifi_80211_tx, which
+# has a deep internal stack; sar_amp_tick may cascade into stream_sender_send
+# -> sendto -> lwIP. Default 3584 is too tight — observed boot-time overflow
+# at ~3.4s post-commit 60a0524. 8192 = 2.3x headroom.
+CONFIG_ESP_TIMER_TASK_STACK_SIZE=8192

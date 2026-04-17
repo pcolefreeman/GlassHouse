@@ -1,0 +1,7 @@
+CMake Warning at components/wasm3/CMakeLists.txt:42 (message):
+  WASM3 source not available.  Building WITHOUT WASM Tier 3 support.
+
+  To enable: git clone --depth 1 https://github.com/wasm3/wasm3.git
+  C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/components/wasm3/wasm3-src
+
+

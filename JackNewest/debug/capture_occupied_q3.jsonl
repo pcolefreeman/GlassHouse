@@ -1,0 +1,906 @@
+{"t": 0.0687, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.0688, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.0689, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.0689, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 0.1292, "label": "occupied_q3", "type": "unknown", "len": 321, "hex": "010011c50101c0006c090000e06f0000"}
+{"t": 0.1294, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.1294, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.2338, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.201783, "state": 1, "count": 20}
+{"t": 0.234, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.2341, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.3489, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.541, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 8.196057, "state": 1, "count": 20}
+{"t": 0.5411, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 0.964956, "state": 1, "count": 20}
+{"t": 0.6188, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.105908, "state": 1, "count": 20}
+{"t": 0.6189, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 8.213035, "state": 1, "count": 20}
+{"t": 0.6189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.717, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.8086, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.8087, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 0.8087, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.111133, "state": 1, "count": 20}
+{"t": 0.8087, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.8087, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.8087, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.1388, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.1389, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.1389, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.1389, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.139, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.139, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.5011, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.249685, "state": 1, "count": 20}
+{"t": 1.5013, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.732386, "state": 1, "count": 20}
+{"t": 1.5013, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.105908, "state": 1, "count": 20}
+{"t": 1.9887, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.0386, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50301c0006c090000965c0100"}
+{"t": 2.0387, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.29591, "state": 1, "count": 20}
+{"t": 2.2091, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.006392, "state": 1, "count": 20}
+{"t": 2.2093, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 14.246246, "state": 1, "count": 20}
+{"t": 2.2093, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.33942, "state": 1, "count": 20}
+{"t": 2.2093, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.29591, "state": 1, "count": 20}
+{"t": 2.3158, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.571, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.5711, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.5712, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.5712, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.5712, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.5713, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.6973, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.8085, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.235436, "state": 1, "count": 20}
+{"t": 2.8086, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.614503, "state": 1, "count": 20}
+{"t": 2.8086, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 14.246246, "state": 1, "count": 20}
+{"t": 2.9087, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.1091, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.4286, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.4287, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.4287, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.4287, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.5787, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.7285, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.7784, "label": "occupied_q3", "type": "unknown", "len": 577, "hex": "010011c50101c0006c090000b9710000"}
+{"t": 4.0786, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 4.1888, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 4.189, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.33942, "state": 1, "count": 20}
+{"t": 4.189, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.201908, "state": 1, "count": 20}
+{"t": 4.1891, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 4.4885, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.33942, "state": 1, "count": 20}
+{"t": 5.1386, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.219888, "state": 1, "count": 20}
+{"t": 5.4489, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.4491, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 2.378035, "state": 1, "count": 20}
+{"t": 5.4492, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.33942, "state": 1, "count": 20}
+{"t": 5.5188, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 2.41021, "state": 1, "count": 20}
+{"t": 5.5189, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.92141, "state": 1, "count": 20}
+{"t": 5.5189, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 7.129989, "state": 1, "count": 20}
+{"t": 5.5189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.6242, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.8148, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.118902, "state": 1, "count": 20}
+{"t": 5.8149, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.246594, "state": 1, "count": 20}
+{"t": 5.815, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.815, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 5.8151, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.9425, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.0991, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.331548, "state": 1, "count": 20}
+{"t": 6.0992, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.448922, "state": 1, "count": 20}
+{"t": 6.1491, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.216134, "state": 1, "count": 20}
+{"t": 6.2471, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50301c0006c090000235e0100"}
+{"t": 6.2472, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.319002, "state": 1, "count": 20}
+{"t": 6.2473, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.2474, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4076, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4077, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4078, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4078, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4078, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4079, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 3.205772, "state": 1, "count": 20}
+{"t": 6.408, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.408, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.131767, "state": 1, "count": 20}
+{"t": 6.4081, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.398003, "state": 1, "count": 20}
+{"t": 6.4081, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.4081, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.509, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.5686, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.207175, "state": 1, "count": 20}
+{"t": 6.5687, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.6291, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.6292, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.6885, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 4.594593, "state": 1, "count": 20}
+{"t": 6.6887, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.7901, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.7902, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.9016, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.019, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.19622, "state": 1, "count": 20}
+{"t": 7.0192, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.807811, "state": 1, "count": 20}
+{"t": 7.0192, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.566238, "state": 1, "count": 20}
+{"t": 7.0192, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2385, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2386, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 7.2387, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 1.693518, "state": 1, "count": 20}
+{"t": 7.2391, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.6491, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.131317, "state": 1, "count": 20}
+{"t": 7.6492, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.33942, "state": 1, "count": 20}
+{"t": 7.6492, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8186, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.61043, "state": 1, "count": 20}
+{"t": 7.8187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8187, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.22678, "state": 1, "count": 20}
+{"t": 7.8187, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.140718, "state": 1, "count": 20}
+{"t": 7.9185, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.451906, "state": 1, "count": 20}
+{"t": 7.9186, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.0193, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.083009, "state": 1, "count": 20}
+{"t": 8.0194, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 2.308717, "state": 1, "count": 20}
+{"t": 8.0195, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.0196, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.0196, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.0196, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.0196, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.3566, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.3567, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.6091, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.7553, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 8.909, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.0103, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.0105, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.0688, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.1704, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.1707, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.229, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1295, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1297, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1297, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1303, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1304, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1304, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.219, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.152055, "state": 1, "count": 20}
+{"t": 10.2191, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.2191, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.3188, "label": "occupied_q3", "type": "unknown", "len": 321, "hex": "010011c50101c0006c090000f5740000"}
+{"t": 10.4386, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.4387, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.4387, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.4387, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.292411, "state": 1, "count": 20}
+{"t": 10.5461, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.6491, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.626597, "state": 1, "count": 20}
+{"t": 10.6492, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.160962, "state": 1, "count": 20}
+{"t": 10.6493, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 3.437074, "state": 1, "count": 20}
+{"t": 10.6586, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.21061, "state": 1, "count": 20}
+{"t": 10.7697, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.702056, "state": 1, "count": 20}
+{"t": 10.7699, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 7.1907, "state": 1, "count": 20}
+{"t": 11.0071, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.0072, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.0072, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.1686, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.2797, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50101c0006c09000058750000"}
+{"t": 11.2799, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 1.27149, "state": 1, "count": 20}
+{"t": 11.28, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.28, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.28, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.3888, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.3889, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.8985, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.971036, "state": 1, "count": 20}
+{"t": 11.8986, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.626597, "state": 1, "count": 20}
+{"t": 11.9584, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 2.698387, "state": 1, "count": 20}
+{"t": 11.9585, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.030423, "state": 1, "count": 20}
+{"t": 11.9585, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 7.157212, "state": 1, "count": 20}
+{"t": 12.064, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.319, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.3191, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.4163, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.4164, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.528, "label": "occupied_q3", "type": "unknown", "len": 641, "hex": "010011c50201c0006c0900000da70000"}
+{"t": 12.7284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.7784, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.1786, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.4386, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.4388, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.5361, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.5363, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.8989, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.333608, "state": 1, "count": 20}
+{"t": 13.899, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.899, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.9684, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50101c0006c090000ba760000"}
+{"t": 13.9685, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.748891, "state": 1, "count": 20}
+{"t": 13.9686, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.401506, "state": 1, "count": 20}
+{"t": 13.9686, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 3.421037, "state": 1, "count": 20}
+{"t": 13.9686, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2211, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2212, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2212, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2213, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2213, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2213, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2214, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.4089, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.409, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.4091, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.251629, "state": 1, "count": 20}
+{"t": 14.4091, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.748891, "state": 1, "count": 20}
+{"t": 14.6691, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.6693, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.6694, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.7685, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.8283, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.207663, "state": 1, "count": 20}
+{"t": 14.8284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.8284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.9408, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.9409, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.2491, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.748891, "state": 1, "count": 20}
+{"t": 15.2492, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.370015, "state": 1, "count": 20}
+{"t": 15.4089, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 3.372769, "state": 1, "count": 20}
+{"t": 15.4091, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 7.133747, "state": 1, "count": 20}
+{"t": 15.4092, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.4092, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.4092, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.4093, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.529, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 1.49311, "state": 1, "count": 20}
+{"t": 15.5889, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.5891, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.6975, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.6977, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.9517, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.299639, "state": 1, "count": 20}
+{"t": 15.9519, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.9519, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.952, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.952, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.061124, "state": 1, "count": 20}
+{"t": 15.952, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.1776, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.1778, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.134747, "state": 1, "count": 20}
+{"t": 16.2899, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.5385, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.251136, "state": 1, "count": 20}
+{"t": 16.6423, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.652537, "state": 1, "count": 20}
+{"t": 16.643, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.748891, "state": 1, "count": 20}
+{"t": 16.6432, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.325717, "state": 1, "count": 20}
+{"t": 16.6432, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 1.736188, "state": 1, "count": 20}
+{"t": 16.6433, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.6433, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.6434, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.865, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.8651, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.218601, "state": 1, "count": 20}
+{"t": 16.8651, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 16.8652, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.8652, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.8652, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.8653, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.0189, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.251928, "state": 1, "count": 20}
+{"t": 17.0191, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 6.971644, "state": 1, "count": 20}
+{"t": 17.0191, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.0191, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.0191, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.2384, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.2385, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 17.2386, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 1.633512, "state": 1, "count": 20}
+{"t": 17.2386, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.3448, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.5285, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 13.280602, "state": 1, "count": 20}
+{"t": 17.5287, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.97576, "state": 1, "count": 20}
+{"t": 17.5287, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.5287, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.5287, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.192779, "state": 1, "count": 20}
+{"t": 17.5288, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 3.442475, "state": 1, "count": 20}
+{"t": 17.5288, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 13.280602, "state": 1, "count": 20}
+{"t": 17.5288, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.92373, "state": 1, "count": 20}
+{"t": 17.6793, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.7783, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.8283, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50101c0006c0900009d780000"}
+{"t": 17.9284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 17.9884, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.075515, "state": 1, "count": 20}
+{"t": 17.9886, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.0384, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.0983, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.998285, "state": 1, "count": 20}
+{"t": 18.0985, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.685858, "state": 1, "count": 20}
+{"t": 18.2101, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 6.992479, "state": 1, "count": 20}
+{"t": 18.2103, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 2.746207, "state": 1, "count": 20}
+{"t": 18.2103, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 13.370466, "state": 1, "count": 20}
+{"t": 18.2104, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.3789, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.164212, "state": 1, "count": 20}
+{"t": 18.379, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 1.205507, "state": 1, "count": 20}
+{"t": 18.3791, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.3791, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.6277, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.6278, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.7383, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.8979, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 13.765089, "state": 1, "count": 20}
+{"t": 18.898, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 1.912202, "state": 1, "count": 20}
+{"t": 19.057, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.16546, "state": 1, "count": 20}
+{"t": 19.0572, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 6.992479, "state": 1, "count": 20}
+{"t": 19.0572, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.3189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.319, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.4265, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.4266, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.5389, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.121698, "state": 1, "count": 20}
+{"t": 19.5391, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.176216, "state": 1, "count": 20}
+{"t": 19.5392, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.29665, "state": 1, "count": 20}
+{"t": 19.5392, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.5393, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.6589, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.269204, "state": 1, "count": 20}
+{"t": 19.6591, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.7783, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.759792, "state": 1, "count": 20}
+{"t": 19.7784, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 6.992479, "state": 1, "count": 20}
+{"t": 19.7785, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.7785, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.0784, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.2883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.2884, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.2884, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.3865, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.4987, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.261291, "state": 1, "count": 20}
+{"t": 20.4989, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.7683, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.7684, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.7684, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.7685, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 2.477722, "state": 1, "count": 20}
+{"t": 20.8186, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.8281, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50101c0006c090000357a0000"}
+{"t": 20.8282, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.091018, "state": 1, "count": 20}
+{"t": 20.9288, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.299156, "state": 1, "count": 20}
+{"t": 21.0383, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 21.0384, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.0384, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.0385, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.2482, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 3.117157, "state": 1, "count": 20}
+{"t": 21.2484, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.223937, "state": 1, "count": 20}
+{"t": 21.2484, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 2.64212, "state": 1, "count": 20}
+{"t": 21.2485, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 7.845061, "state": 1, "count": 20}
+{"t": 21.5189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.519, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.6174, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.6175, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.7298, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.7299, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.1958, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.1959, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.196, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.147088, "state": 1, "count": 20}
+{"t": 22.1961, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.033135, "state": 1, "count": 20}
+{"t": 22.1961, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 2.64212, "state": 1, "count": 20}
+{"t": 22.1962, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.3562, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.119331, "state": 1, "count": 20}
+{"t": 22.3564, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.123823, "state": 1, "count": 20}
+{"t": 22.3564, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.819809, "state": 1, "count": 20}
+{"t": 22.3564, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.3565, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.3565, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.3565, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.3565, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.79, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.9883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.0883, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.304911, "state": 1, "count": 20}
+{"t": 23.2366, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.001117, "state": 1, "count": 20}
+{"t": 23.2368, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.257342, "state": 1, "count": 20}
+{"t": 23.2369, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 2.64212, "state": 1, "count": 20}
+{"t": 23.2369, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.237, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.237, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.4088, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.5689, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.569, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.6682, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.6683, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.9882, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.9883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.1883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.4992, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.490783, "state": 1, "count": 20}
+{"t": 24.4993, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 2.64212, "state": 1, "count": 20}
+{"t": 24.6588, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.195805, "state": 1, "count": 20}
+{"t": 24.6589, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.262283, "state": 1, "count": 20}
+{"t": 24.7556, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.7557, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.191428, "state": 1, "count": 20}
+{"t": 24.7557, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.327562, "state": 1, "count": 20}
+{"t": 24.7558, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.276682, "state": 1, "count": 20}
+{"t": 24.7558, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.7558, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.0269, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.0271, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 25.0271, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.123318, "state": 1, "count": 20}
+{"t": 25.3788, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.6788, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.7793, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.7794, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.130292, "state": 1, "count": 20}
+{"t": 25.9988, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.9989, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.311528, "state": 1, "count": 20}
+{"t": 26.2088, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.357315, "state": 1, "count": 20}
+{"t": 26.209, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.181219, "state": 1, "count": 20}
+{"t": 26.3061, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.3063, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.5681, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.5681, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.5681, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 26.5682, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.6281, "label": "occupied_q3", "type": "unknown", "len": 330, "hex": "010011c50301c0006c0900007f650100"}
+{"t": 26.6282, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.069164, "state": 1, "count": 20}
+{"t": 26.6283, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 7.9501, "state": 1, "count": 20}
+{"t": 26.7787, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.7787, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.209712, "state": 1, "count": 20}
+{"t": 26.7788, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.857885, "state": 1, "count": 20}
+{"t": 26.8285, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.1381, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.1384, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.188, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.3376, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.5881, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.687, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.152146, "state": 1, "count": 20}
+{"t": 27.7982, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.205138, "state": 1, "count": 20}
+{"t": 27.7982, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.299015, "state": 1, "count": 20}
+{"t": 28.0582, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.140423, "state": 1, "count": 20}
+{"t": 28.0582, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2135, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.93404, "state": 1, "count": 20}
+{"t": 28.2136, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.299015, "state": 1, "count": 20}
+{"t": 28.2137, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2137, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2137, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2137, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2782, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.3889, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.389, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.389, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.6882, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.152146, "state": 1, "count": 20}
+{"t": 28.8508, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.91142, "state": 1, "count": 20}
+{"t": 28.8509, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.299015, "state": 1, "count": 20}
+{"t": 29.1688, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.1689, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.1693, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.1694, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.086049, "state": 1, "count": 20}
+{"t": 29.1694, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.2885, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.3569, "state": 1, "count": 20}
+{"t": 29.2886, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.065069, "state": 1, "count": 20}
+{"t": 29.2887, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.2887, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.3952, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 29.6988, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.6989, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.139199, "state": 1, "count": 20}
+{"t": 29.6994, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.7082, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.287833, "state": 1, "count": 20}
+{"t": 29.758, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.330976, "state": 1, "count": 20}
+{"t": 29.7582, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.8607, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.0044, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.2188, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.2189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.219, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.3247, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.3249, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.4382, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.18355, "state": 1, "count": 20}
+{"t": 30.4383, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 4.873944, "state": 1, "count": 20}
+{"t": 30.4384, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.5505, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.6951, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.139199, "state": 1, "count": 20}
+{"t": 30.6953, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.181498, "state": 1, "count": 20}
+{"t": 30.6953, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 0.816737, "state": 1, "count": 20}
+{"t": 30.7582, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.737829, "state": 1, "count": 20}
+{"t": 30.7584, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.325015, "state": 1, "count": 20}
+{"t": 30.7584, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.8581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.9673, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 30.9674, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 31.0689, "label": "occupied_q3", "type": "unknown", "len": 321, "hex": "010011c50101c0006c090000287f0000"}
+{"t": 31.1749, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.160926, "state": 1, "count": 20}
+{"t": 31.1751, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 31.1751, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 31.1751, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 31.3509, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 31.8456, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.901716, "state": 1, "count": 20}
+{"t": 31.8458, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.139199, "state": 1, "count": 20}
+{"t": 31.8458, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.293546, "state": 1, "count": 20}
+{"t": 31.9987, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.1019, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.102, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.1883, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.187873, "state": 1, "count": 20}
+{"t": 32.1884, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.15827, "state": 1, "count": 20}
+{"t": 32.1885, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.312703, "state": 1, "count": 20}
+{"t": 32.1885, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.1885, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.1886, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.198, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.084329, "state": 1, "count": 20}
+{"t": 32.2987, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.239517, "state": 1, "count": 20}
+{"t": 32.2989, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.3581, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.07033, "state": 1, "count": 20}
+{"t": 32.3583, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.312703, "state": 1, "count": 20}
+{"t": 32.5587, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.7087, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 32.9086, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.0621, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.2071, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.3186, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.3187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.4183, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.5282, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 8.113509, "state": 1, "count": 20}
+{"t": 33.5284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.5284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 33.5783, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50301c0006c090000ed670100"}
+{"t": 34.0885, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.0886, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.0886, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.2002, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.6971, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.6972, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.6973, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.6973, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.6973, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.8079, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.240928, "state": 1, "count": 20}
+{"t": 34.808, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.303559, "state": 1, "count": 20}
+{"t": 34.808, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.8081, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.8081, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.8081, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.8082, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 34.8082, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 1.6314, "state": 1, "count": 20}
+{"t": 35.0086, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.223776, "state": 1, "count": 20}
+{"t": 35.0087, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.134341, "state": 1, "count": 20}
+{"t": 35.0088, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.290818, "state": 1, "count": 20}
+{"t": 35.0088, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.2586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.3288, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.3289, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.3289, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.3289, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.4312, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 35.5754, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.0381, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.0382, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.0383, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.1389, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.247, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.061051, "state": 1, "count": 20}
+{"t": 36.2472, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.07131, "state": 1, "count": 20}
+{"t": 36.2472, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.252834, "state": 1, "count": 20}
+{"t": 36.2472, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.355399, "state": 1, "count": 20}
+{"t": 36.2473, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.4586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.5085, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.818, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 36.8181, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.038, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 37.0381, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 2.217952, "state": 1, "count": 20}
+{"t": 37.0381, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.0382, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.1086, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.1087, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.192635, "state": 1, "count": 20}
+{"t": 37.1088, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.1405, "state": 1, "count": 20}
+{"t": 37.1088, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.378486, "state": 1, "count": 20}
+{"t": 37.2085, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 7.888532, "state": 1, "count": 20}
+{"t": 37.2087, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 1.895842, "state": 1, "count": 20}
+{"t": 37.2087, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.417, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.4172, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.4172, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 37.4173, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 1.493557, "state": 1, "count": 20}
+{"t": 37.5452, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.5454, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.6565, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.07131, "state": 1, "count": 20}
+{"t": 37.6567, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 7.733862, "state": 1, "count": 20}
+{"t": 37.6567, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 1.620977, "state": 1, "count": 20}
+{"t": 37.6568, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.6568, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.6569, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.7843, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 37.7844, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.0185, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.234281, "state": 1, "count": 20}
+{"t": 38.0186, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 38.0186, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 7.70931, "state": 1, "count": 20}
+{"t": 38.0187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.0187, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.0187, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.826131, "state": 1, "count": 20}
+{"t": 38.1199, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 0.845614, "state": 1, "count": 20}
+{"t": 38.12, "label": "occupied_q3", "type": "link", "link": "13", "node": 1, "partner": 3, "variance": 0.312231, "state": 1, "count": 20}
+{"t": 38.1201, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.2286, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.75123, "state": 1, "count": 20}
+{"t": 38.3771, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.4286, "label": "occupied_q3", "type": "unknown", "len": 577, "hex": "010011c50101c0006c090000b0820000"}
+{"t": 38.5786, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.6787, "label": "occupied_q3", "type": "unknown", "len": 321, "hex": "010011c50101c0006c090000d3820000"}
+{"t": 38.8879, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.888, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 38.948, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 39.045, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.200549, "state": 1, "count": 20}
+{"t": 39.0451, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.876127, "state": 1, "count": 20}
+{"t": 39.157, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.1571, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.2081, "label": "occupied_q3", "type": "unknown", "len": 650, "hex": "010011c50101c0006c0900000f830000"}
+{"t": 39.2082, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.3161, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.3163, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.3166, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.4274, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.4274, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 39.4275, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.18358, "state": 1, "count": 20}
+{"t": 39.4275, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 1.520003, "state": 1, "count": 20}
+{"t": 39.4275, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.4275, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.4276, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.9381, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 39.9882, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.205274, "state": 1, "count": 20}
+{"t": 40.493, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 1.398857, "state": 1, "count": 20}
+{"t": 40.4932, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 40.7493, "label": "occupied_q3", "type": "unknown", "len": 1610, "hex": "010011c50301c0006c0900003f6a0100"}
+{"t": 40.7495, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 2.270494, "state": 1, "count": 20}
+{"t": 40.7497, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 40.8579, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.0586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.2085, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.5582, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.758, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.8653, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.8654, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 41.8654, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.0786, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.0787, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.0787, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.1379, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 42.138, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.223303, "state": 1, "count": 20}
+{"t": 42.138, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 2.695757, "state": 1, "count": 20}
+{"t": 42.5086, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.5087, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 42.5088, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.5088, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.6173, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.34352, "state": 1, "count": 20}
+{"t": 42.6175, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 1.894578, "state": 1, "count": 20}
+{"t": 42.6176, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.8254, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 7.156617, "state": 1, "count": 20}
+{"t": 42.8258, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 42.8258, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 42.8258, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.241621, "state": 1, "count": 20}
+{"t": 43.0585, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 43.0587, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.357856, "state": 1, "count": 20}
+{"t": 43.0587, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.0587, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.1283, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.1286, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 43.1287, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.199035, "state": 1, "count": 20}
+{"t": 43.1288, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 4.25169, "state": 1, "count": 20}
+{"t": 43.2399, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.2402, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.3485, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.3486, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.5486, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.648, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.7282, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.7283, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.7283, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.7283, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.7283, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 43.7284, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.828, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.8879, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.090844, "state": 1, "count": 20}
+{"t": 43.888, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.8881, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.9162, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.9163, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 43.9163, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.277277, "state": 1, "count": 20}
+{"t": 43.9163, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.236132, "state": 1, "count": 20}
+{"t": 43.9163, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.9164, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 43.9164, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.0236, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.090844, "state": 1, "count": 20}
+{"t": 44.0238, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 1.047219, "state": 1, "count": 20}
+{"t": 44.0239, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.166508, "state": 1, "count": 20}
+{"t": 44.0239, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.238, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.2381, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.3441, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.3442, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.3442, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.3443, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.3443, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 44.3444, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 44.3444, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 8.583549, "state": 1, "count": 20}
+{"t": 44.3445, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.931755, "state": 1, "count": 20}
+{"t": 44.3445, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.4285, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.4882, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.4883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.4883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.588, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.6879, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 8.570798, "state": 1, "count": 20}
+{"t": 44.848, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.8481, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 44.8482, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.8979, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 44.9585, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 44.9586, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.174565, "state": 1, "count": 20}
+{"t": 44.9587, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.0085, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.1108, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.090844, "state": 1, "count": 20}
+{"t": 45.111, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.818908, "state": 1, "count": 20}
+{"t": 45.1111, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.2232, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.4379, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.830796, "state": 1, "count": 20}
+{"t": 45.438, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.4381, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 45.4381, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.7374, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 8.902659, "state": 1, "count": 20}
+{"t": 45.7375, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.7376, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.8078, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 8.902659, "state": 1, "count": 20}
+{"t": 45.8079, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 0.582857, "state": 1, "count": 20}
+{"t": 45.9131, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.9132, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 45.9133, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.0744, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 46.0746, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.129021, "state": 1, "count": 20}
+{"t": 46.0747, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.278, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.3781, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.3782, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.4879, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.5853, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.6483, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.054774, "state": 1, "count": 20}
+{"t": 46.6485, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.6485, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.7479, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.8579, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.858, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.858, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.858, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.9179, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 46.918, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 71.858032, "state": 1, "count": 20}
+{"t": 46.918, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.193248, "state": 1, "count": 20}
+{"t": 46.918, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 2.228421, "state": 1, "count": 20}
+{"t": 47.0681, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.1185, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.098298, "state": 1, "count": 20}
+{"t": 47.2983, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.2984, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.128857, "state": 1, "count": 20}
+{"t": 47.3377, "label": "occupied_q3", "type": "unknown", "len": 468, "hex": "010011c50401c0006c09000085070200"}
+{"t": 47.3378, "label": "occupied_q3", "type": "unknown", "len": 148, "hex": "010011c5020140006c0900008eab0000"}
+{"t": 47.3379, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 72.358543, "state": 1, "count": 20}
+{"t": 47.3379, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.193769, "state": 1, "count": 20}
+{"t": 47.3379, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 2.022526, "state": 1, "count": 20}
+{"t": 47.3583, "label": "occupied_q3", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000091070200"}
+{"t": 47.3584, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.4079, "label": "occupied_q3", "type": "iq", "node_id": 2, "channel": 1, "iq_len": 128, "hex": "0000000000000000000000000204020401040104010401040104010401040104"}
+{"t": 47.5086, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.6084, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.7578, "label": "occupied_q3", "type": "unknown", "len": 148, "hex": "010011c5040140006c090000b7070200"}
+{"t": 47.758, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.758, "label": "occupied_q3", "type": "unknown", "len": 148, "hex": "010011c5020140006c0900009fab0000"}
+{"t": 47.7581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.7581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.7581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.7582, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.7582, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.8632, "label": "occupied_q3", "type": "iq", "node_id": 3, "channel": 1, "iq_len": 128, "hex": "000000000000000000000000f000f0ffeffef0fceffcf0fcf0fbf0fbf0fbeffa"}
+{"t": 47.8633, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.9879, "label": "occupied_q3", "type": "unknown", "len": 1032, "hex": "010011c50301c0006c090000b56c0100"}
+{"t": 47.988, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 47.988, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.0579, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.0581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.0581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.0581, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.2685, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 65.535439, "state": 1, "count": 20}
+{"t": 48.2686, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.3763, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.3764, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.3765, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.4279, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.5285, "label": "occupied_q3", "type": "iq", "node_id": 2, "channel": 1, "iq_len": 128, "hex": "000000000000000000000000fe04fe04fd04fd04fd03fd03fd03fd03fd03fd03"}
+{"t": 48.5286, "label": "occupied_q3", "type": "vitals", "flags": 5, "presence": true, "motion_bit": true, "motion_energy": 7.253581}
+{"t": 48.5785, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.6483, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.6485, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.6485, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 48.6485, "label": "occupied_q3", "type": "vitals", "flags": 5, "presence": true, "motion_bit": true, "motion_energy": 4.801422}
+{"t": 48.6984, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.0985, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.2484, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.5584, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.5585, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.5586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.5586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.8288, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 7.929916, "state": 1, "count": 20}
+{"t": 49.8289, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 49.9785, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.0584, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.0585, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.0585, "label": "occupied_q3", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.974404, "state": 1, "count": 20}
+{"t": 50.0586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.0586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.0586, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.3578, "label": "occupied_q3", "type": "unknown", "len": 1281, "hex": "010011c50301c0006c090000956d0100"}
+{"t": 50.3579, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.4684, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.4685, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.4691, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 50.6683, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.0185, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.0881, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50301c0006c090000e16d0100"}
+{"t": 51.0882, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.0882, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.0882, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.0883, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.1888, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 1.784534, "state": 1, "count": 20}
+{"t": 51.1889, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 1.809198, "state": 1, "count": 20}
+{"t": 51.189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.189, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 51.9879, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.0484, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 113.538078, "state": 1, "count": 20}
+{"t": 52.0486, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.091865, "state": 1, "count": 20}
+{"t": 52.1487, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.2985, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.4055, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.4057, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.5179, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.518, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.5181, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.90447, "state": 1, "count": 20}
+{"t": 52.5181, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 1.205638, "state": 1, "count": 20}
+{"t": 52.5182, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.5182, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.6461, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.126399, "state": 1, "count": 20}
+{"t": 52.6466, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.6467, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 52.938, "label": "occupied_q3", "type": "unknown", "len": 650, "hex": "010011c50101c0006c09000020020000"}
+{"t": 53.2983, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.253816, "state": 1, "count": 20}
+{"t": 53.2985, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.2985, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.4179, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.27929, "state": 1, "count": 20}
+{"t": 53.418, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.4181, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.4181, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.6779, "label": "occupied_q3", "type": "unknown", "len": 1281, "hex": "010011c50101c0006c090000a3020000"}
+{"t": 53.678, "label": "occupied_q3", "type": "link", "link": "13", "node": 3, "partner": 1, "variance": 68.930428, "state": 1, "count": 20}
+{"t": 53.678, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.745638, "state": 1, "count": 20}
+{"t": 53.678, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.678, "label": "occupied_q3", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 1.389895, "state": 1, "count": 20}
+{"t": 53.7377, "label": "occupied_q3", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 1.138152, "state": 1, "count": 20}
+{"t": 53.7378, "label": "occupied_q3", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 0.094764, "state": 1, "count": 20}
+{"t": 53.7379, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.7379, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.8879, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 53.9379, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 114.315613, "state": 1, "count": 20}
+{"t": 53.938, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.397603, "state": 1, "count": 20}
+{"t": 53.9877, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 4.462398, "state": 1, "count": 20}
+{"t": 53.9878, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 54.2878, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 54.6877, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.495955, "state": 1, "count": 20}
+{"t": 54.844, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 114.315613, "state": 1, "count": 20}
+{"t": 54.844, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.471152, "state": 1, "count": 20}
+{"t": 54.8441, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 3.06932, "state": 1, "count": 20}
+{"t": 55.2397, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 55.388, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 55.438, "label": "occupied_q3", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 114.315613, "state": 1, "count": 20}
+{"t": 55.4382, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 1.905262, "state": 1, "count": 20}
+{"t": 55.4876, "label": "occupied_q3", "type": "unknown", "len": 330, "hex": "010011c50401c0006c090000f80b0200"}
+{"t": 55.4877, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 55.698, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.234021, "state": 1, "count": 20}
+{"t": 55.6981, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 2.35899, "state": 1, "count": 20}
+{"t": 56.0956, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 56.1977, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 56.2477, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 56.5477, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 56.6476, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 56.7477, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 56.7976, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.0976, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.1477, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.3078, "label": "occupied_q3", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 0.084969, "state": 1, "count": 20}
+{"t": 57.3079, "label": "occupied_q3", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.142415, "state": 1, "count": 20}
+{"t": 57.3079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.3079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.3079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.3079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 57.4076, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.234926, "state": 1, "count": 20}
+{"t": 57.4077, "label": "occupied_q3", "type": "link", "link": "23", "node": 2, "partner": 3, "variance": 3.021762, "state": 1, "count": 20}
+{"t": 58.0077, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 58.0576, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 58.2033, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 58.4083, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 58.5698, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0173, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0174, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0174, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0174, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0175, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0175, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0979, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.0981, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.3078, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.3079, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.3583, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.4653, "label": "occupied_q3", "type": "unknown", "len": 266, "hex": "010011c50101c0006c090000bd050000"}
+{"t": 59.4655, "label": "occupied_q3", "type": "link", "link": "24", "node": 2, "partner": 4, "variance": 0.259225, "state": 1, "count": 20}
+{"t": 59.4656, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.4657, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.6378, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.6379, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.6379, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.7369, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 59.8876, "label": "occupied_q3", "type": "link", "link": "14", "node": 1, "partner": 4, "variance": 3.378093, "state": 1, "count": 20}
+{"t": 59.9377, "label": "occupied_q3", "type": "unknown", "len": 1, "hex": "aa"}

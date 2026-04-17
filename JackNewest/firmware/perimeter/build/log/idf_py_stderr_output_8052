@@ -1,0 +1,55 @@
+[0;33m--- Warning: GDB cannot open serial ports accessed as COMx[0m
+[0;33m--- Using \\.\COM13 instead...[0m
+[0;33m--- esp-idf-monitor 1.9.0 on \\.\COM13 115200[0m
+[0;33m--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H[0m
+[0m--- 0x42007cc4: [0;33muart_ll_get_txfifo_len[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/hal/esp32s3/include/hal/uart_ll.h[0m[0m:[1;31m387[0m
+[0m--- (inlined by) [0;33muart_tx_char[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/vfs/vfs_uart.c[0m[0m:[1;31m165[0m
+[0m--- 0x40375a8a: [0;33mpanic_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/panic.c[0m[0m:[1;31m472[0m
+[0m--- 0x4037d49d: [0;33mesp_system_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/esp_system_chip.c[0m[0m:[1;31m93[0m
+[0m--- 0x4037e186: [0;33mvApplicationStackOverflowHook[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m553[0m
+[0m--- 0x4037f1f3: [0;33mvTaskSwitchContext[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c[0m[0m:[1;31m3630[0m
+[0m--- 0x4037e2b8: [0;33m_frxt_dispatch[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m451[0m
+[0m--- 0x4037e2ae: [0;33m_frxt_int_exit[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m246[0m
+[0m--- 0x403759ed: [0;33mesp_restart_noos[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/soc/esp32s3/system_internal.c[0m[0m:[1;31m159[0m
+[0m--- 0x40375a8a: [0;33mpanic_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/panic.c[0m[0m:[1;31m472[0m
+[0m--- 0x4037d49d: [0;33mesp_system_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/esp_system_chip.c[0m[0m:[1;31m93[0m
+[0m--- 0x4037e186: [0;33mvApplicationStackOverflowHook[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m553[0m
+[0m--- 0x4037f1f3: [0;33mvTaskSwitchContext[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c[0m[0m:[1;31m3630[0m
+[0m--- 0x4037e2b8: [0;33m_frxt_dispatch[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m451[0m
+[0m--- 0x4037e2ae: [0;33m_frxt_int_exit[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m246[0m
+[0m--- 0x403759ed: [0;33mesp_restart_noos[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/soc/esp32s3/system_internal.c[0m[0m:[1;31m159[0m
+[0m--- 0x40375a8a: [0;33mpanic_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/panic.c[0m[0m:[1;31m472[0m
+[0m--- 0x4037d49d: [0;33mesp_system_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/esp_system_chip.c[0m[0m:[1;31m93[0m
+[0m--- 0x4037e186: [0;33mvApplicationStackOverflowHook[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m553[0m
+[0m--- 0x4037f1f3: [0;33mvTaskSwitchContext[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c[0m[0m:[1;31m3630[0m
+[0m--- 0x4037e2b8: [0;33m_frxt_dispatch[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m451[0m
+[0m--- 0x4037e2ae: [0;33m_frxt_int_exit[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m246[0m
+[0m--- 0x403759ed: [0;33mesp_restart_noos[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/soc/esp32s3/system_internal.c[0m[0m:[1;31m159[0m
+[0m--- 0x40375a8a: [0;33mpanic_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/panic.c[0m[0m:[1;31m472[0m
+[0m--- 0x4037d49d: [0;33mesp_system_abort[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/esp_system_chip.c[0m[0m:[1;31m93[0m
+[0m--- 0x4037e186: [0;33mvApplicationStackOverflowHook[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m553[0m
+[0m--- 0x4037f1f3: [0;33mvTaskSwitchContext[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c[0m[0m:[1;31m3630[0m
+[0m--- 0x4037e2b8: [0;33m_frxt_dispatch[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m451[0m
+[0m--- 0x4037e2ae: [0;33m_frxt_int_exit[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S[0m[0m:[1;31m246[0m
+[0m--- 0x420067ea: [0;33mtimer_process_alarm[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_timer/src/esp_timer.c[0m[0m:[1;31m453[0m
+[0m--- (inlined by) [0;33mtimer_task[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_timer/src/esp_timer.c[0m[0m:[1;31m479[0m
+[0m--- 0x403759ed: [0;33mesp_restart_noos[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_system/port/soc/esp32s3/system_internal.c[0m[0m:[1;31m159[0m
+[0;33m--- To exit from IDF monitor please use "Ctrl+]". Alternatively, you can use Ctrl+T Ctrl+X to exit.[0m
+[0m
+Traceback (most recent call last):
+  File "C:\Users\incre\esp\esp-idf\tools/idf_monitor.py", line 11, in <module>
+    sys.exit(subprocess.run([sys.executable, '-m', 'esp_idf_monitor'] + sys.argv[1:]).returncode)
+             ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\incre\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\incre\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 1212, in communicate
+    self.wait()
+    ~~~~~~~~~^^
+  File "C:\Users\incre\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 1278, in wait
+    return self._wait(timeout=timeout)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\incre\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 1604, in _wait
+    result = _winapi.WaitForSingleObject(self._handle,
+                                         timeout_millis)
+KeyboardInterrupt

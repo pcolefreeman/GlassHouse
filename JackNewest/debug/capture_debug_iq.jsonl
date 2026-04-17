@@ -1,0 +1,692 @@
+{"t": 0.4374, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 0.4376, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.4376, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.5452, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.5454, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.6522, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.6524, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.6524, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.7603, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.7604, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.8778, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000002000000"}
+{"t": 0.8778, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 0.9479, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000003000000"}
+{"t": 0.948, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 1.0577, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 1.0578, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.1478, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000008000000"}
+{"t": 1.1479, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 1.1979, "label": "debug_iq", "type": "unknown", "len": 456, "hex": "010011c50301c0006c0900000b000000"}
+{"t": 1.3538, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.3538, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.3539, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.3539, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.3539, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.26468, "state": 1, "count": 13}
+{"t": 1.3539, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.5477, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 59.619297, "state": 1, "count": 9}
+{"t": 1.5478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.5478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.5478, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 1.5478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.5478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.5478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.6492, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 1.6493, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.6493, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.6493, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.29822, "state": 1, "count": 19}
+{"t": 1.6493, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 38.210461, "state": 1, "count": 9}
+{"t": 1.7077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.7078, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000029000000"}
+{"t": 1.8191, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 1.8191, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.8192, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.8192, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 1.8192, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.29822, "state": 1, "count": 19}
+{"t": 1.8192, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 38.210461, "state": 1, "count": 9}
+{"t": 1.8192, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 92.47229, "state": 1, "count": 14}
+{"t": 2.0373, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.1477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.1478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.258, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.2582, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.2582, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.3672, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.3673, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.4769, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.4769, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000000000000"}
+{"t": 2.4769, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.6179, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.6179, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 2.6179, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.7178, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.341331, "state": 1, "count": 6}
+{"t": 2.8178, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.9178, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.9179, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 2.9679, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.0678, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.0679, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.0679, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.1796, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.1796, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.086779, "state": 1, "count": 5}
+{"t": 3.1796, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.1796, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.2896, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.2897, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.2897, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.086779, "state": 1, "count": 5}
+{"t": 3.399, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.399, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.3991, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.5067, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 3.5068, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.086779, "state": 1, "count": 5}
+{"t": 4.8075, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 4.8076, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 4.9156, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 4.9157, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 4.9158, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.0232, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.0233, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.1335, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.1335, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.2879, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000002000000"}
+{"t": 5.288, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.3076, "label": "debug_iq", "type": "unknown", "len": 468, "hex": "010011c50401c0006c09000000000000"}
+{"t": 5.3477, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 5.3478, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000004000000"}
+{"t": 5.3478, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.4481, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000001000000"}
+{"t": 5.4482, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.4876, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 5.5276, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000a000000"}
+{"t": 5.5277, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c0900000c000000"}
+{"t": 5.5278, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.5778, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 5.5779, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.5779, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.5779, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.5779, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 128.187469, "state": 1, "count": 4}
+{"t": 5.5779, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 59.376637, "state": 1, "count": 8}
+{"t": 5.5779, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.5977, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.6376, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000b000000"}
+{"t": 5.6377, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c0900000e000000"}
+{"t": 5.6877, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 5.6878, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.6878, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.6878, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 31.88769, "state": 1, "count": 8}
+{"t": 5.6878, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.12206, "state": 1, "count": 3}
+{"t": 5.7878, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.8577, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 104.146141, "state": 1, "count": 7}
+{"t": 5.8578, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 49.672443, "state": 1, "count": 10}
+{"t": 5.8578, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 5.9377, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 31.88769, "state": 1, "count": 8}
+{"t": 5.9377, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.11299, "state": 1, "count": 4}
+{"t": 5.9378, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 47.570236, "state": 1, "count": 5}
+{"t": 6.0532, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000012000000"}
+{"t": 6.0532, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.0533, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.0533, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.0533, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.1077, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.11299, "state": 1, "count": 4}
+{"t": 6.1077, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 63.548531, "state": 1, "count": 7}
+{"t": 6.1078, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.1078, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000015000000"}
+{"t": 6.2111, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 6.2112, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.2112, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.3188, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.3189, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 29.172586, "state": 1, "count": 9}
+{"t": 6.3189, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.11299, "state": 1, "count": 4}
+{"t": 6.3189, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 58.161995, "state": 1, "count": 8}
+{"t": 6.4278, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000000000000"}
+{"t": 6.4278, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.5362, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.5363, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.6437, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.6438, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.7523, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.7524, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.7524, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.8621, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.9377, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000001000000"}
+{"t": 6.9378, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.9379, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 6.9379, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.0078, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000002000000"}
+{"t": 7.0079, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 7.0079, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.0079, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.1079, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.1079, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.108, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.108, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2196, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2197, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2197, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2198, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.185853, "state": 1, "count": 4}
+{"t": 7.2198, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.2198, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.3272, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.3273, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.3273, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.3273, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.4481, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.608, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.608, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.255606, "state": 1, "count": 2}
+{"t": 7.6081, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.6081, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.6081, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.7182, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.7182, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.255606, "state": 1, "count": 2}
+{"t": 7.7183, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8267, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.8269, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.9351, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 7.9351, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.255606, "state": 1, "count": 2}
+{"t": 9.1324, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 9.2415, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.2415, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.3508, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.3509, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.4599, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.46, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.5667, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.5668, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.5668, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.6731, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000001000000"}
+{"t": 9.6732, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.7576, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 9.7576, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000004000000"}
+{"t": 9.7576, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.7776, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 9.8176, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000001000000"}
+{"t": 9.8177, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 9.8576, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000006000000"}
+{"t": 9.8577, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.069116, "state": 1, "count": 2}
+{"t": 9.8577, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000007000000"}
+{"t": 9.8577, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.8776, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000009000000"}
+{"t": 9.8777, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 9.9277, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 9.9278, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.023683, "state": 1, "count": 5}
+{"t": 9.9278, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 3.775518, "state": 1, "count": 7}
+{"t": 9.9278, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.0177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.0178, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.0178, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 53.229042, "state": 1, "count": 3}
+{"t": 10.0178, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 8.902531, "state": 1, "count": 7}
+{"t": 10.068, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.1079, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c0900000d000000"}
+{"t": 10.1079, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 10.108, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.108, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.021723, "state": 1, "count": 6}
+{"t": 10.1579, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 3.472185, "state": 1, "count": 14}
+{"t": 10.2078, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.2276, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 40.180641, "state": 1, "count": 4}
+{"t": 10.2276, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 35.037018, "state": 1, "count": 9}
+{"t": 10.2277, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.2782, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 10.3376, "label": "debug_iq", "type": "unknown", "len": 264, "hex": "060011c5040100010000000000000000"}
+{"t": 10.3376, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.021723, "state": 1, "count": 6}
+{"t": 10.3377, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 3.041141, "state": 1, "count": 16}
+{"t": 10.3377, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 90.551712, "state": 1, "count": 10}
+{"t": 10.4452, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000021000000"}
+{"t": 10.4453, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 10.4453, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.4453, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.4454, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.5176, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 3.041141, "state": 1, "count": 16}
+{"t": 10.5177, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 91.36631, "state": 1, "count": 12}
+{"t": 10.5177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.5177, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000024000000"}
+{"t": 10.6285, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 10.6285, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.6286, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.6286, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.7366, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.119562, "state": 1, "count": 7}
+{"t": 10.7367, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 3.041141, "state": 1, "count": 16}
+{"t": 10.7367, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 93.485992, "state": 1, "count": 13}
+{"t": 10.8446, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.9544, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.9545, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 10.9546, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.0619, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.0619, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.1694, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.1695, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.3276, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000002000000"}
+{"t": 11.3276, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.3276, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.3476, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000003000000"}
+{"t": 11.3476, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.4077, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 11.4078, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.4078, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.4578, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.4578, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.5077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.5577, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.6077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.6582, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.6583, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.7576, "label": "debug_iq", "type": "unknown", "len": 321, "hex": "010011c50201c0006c0900000e000000"}
+{"t": 11.7577, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.8077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.9694, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.9695, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.9695, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.13685, "state": 1, "count": 3}
+{"t": 11.9696, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 11.9696, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.0773, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.0774, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.0774, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.13685, "state": 1, "count": 3}
+{"t": 12.1841, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.1842, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.2924, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.2925, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 12.2925, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.13685, "state": 1, "count": 3}
+{"t": 13.5982, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 13.5983, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.7061, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.7062, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.7062, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.8152, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.8153, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.9241, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.9242, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 13.9985, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.05, "label": "debug_iq", "type": "unknown", "len": 276, "hex": "010011c5030180006c09000001000000"}
+{"t": 14.0501, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.0501, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000002000000"}
+{"t": 14.1175, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 14.1576, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.1576, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 14.1976, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000001000000"}
+{"t": 14.1976, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.1976, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000004000000"}
+{"t": 14.1976, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.1976, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.2176, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000006000000"}
+{"t": 14.2176, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000009000000"}
+{"t": 14.3176, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 14.3177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.3177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.3177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.3177, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.191648, "state": 1, "count": 5}
+{"t": 14.3177, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 34.222885, "state": 1, "count": 2}
+{"t": 14.3177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.3178, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.3178, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 50.596626, "state": 1, "count": 4}
+{"t": 14.3576, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 4.871644, "state": 1, "count": 6}
+{"t": 14.3576, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.4076, "label": "debug_iq", "type": "unknown", "len": 276, "hex": "010011c5030180006c0900000a000000"}
+{"t": 14.4077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.4676, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000b000000"}
+{"t": 14.4677, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c0900000b000000"}
+{"t": 14.5591, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 14.5596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.5596, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 14.5596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.5596, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.169531, "state": 1, "count": 6}
+{"t": 14.5596, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 27.003494, "state": 1, "count": 6}
+{"t": 14.5596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.5596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.5596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.5596, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 40.89587, "state": 1, "count": 5}
+{"t": 14.5596, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 4.178062, "state": 1, "count": 7}
+{"t": 14.5975, "label": "debug_iq", "type": "unknown", "len": 321, "hex": "010011c50401c0006c0900000e000000"}
+{"t": 14.5976, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000f000000"}
+{"t": 14.6477, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 14.6477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.7075, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 14.7075, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.169531, "state": 1, "count": 6}
+{"t": 14.7075, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 21.73197, "state": 1, "count": 8}
+{"t": 14.7075, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 136.442398, "state": 1, "count": 8}
+{"t": 14.7075, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000017000000"}
+{"t": 14.7076, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.8099, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 14.81, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.81, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.8676, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.8975, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 21.73197, "state": 1, "count": 8}
+{"t": 14.8977, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 137.364212, "state": 1, "count": 10}
+{"t": 14.8977, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 14.8977, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900001a000000"}
+{"t": 15.0119, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.012, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.1191, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.1191, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.187483, "state": 1, "count": 7}
+{"t": 15.1192, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 21.73197, "state": 1, "count": 8}
+{"t": 15.1192, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 136.064697, "state": 1, "count": 11}
+{"t": 15.2273, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000000000000"}
+{"t": 15.2274, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.3355, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.3356, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.4443, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.4444, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.4444, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.5531, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.5532, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.6392, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.7477, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000004000000"}
+{"t": 15.7477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.8176, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 15.8177, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.8576, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.4105, "state": 1, "count": 8}
+{"t": 15.8974, "label": "debug_iq", "type": "unknown", "len": 276, "hex": "010011c5020180006c09000009000000"}
+{"t": 15.9476, "label": "debug_iq", "type": "unknown", "len": 264, "hex": "060011c5020100010000000000000000"}
+{"t": 15.9477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.9477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.9978, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 15.9979, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.361958, "state": 1, "count": 3}
+{"t": 15.9979, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.0476, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.0477, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 4.53021, "state": 1, "count": 18}
+{"t": 16.0477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.0477, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.0976, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.1977, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.1977, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.1977, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.301, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.3011, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.3012, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.3012, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.361958, "state": 1, "count": 3}
+{"t": 16.3012, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.4101, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.4102, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.5193, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.5193, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.361958, "state": 1, "count": 3}
+{"t": 16.5194, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.6277, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.6278, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.7361, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 16.7362, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.361958, "state": 1, "count": 3}
+{"t": 18.0416, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 18.0416, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.0416, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.15, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.1501, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.2579, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.258, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.258, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.3664, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.3665, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.4575, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000002000000"}
+{"t": 18.5474, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000003000000"}
+{"t": 18.5475, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.5475, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 18.6582, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000000000000"}
+{"t": 18.6582, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000002000000"}
+{"t": 18.6582, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.6874, "label": "debug_iq", "type": "unknown", "len": 468, "hex": "010011c50301c0006c0900000b000000"}
+{"t": 18.6875, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.6875, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.7967, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000011000000"}
+{"t": 18.7968, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 18.9042, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 18.9043, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 18.9043, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.0576, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.0576, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.0775, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.0779, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.1276, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 19.2473, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900001e000000"}
+{"t": 19.2474, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 19.2474, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.2474, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.2474, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.2979, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 53.82943, "state": 1, "count": 9}
+{"t": 19.2979, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.532513, "state": 1, "count": 15}
+{"t": 19.2979, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 90.282272, "state": 1, "count": 9}
+{"t": 19.298, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000021000000"}
+{"t": 19.298, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.4016, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 19.4016, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.4017, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.5093, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.5097, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 53.82943, "state": 1, "count": 9}
+{"t": 19.5097, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.532513, "state": 1, "count": 15}
+{"t": 19.5098, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 86.82328, "state": 1, "count": 10}
+{"t": 19.6155, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.7229, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.723, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.8311, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.8312, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.9386, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 19.9387, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.0376, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.1418, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000001000000"}
+{"t": 20.1419, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.1419, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.2176, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 20.2176, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.2676, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 1.139797, "state": 1, "count": 6}
+{"t": 20.2677, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.3677, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.3678, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.4276, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.4276, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.5302, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.5303, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.5303, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.5303, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.5303, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.5303, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.6364, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.6365, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.6365, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 0.857974, "state": 1, "count": 9}
+{"t": 20.6366, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.7444, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.7446, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.8532, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.8532, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.8533, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.9619, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 20.962, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.0691, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 21.0691, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.4704, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 22.4705, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.4705, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.4705, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.5784, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.5785, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.6841, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.6841, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.7933, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.7934, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.8774, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 22.8774, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000001000000"}
+{"t": 22.9174, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 22.9174, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000004000000"}
+{"t": 23.0073, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 23.0074, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.0074, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000000000000"}
+{"t": 23.1347, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000003000000"}
+{"t": 23.1347, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1347, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.155919, "state": 1, "count": 3}
+{"t": 23.1348, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 6.547503, "state": 1, "count": 6}
+{"t": 23.1348, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1348, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1348, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1348, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1348, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1349, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.08175, "state": 1, "count": 2}
+{"t": 23.1349, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1349, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.1349, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.155919, "state": 1, "count": 3}
+{"t": 23.1349, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 5.964868, "state": 1, "count": 7}
+{"t": 23.2174, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.2175, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.2175, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000005000000"}
+{"t": 23.3193, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c0900000a000000"}
+{"t": 23.3194, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.3195, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.3195, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.3195, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.3195, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.813274, "state": 1, "count": 3}
+{"t": 23.3195, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.3195, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.3195, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.155919, "state": 1, "count": 3}
+{"t": 23.3195, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 5.4612, "state": 1, "count": 8}
+{"t": 23.3873, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000006000000"}
+{"t": 23.4376, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 23.4376, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.4774, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 23.4973, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000c000000"}
+{"t": 23.4974, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.4974, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.915448, "state": 1, "count": 4}
+{"t": 23.4974, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 108.201317, "state": 1, "count": 7}
+{"t": 23.5992, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 23.5993, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.5993, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.7071, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.7072, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.7072, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.915448, "state": 1, "count": 4}
+{"t": 23.7073, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 108.201317, "state": 1, "count": 7}
+{"t": 23.7073, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000e000000"}
+{"t": 23.8146, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.8147, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.9215, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.9215, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 23.9216, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 0.915448, "state": 1, "count": 4}
+{"t": 23.9216, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 103.779068, "state": 1, "count": 8}
+{"t": 24.1202, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.1202, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.2274, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.2275, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.3344, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.3345, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.4418, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.4419, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.5273, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000000000000"}
+{"t": 24.5274, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.5274, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.5274, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.6081, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000001000000"}
+{"t": 24.6082, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 24.6082, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.6082, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.7077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.7077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.808, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 24.9077, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.0676, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.0676, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.27074, "state": 1, "count": 4}
+{"t": 25.0677, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.0677, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.1829, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.31364, "state": 1, "count": 5}
+{"t": 25.183, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.1831, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.2896, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.2896, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.2896, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.31364, "state": 1, "count": 5}
+{"t": 25.3985, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.3986, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.5072, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.5073, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 25.5073, "label": "debug_iq", "type": "link", "link": "12", "node": 1, "partner": 2, "variance": 0.31364, "state": 1, "count": 5}
+{"t": 26.8022, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000000000000"}
+{"t": 26.8023, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.9109, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 26.911, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.0169, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.017, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.1239, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.124, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.232, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.2321, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.2321, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.2973, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000001000000"}
+{"t": 27.3373, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 27.3373, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.3373, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000000000000"}
+{"t": 27.4074, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c09000005000000"}
+{"t": 27.4075, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 27.5073, "label": "debug_iq", "type": "unknown", "len": 276, "hex": "010011c5030180006c09000009000000"}
+{"t": 27.5073, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.5074, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5030180000000000000000000"}
+{"t": 27.6203, "label": "debug_iq", "type": "unknown", "len": 264, "hex": "060011c5040100010000000000000000"}
+{"t": 27.6204, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6204, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6205, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6205, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6205, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 49.417912, "state": 1, "count": 5}
+{"t": 27.6205, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6205, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6205, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6573, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 9.87366, "state": 1, "count": 9}
+{"t": 27.6574, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.6574, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.7595, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000008000000"}
+{"t": 27.7596, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5030140006c0900000c000000"}
+{"t": 27.7596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.7596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.7596, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.7596, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 54.890915, "state": 1, "count": 7}
+{"t": 27.7597, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.7597, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.7597, "label": "debug_iq", "type": "link", "link": "34", "node": 3, "partner": 4, "variance": 0.025494, "state": 1, "count": 3}
+{"t": 27.7597, "label": "debug_iq", "type": "link", "link": "23", "node": 3, "partner": 2, "variance": 9.270895, "state": 1, "count": 10}
+{"t": 27.8173, "label": "debug_iq", "type": "unknown", "len": 468, "hex": "010011c50401c0006c09000009000000"}
+{"t": 27.8873, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c0900000d000000"}
+{"t": 27.8874, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.8874, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 27.9273, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 27.9572, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000013000000"}
+{"t": 27.9573, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 27.9573, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 53.448055, "state": 1, "count": 8}
+{"t": 27.9573, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.775009, "state": 1, "count": 3}
+{"t": 28.067, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5040180000000000000000000"}
+{"t": 28.0671, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.0671, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.0671, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.0671, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.1575, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 53.448055, "state": 1, "count": 8}
+{"t": 28.1576, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.775009, "state": 1, "count": 3}
+{"t": 28.1576, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 127.113792, "state": 1, "count": 9}
+{"t": 28.1773, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5040140006c09000016000000"}
+{"t": 28.1774, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2851, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2852, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.2852, "label": "debug_iq", "type": "link", "link": "24", "node": 4, "partner": 2, "variance": 53.448055, "state": 1, "count": 8}
+{"t": 28.2852, "label": "debug_iq", "type": "link", "link": "34", "node": 4, "partner": 3, "variance": 0.775009, "state": 1, "count": 3}
+{"t": 28.2852, "label": "debug_iq", "type": "link", "link": "14", "node": 4, "partner": 1, "variance": 129.552505, "state": 1, "count": 11}
+{"t": 28.4847, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.4847, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.5928, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.5929, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.702, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.702, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.8106, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.8107, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.9501, "label": "debug_iq", "type": "unknown", "len": 148, "hex": "010011c5020140006c09000002000000"}
+{"t": 28.9504, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 28.9505, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.0275, "label": "debug_iq", "type": "unknown", "len": 321, "hex": "010011c50201c0006c09000003000000"}
+{"t": 29.0276, "label": "debug_iq", "type": "unknown", "len": 136, "hex": "060011c5020180000000000000000000"}
+{"t": 29.0276, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.0775, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 15.970434, "state": 1, "count": 7}
+{"t": 29.0775, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.1575, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.1575, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.1575, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.2074, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.2577, "label": "debug_iq", "type": "unknown", "len": 321, "hex": "010011c50201c0006c0900000a000000"}
+{"t": 29.2577, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 10.525738, "state": 1, "count": 11}
+{"t": 29.2577, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.3074, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.3573, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.4074, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.5074, "label": "debug_iq", "type": "link", "link": "12", "node": 2, "partner": 1, "variance": 7.901802, "state": 1, "count": 15}
+{"t": 29.5075, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.5075, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.6141, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.6142, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.6142, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.7236, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.7237, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.832, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.8321, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}
+{"t": 29.9406, "label": "debug_iq", "type": "unknown", "len": 1, "hex": "aa"}

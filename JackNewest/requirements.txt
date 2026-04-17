@@ -1,0 +1,9 @@
+pyserial>=3.5
+cobs>=1.2.1
+pytest>=7.0.0
+numpy>=1.24
+scipy>=1.10
+esp-idf-nvs-partition-gen>=0.1.0
+esptool>=4.0
+# pygame installed separately — requires pre-built wheel or MSYS2 on Windows
+pip install pygame-ce  (community edition, better Python 3.14 support)

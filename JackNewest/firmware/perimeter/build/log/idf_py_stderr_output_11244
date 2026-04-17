@@ -1,0 +1,7 @@
+[0;33m--- Warning: GDB cannot open serial ports accessed as COMx[0m
+[0;33m--- Using \\.\COM9 instead...[0m
+[0;33m--- esp-idf-monitor 1.9.0 on \\.\COM9 115200[0m
+[0;33m--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H[0m
+[0m--- 0x4037b31a: [0;33mxt_utils_compare_and_set[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/xtensa/include/xt_utils.h[0m[0m:[1;31m215[0m
+[0m--- (inlined by) [0;33mesp_cpu_compare_and_set[0m[0m at [0;32mC:/Users/incre/esp/esp-idf/components/esp_hw_support/cpu.c[0m[0m:[1;31m491[0m
+[0m

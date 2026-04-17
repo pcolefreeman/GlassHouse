@@ -1,0 +1,331 @@
+PS C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter> idf.py flash monitor
+Executing action: flash
+Running cmake in directory C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter\build
+Executing "cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\incre\.espressif\python_env\idf5.2_py3.14_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=1 C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter"...
+-- ccache will be used for faster recompilation
+-- Building ESP-IDF components for target esp32s3
+NOTICE: Processing 4 dependencies:
+NOTICE: [1/4] espressif/esp_lcd_touch (1.2.1)
+NOTICE: [2/4] espressif/esp_lcd_touch_cst816s (1.1.1~1)
+NOTICE: [3/4] lvgl/lvgl (8.3.11)
+NOTICE: [4/4] idf (5.2.0)
+-- WASM3 source not found at C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/wasm3-src
+-- Attempting to download WASM3...
+-- Project sdkconfig file C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/sdkconfig
+Loading defaults file C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/sdkconfig.defaults...
+-- Compiler supported targets: xtensa-esp-elf
+-- App "esp32-csi-node" version: 0.6.0
+-- Adding linker script C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/esp_system/ld/esp32s3/sections.ld.in
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script C:/Users/incre/esp/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- WASM3 source not found at C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/components/wasm3/wasm3-src
+-- Attempting to download WASM3...
+CMake Warning at components/wasm3/CMakeLists.txt:42 (message):
+  WASM3 source not available.  Building WITHOUT WASM Tier 3 support.
+
+  To enable: git clone --depth 1 https://github.com/wasm3/wasm3.git
+  C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/components/wasm3/wasm3-src
+
+
+-- Components: app_trace app_update bootloader bootloader_support bt cmock console cxx driver efuse esp-tls esp_adc esp_app_format esp_bootloader_format esp_coex esp_common esp_eth esp_event esp_gdbstub esp_hid esp_http_client esp_http_server esp_https_ota esp_https_server esp_hw_support esp_lcd esp_local_ctrl esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_system esp_timer esp_wifi espcoredump espressif__esp_lcd_touch espressif__esp_lcd_touch_cst816s esptool_py fatfs freertos hal heap http_parser idf_test ieee802154 json log lvgl__lvgl lwip main mbedtls mqtt newlib nvs_flash nvs_sec_provider openthread partition_table perfmon protobuf-c protocomm pthread sdmmc soc spi_flash spiffs tcp_transport touch_element ulp unity usb vfs wasm3 wear_levelling wifi_provisioning wpa_supplicant xtensa
+-- Component paths: C:/Users/incre/esp/esp-idf/components/app_trace C:/Users/incre/esp/esp-idf/components/app_update C:/Users/incre/esp/esp-idf/components/bootloader C:/Users/incre/esp/esp-idf/components/bootloader_support C:/Users/incre/esp/esp-idf/components/bt C:/Users/incre/esp/esp-idf/components/cmock C:/Users/incre/esp/esp-idf/components/console C:/Users/incre/esp/esp-idf/components/cxx C:/Users/incre/esp/esp-idf/components/driver C:/Users/incre/esp/esp-idf/components/efuse C:/Users/incre/esp/esp-idf/components/esp-tls C:/Users/incre/esp/esp-idf/components/esp_adc C:/Users/incre/esp/esp-idf/components/esp_app_format C:/Users/incre/esp/esp-idf/components/esp_bootloader_format C:/Users/incre/esp/esp-idf/components/esp_coex C:/Users/incre/esp/esp-idf/components/esp_common C:/Users/incre/esp/esp-idf/components/esp_eth C:/Users/incre/esp/esp-idf/components/esp_event C:/Users/incre/esp/esp-idf/components/esp_gdbstub C:/Users/incre/esp/esp-idf/components/esp_hid C:/Users/incre/esp/esp-idf/components/esp_http_client C:/Users/incre/esp/esp-idf/components/esp_http_server C:/Users/incre/esp/esp-idf/components/esp_https_ota C:/Users/incre/esp/esp-idf/components/esp_https_server C:/Users/incre/esp/esp-idf/components/esp_hw_support C:/Users/incre/esp/esp-idf/components/esp_lcd C:/Users/incre/esp/esp-idf/components/esp_local_ctrl C:/Users/incre/esp/esp-idf/components/esp_mm C:/Users/incre/esp/esp-idf/components/esp_netif C:/Users/incre/esp/esp-idf/components/esp_netif_stack C:/Users/incre/esp/esp-idf/components/esp_partition C:/Users/incre/esp/esp-idf/components/esp_phy C:/Users/incre/esp/esp-idf/components/esp_pm C:/Users/incre/esp/esp-idf/components/esp_psram C:/Users/incre/esp/esp-idf/components/esp_ringbuf C:/Users/incre/esp/esp-idf/components/esp_rom C:/Users/incre/esp/esp-idf/components/esp_system C:/Users/incre/esp/esp-idf/components/esp_timer C:/Users/incre/esp/esp-idf/components/esp_wifi C:/Users/incre/esp/esp-idf/components/espcoredump C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/managed_components/espressif__esp_lcd_touch C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/managed_components/espressif__esp_lcd_touch_cst816s C:/Users/incre/esp/esp-idf/components/esptool_py C:/Users/incre/esp/esp-idf/components/fatfs C:/Users/incre/esp/esp-idf/components/freertos C:/Users/incre/esp/esp-idf/components/hal C:/Users/incre/esp/esp-idf/components/heap C:/Users/incre/esp/esp-idf/components/http_parser C:/Users/incre/esp/esp-idf/components/idf_test C:/Users/incre/esp/esp-idf/components/ieee802154 C:/Users/incre/esp/esp-idf/components/json C:/Users/incre/esp/esp-idf/components/log C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/managed_components/lvgl__lvgl C:/Users/incre/esp/esp-idf/components/lwip C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main C:/Users/incre/esp/esp-idf/components/mbedtls C:/Users/incre/esp/esp-idf/components/mqtt C:/Users/incre/esp/esp-idf/components/newlib C:/Users/incre/esp/esp-idf/components/nvs_flash C:/Users/incre/esp/esp-idf/components/nvs_sec_provider C:/Users/incre/esp/esp-idf/components/openthread C:/Users/incre/esp/esp-idf/components/partition_table C:/Users/incre/esp/esp-idf/components/perfmon C:/Users/incre/esp/esp-idf/components/protobuf-c C:/Users/incre/esp/esp-idf/components/protocomm C:/Users/incre/esp/esp-idf/components/pthread C:/Users/incre/esp/esp-idf/components/sdmmc C:/Users/incre/esp/esp-idf/components/soc C:/Users/incre/esp/esp-idf/components/spi_flash C:/Users/incre/esp/esp-idf/components/spiffs C:/Users/incre/esp/esp-idf/components/tcp_transport C:/Users/incre/esp/esp-idf/components/touch_element C:/Users/incre/esp/esp-idf/components/ulp C:/Users/incre/esp/esp-idf/components/unity C:/Users/incre/esp/esp-idf/components/usb C:/Users/incre/esp/esp-idf/components/vfs C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/components/wasm3 C:/Users/incre/esp/esp-idf/components/wear_levelling C:/Users/incre/esp/esp-idf/components/wifi_provisioning C:/Users/incre/esp/esp-idf/components/wpa_supplicant C:/Users/incre/esp/esp-idf/components/xtensa
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build
+Serial port COM13
+Connecting...
+Detecting chip type... ESP32-S3
+Running ninja in directory C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter\build
+Executing "ninja flash"...
+[1/1] cmd.exe /C "cd /D C:\Users\incre\Class\Capstone\Claude\GSDprojects\gla...SDprojects/glasshouse-v2/firmware/perimeter/build/bootloader/bootloader.bin"
+Bootloader binary size 0x49f0 bytes. 0x3610 bytes (42%) free.
+[1312/1333] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/edge_processing.c.obj
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/edge_processing.c:653:13: warning: 'send_feature_vector' defined but not used [-Wunused-function]
+  653 | static void send_feature_vector(void)
+      |             ^~~~~~~~~~~~~~~~~~~
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/edge_processing.c:563:13: warning: 'send_vitals_packet' defined but not used [-Wunused-function]
+  563 | static void send_vitals_packet(void)
+      |             ^~~~~~~~~~~~~~~~~~
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/edge_processing.c:435:13: warning: 'send_compressed_frame' defined but not used [-Wunused-function]
+  435 | static void send_compressed_frame(const uint8_t *iq_data, uint16_t iq_len,
+      |             ^~~~~~~~~~~~~~~~~~~~~
+[1316/1333] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/mmwave_sensor.c.obj
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/mmwave_sensor.c: In function 'ld2410_process_frame':
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/mmwave_sensor.c:245:13: warning: unused variable 'data_type' [-Wunused-variable]
+  245 |     uint8_t data_type = data[0];   /* 0x02 = normal, 0x01 = engineering */
+      |             ^~~~~~~~~
+[1319/1333] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/swarm_bridge.c.obj
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/swarm_bridge.c: In function 'swarm_task':
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/swarm_bridge.c:288:18: warning: unused variable 'presence' [-Wunused-variable]
+  288 |             bool presence = vit_valid && (vit.flags & 0x01);
+      |                  ^~~~~~~~
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/swarm_bridge.c:281:18: warning: unused variable 'free_heap' [-Wunused-variable]
+  281 |         uint32_t free_heap = esp_get_free_heap_size();
+      |                  ^~~~~~~~~
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/swarm_bridge.c:235:17: warning: unused variable 'fw_ver' [-Wunused-variable]
+  235 |     const char *fw_ver = app ? app->version : "unknown";
+      |                 ^~~~~~
+[1325/1333] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/power_mgmt.c.obj
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/power_mgmt.c: In function 'power_mgmt_init':
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/main/power_mgmt.c:81:15: warning: unused variable 'err' [-Wunused-variabl]
+   81 |     esp_err_t err = ESP_OK;
+      |               ^~~
+[1331/1333] Generating binary image from built executable
+esptool.py v4.11.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/esp32-csi-node.bin
+[1332/1333] cmd.exe /C "cd /D C:\Users\incre\Class\Capstone\Claude\GSDprojec...laude/GSDprojects/glasshouse-v2/firmware/perimeter/build/esp32-csi-node.bin"
+esp32-csi-node.bin binary size 0x10f5c0 bytes. Smallest app partition is 0x200000 bytes. 0xf0a40 bytes (47%) free.
+[1332/1333] cmd.exe /C "cd /D C:\Users\incre\esp\esp-idf\components\esptool_...e.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin
+esptool.py v4.11.0
+Serial port COM13
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 44:1b:f6:8c:10:a0
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00000000 to 0x00004fff...
+Flash will be erased from 0x00020000 to 0x0012ffff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+Flash will be erased from 0x0000f000 to 0x00010fff...
+SHA digest in image updated
+Compressed 18928 bytes to 11910...
+Writing at 0x00000000... (100 %)
+Wrote 18928 bytes (11910 compressed) at 0x00000000 in 0.3 seconds (effective 549.2 kbit/s)...
+Hash of data verified.
+Compressed 1111488 bytes to 724569...
+Writing at 0x00020000... (2 %)
+Writing at 0x0002d62b... (4 %)
+Writing at 0x0003a914... (6 %)
+Writing at 0x000427a0... (8 %)
+Writing at 0x000483d9... (11 %)
+Writing at 0x0004e89a... (13 %)
+Writing at 0x0005a03e... (15 %)
+Writing at 0x0005fab9... (17 %)
+Writing at 0x000655dd... (20 %)
+Writing at 0x0006ae37... (22 %)
+Writing at 0x000705f8... (24 %)
+Writing at 0x000760c3... (26 %)
+Writing at 0x0007b2ec... (28 %)
+Writing at 0x00080769... (31 %)
+Writing at 0x00085e8e... (33 %)
+Writing at 0x0008ba6b... (35 %)
+Writing at 0x00090fd0... (37 %)
+Writing at 0x00096b3a... (40 %)
+Writing at 0x0009c9ca... (42 %)
+Writing at 0x000a2015... (44 %)
+Writing at 0x000a7237... (46 %)
+Writing at 0x000ac6dd... (48 %)
+Writing at 0x000b1af8... (51 %)
+Writing at 0x000b7074... (53 %)
+Writing at 0x000bc6bb... (55 %)
+Writing at 0x000c1a5e... (57 %)
+Writing at 0x000c69e8... (60 %)
+Writing at 0x000cbb41... (62 %)
+Writing at 0x000d0bf7... (64 %)
+Writing at 0x000d5fcf... (66 %)
+Writing at 0x000db488... (68 %)
+Writing at 0x000e0fc0... (71 %)
+Writing at 0x000e61c7... (73 %)
+Writing at 0x000eb249... (75 %)
+Writing at 0x000f06d2... (77 %)
+Writing at 0x000f587c... (80 %)
+Writing at 0x000fb315... (82 %)
+Writing at 0x001006ad... (84 %)
+Writing at 0x00105fbd... (86 %)
+Writing at 0x0010b71a... (88 %)
+Writing at 0x00115691... (91 %)
+Writing at 0x0011d09c... (93 %)
+Writing at 0x001229da... (95 %)
+Writing at 0x00128a22... (97 %)
+Writing at 0x0012dca8... (100 %)
+Wrote 1111488 bytes (724569 compressed) at 0x00020000 in 7.2 seconds (effective 1230.5 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 143...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (143 compressed) at 0x00008000 in 0.1 seconds (effective 480.2 kbit/s)...
+Hash of data verified.
+Compressed 8192 bytes to 31...
+Writing at 0x0000f000... (100 %)
+Wrote 8192 bytes (31 compressed) at 0x0000f000 in 0.1 seconds (effective 1263.8 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+ptool_py/esptool/esptool.py;--chip;esp32s3 -D SERIAL_TOOL_ARGS=--before=default_reset;--after=hard_reset;write_flash;@flash_args -D WORKING_DIRECTORY=C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build -P C:/Users/incre/esp/esp-idf/components/esptool_py/run_serial_tool.cmake"
+Executing action: monitor
+Running idf_monitor in directory C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter
+Executing "C:\Users\incre\.espressif\python_env\idf5.2_py3.14_env\Scripts\python.exe C:\Users\incre\esp\esp-idf\tools/idf_monitor.py -p COM13 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter\build\esp32-csi-node.elf --force-color -m 'C:\Users\incre\.espressif\python_env\idf5.2_py3.14_env\Scripts\python.exe' 'C:\Users\incre\esp\esp-idf\tools\idf.py'"...
+--- Warning: GDB cannot open serial ports accessed as COMx
+--- Using \\.\COM13 instead...
+--- esp-idf-monitor 1.9.0 on \\.\COM13 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x42007cc7
+--- 0x42007cc7: uart_ll_get_txfifo_len at C:/Users/incre/esp/esp-idf/components/hal/esp32s3/include/hal/uart_ll.h:387
+--- (inlined by) uart_tx_char at C:/Users/incre/esp/esp-idf/components/vfs/vfs_uart.c:165
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3810,len:0x12b4
+load:0x403c9700,len:0x4
+load:0x403c9704,len:0xaf0
+load:0x403cc700,len:0x2be4
+entry 0x403c9898
+I (243) cpu_start: Multicore app
+I (252) cpu_start: Pro cpu start user code
+I (252) cpu_start: cpu freq: 160000000 Hz
+I (252) cpu_start: Application information:
+I (255) cpu_start: Project name:     esp32-csi-node
+I (261) cpu_start: App version:      0.6.0
+I (266) cpu_start: Compile time:     Apr 16 2026 19:40:49
+I (272) cpu_start: ELF file SHA256:  d2ec43f8c...
+I (277) cpu_start: ESP-IDF:          v5.2
+I (282) cpu_start: Min chip rev:     v0.0
+I (286) cpu_start: Max chip rev:     v0.99
+I (291) cpu_start: Chip rev:         v0.2
+I (296) heap_init: Initializing. RAM available for dynamic allocation:
+I (303) heap_init: At 3FCB4230 len 000354E0 (213 KiB): RAM
+I (309) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (315) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (322) heap_init: At 600FE010 len 00001FD8 (7 KiB): RTCRAM
+I (329) spi_flash: detected chip: boya
+I (332) spi_flash: flash io: dio
+W (336) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.
+W (350) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (360) sleep: Configure to isolate all GPIO pins in sleep state
+I (367) sleep: Enable automatic switching of GPIO sleep configuration
+I (374) main_task: Started on CPU0
+I (384) main_task: Calling app_main()
+I (414) nvs_config: NVS override: ssid=CSI_NET_V2
+I (414) nvs_config: NVS override: password=***
+I (414) nvs_config: NVS override: target_ip=192.168.4.1
+I (414) nvs_config: NVS override: target_port=4210
+I (424) nvs_config: NVS override: node_id=4
+W (434) nvs_config: wasm_verify=1 but no wasm_pubkey in NVS — uploads will be rejected
+I (434) nvs_config: NVS override: peer_count=3
+I (444) nvs_config: NVS peer[0]: node_id=1 mac=e0:72:a1:d6:f8:00
+I (454) nvs_config: NVS peer[1]: node_id=2 mac=e0:72:a1:d6:ed:24
+I (454) nvs_config: NVS peer[2]: node_id=3 mac=e0:72:a1:d6:48:7c
+I (464) main: ESP32-S3 CSI Node (ADR-018) — v0.6.0 — Node ID: 4
+I (474) pp: pp rom version: e7ae62f
+I (474) net80211: net80211 rom version: e7ae62f
+I (494) wifi:wifi driver task: 3fcc078c, prio:23, stack:6656, core=0
+I (504) wifi:wifi firmware version: cc1dd81
+I (504) wifi:wifi certification version: v7.0
+I (504) wifi:config NVS flash: enabled
+I (504) wifi:config nano formating: disabled
+I (504) wifi:Init data frame dynamic rx buffer num: 32
+I (514) wifi:Init static rx mgmt buffer num: 5
+I (514) wifi:Init management short buffer num: 32
+I (524) wifi:Init dynamic tx buffer num: 32
+I (524) wifi:Init static tx FG buffer num: 2
+I (534) wifi:Init static rx buffer size: 2212
+I (534) wifi:Init static rx buffer num: 10
+I (534) wifi:Init dynamic rx buffer num: 32
+I (544) wifi_init: rx ba win: 6
+I (544) wifi_init: tcpip mbox: 64
+I (544) wifi_init: udp mbox: 32
+I (554) wifi_init: tcp mbox: 6
+I (554) wifi_init: tcp tx win: 5760
+I (564) wifi_init: tcp rx win: 5760
+I (564) wifi_init: tcp mss: 1440
+I (564) wifi_init: WiFi IRAM OP enabled
+I (574) wifi_init: WiFi RX IRAM OP enabled
+I (584) phy_init: phy_version 620,ec7ec30,Sep  5 2023,13:49:13
+I (624) wifi:mode : sta (44:1b:f6:8c:10:a0)
+I (624) wifi:enable tsf
+I (624) main: WiFi STA initialized, connecting to SSID: CSI_NET_V2
+I (3034) main: Retrying WiFi connection (1/10)
+I (5534) main: Retrying WiFi connection (2/10)
+I (8034) main: Retrying WiFi connection (3/10)
+I (10534) main: Retrying WiFi connection (4/10)
+I (10634) wifi:new:<1,1>, old:<1,0>, ap:<255,255>, sta:<1,1>, prof:1
+I (10634) wifi:state: init -> auth (b0)
+I (10634) wifi:state: auth -> assoc (0)
+I (10644) wifi:state: assoc -> run (10)
+I (10664) wifi:connected with CSI_NET_V2, aid = 1, channel 1, 40U, bssid = e0:72:a1:d6:f7:59
+I (10664) wifi:security: WPA2-PSK, phy: bgn, rssi: -45
+I (10664) wifi:pm start, type: 1
+
+I (10664) wifi:dp: 1, bi: 102400, li: 3, scale listen interval from 307200 us to 307200 us
+I (10674) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 25000, mt_pti: 0, mt_time: 10000
+I (10694) wifi:<ba-add>idx:0 (ifx:0, e0:72:a1:d6:f7:59), tid:0, ssn:0, winSize:64
+I (10754) wifi:dp: 2, bi: 102400, li: 4, scale listen interval from 307200 us to 409600 us
+I (10754) wifi:AP's beacon interval = 102400 us, DTIM period = 2
+I (11684) esp_netif_handlers: sta ip: 192.168.4.2, mask: 255.255.255.0, gw: 192.168.4.1
+I (11684) main: Got IP: 192.168.4.2
+I (11684) main: Connected to WiFi
+I (11684) stream_sender: UDP sender initialized: 192.168.4.1:4210
+I (11694) csi_collector: Added peer[0]: node_id=1 mac=e0:72:a1:d6:f8:00
+I (11704) csi_collector: Added peer[1]: node_id=2 mac=e0:72:a1:d6:ed:24
+I (11704) csi_collector: Added peer[2]: node_id=3 mac=e0:72:a1:d6:48:7c
+I (11714) main: Registered 3 peer(s) for pairwise CSI sensing
+I (11724) csi_collector: Auto-detected AP channel: 1
+I (11724) wifi:ic_enable_sniffer
+I (11734) csi_collector: Promiscuous mode enabled for CSI capture
+I (11734) csi_collector: CSI collection initialized (node_id=4, channel=1)
+I (11744) csi_collector: NDP probe started at 50 Hz (period=20000 us)
+I (11754) heartbeat: Heartbeat started: 192.168.4.1:4210 every 50 ms
+I (11754) main: link_reporter interval: 50 ms (SAR_MODE=1)
+I (11764) link_reporter: Link reporter started: node 4, 192.168.4.1:4210, every 50 ms
+I (11774) sar_amp: sar_amp timeout sweep: 500 ms
+I (11774) edge_proc: Initializing edge processing (tier=2, top_k=8, vital_interval=1000ms, presence_thresh=0.000)
+I (11794) edge_proc: Vitals timer started (1000 ms period)
+I (11794) edge_proc: Edge DSP task created on Core 1 (stack=8192, priority=5)
+I (11794) edge_proc: Edge DSP task started on core 1 (tier=2)
+I (11804) ota_update: OTA HTTP server started on port 8032
+I (11814) ota_update:   GET  /ota/status — firmware version info
+I (11824) ota_update:   POST /ota        — upload new firmware binary
+W (11834) wasm_rt: WASM Tier 3 disabled (WASM3 not available)
+I (11834) wasm_upload: WASM upload endpoints registered:
+I (11844) wasm_upload:   POST   /wasm/upload    — upload .wasm binary
+I (11854) wasm_upload:   GET    /wasm/list      — list modules
+I (11854) wasm_upload:   POST   /wasm/start/:id — start module
+I (11864) wasm_upload:   POST   /wasm/stop/:id  — stop module
+I (11874) wasm_upload:   DELETE /wasm/:id       — unload module
+I (11874) main: WASM on_timer() periodic: 1000 ms
+I (11884) mmwave: Probing UART1 (TX=17, RX=18) for mmWave sensor...
+I (11884) mmwave: Probing at 115200 baud (MR60BHA2)...
+I (12994) mmwave: Probing at 256000 baud (LD2410)...
+I (14094) mmwave: No mmWave sensor detected on UART1
+I (14094) main: No mmWave sensor detected (CSI-only mode)
+I (14094) main: Swarm bridge disabled (no seed_url configured)
+I (14094) power_mgmt: WiFi power save policy: SAR mode — WIFI_PS_NONE (radio always on, +30-50% power draw)
+I (14104) wifi:Set ps type: 0, coexist: 0
+
+I (14114) power_mgmt: Duty cycle 100% — no light-sleep scheduling
+I (14114) disp_task: Initializing display subsystem...
+W (14124) disp_task: SPIRAM not enabled — using internal DMA memory (smaller buffers)
+I (14134) disp_hal: Initializing Waveshare AMOLED 1.8" (SH8601 368x448)...
+I (14144) disp_hal: I2C bus init OK (SDA=15, SCL=14)
+W (14144) disp_hal: TCA9554 not found at 0x20: ESP_FAIL
+W (14154) disp_hal: TCA9554 not found — assuming display power is always-on (direct wiring)
+I (14164) disp_hal: QSPI panel IO created (40MHz, quad mode)
+I (14314) disp_hal: Drawing test pattern...
+I (14354) disp_hal: Test pattern drawn
+I (14364) disp_hal: SH8601 panel init OK (368x448)
+I (14364) disp_hal: Probing FT3168 touch controller...
+I (14364) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+W (14374) disp_hal: FT3168 not found (ret=ESP_FAIL, id=0x00)
+I (14384) disp_task: LVGL buffers: 2x 7360 bytes (10 lines, internal DMA)
+I (14394) disp_task: Display task started (Core 0, priority 1, 30 fps)
+I (14394) main: CSI streaming active → 192.168.4.1:4210 (edge_tier=2, OTA=ready, WASM=ready, mmWave=off, swarm=off)
+I (14394) disp_task: Display task running on Core 0, 30 fps limit
+I (14454) disp_ui: UI created: 4 views (Dashboard|Vitals|Presence|System)
+I (21794) edge_proc: Vitals: br=0.0 hr=0.0 motion=0.0000 pres=no

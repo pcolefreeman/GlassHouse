@@ -1,0 +1,157 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x42007cc7
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3810,len:0x12b4
+load:0x403c9700,len:0x4
+load:0x403c9704,len:0xaf0
+load:0x403cc700,len:0x2be4
+entry 0x403c9898
+[0;32mI (243) cpu_start: Multicore app[0m
+[0;32mI (252) cpu_start: Pro cpu start user code[0m
+[0;32mI (252) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (252) cpu_start: Application information:[0m
+[0;32mI (255) cpu_start: Project name:     esp32-csi-node[0m
+[0;32mI (261) cpu_start: App version:      0.6.0[0m
+[0;32mI (266) cpu_start: Compile time:     Apr 16 2026 19:40:49[0m
+[0;32mI (272) cpu_start: ELF file SHA256:  d2ec43f8c...[0m
+[0;32mI (277) cpu_start: ESP-IDF:          v5.2[0m
+[0;32mI (282) cpu_start: Min chip rev:     v0.0[0m
+[0;32mI (286) cpu_start: Max chip rev:     v0.99 [0m
+[0;32mI (291) cpu_start: Chip rev:         v0.2[0m
+[0;32mI (296) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (303) heap_init: At 3FCB4230 len 000354E0 (213 KiB): RAM[0m
+[0;32mI (309) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM[0m
+[0;32mI (315) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM[0m
+[0;32mI (322) heap_init: At 600FE010 len 00001FD8 (7 KiB): RTCRAM[0m
+[0;32mI (329) spi_flash: detected chip: boya[0m
+[0;32mI (332) spi_flash: flash io: dio[0m
+[0;33mW (336) spi_flash: Detected size(16384k) larger than the size in the binary image header(8192k). Using the size in the binary image header.[0m
+[0;33mW (350) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`[0m
+[0;32mI (360) sleep: Configure to isolate all GPIO pins in sleep state[0m
+[0;32mI (367) sleep: Enable automatic switching of GPIO sleep configuration[0m
+[0;32mI (374) main_task: Started on CPU0[0m
+[0;32mI (384) main_task: Calling app_main()[0m
+[0;32mI (414) nvs_config: NVS override: ssid=CSI_NET_V2[0m
+[0;32mI (414) nvs_config: NVS override: password=***[0m
+[0;32mI (414) nvs_config: NVS override: target_ip=192.168.4.1[0m
+[0;32mI (414) nvs_config: NVS override: target_port=4210[0m
+[0;32mI (424) nvs_config: NVS override: node_id=4[0m
+[0;33mW (434) nvs_config: wasm_verify=1 but no wasm_pubkey in NVS — uploads will be rejected[0m
+[0;32mI (434) nvs_config: NVS override: peer_count=3[0m
+[0;32mI (444) nvs_config: NVS peer[0]: node_id=1 mac=e0:72:a1:d6:f8:00[0m
+[0;32mI (454) nvs_config: NVS peer[1]: node_id=2 mac=e0:72:a1:d6:ed:24[0m
+[0;32mI (454) nvs_config: NVS peer[2]: node_id=3 mac=e0:72:a1:d6:48:7c[0m
+[0;32mI (464) main: ESP32-S3 CSI Node (ADR-018) — v0.6.0 — Node ID: 4[0m
+[0;32mI (474) pp: pp rom version: e7ae62f[0m
+[0;32mI (474) net80211: net80211 rom version: e7ae62f[0m
+[0;32mI (494) wifi:wifi driver task: 3fcc078c, prio:23, stack:6656, core=0[0m
+[0;32mI (504) wifi:wifi firmware version: cc1dd81[0m
+[0;32mI (504) wifi:wifi certification version: v7.0[0m
+[0;32mI (504) wifi:config NVS flash: enabled[0m
+[0;32mI (504) wifi:config nano formating: disabled[0m
+[0;32mI (504) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (514) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (514) wifi:Init management short buffer num: 32[0m
+[0;32mI (524) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (524) wifi:Init static tx FG buffer num: 2[0m
+[0;32mI (534) wifi:Init static rx buffer size: 2212[0m
+[0;32mI (534) wifi:Init static rx buffer num: 10[0m
+[0;32mI (534) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (544) wifi_init: rx ba win: 6[0m
+[0;32mI (544) wifi_init: tcpip mbox: 64[0m
+[0;32mI (544) wifi_init: udp mbox: 32[0m
+[0;32mI (554) wifi_init: tcp mbox: 6[0m
+[0;32mI (554) wifi_init: tcp tx win: 5760[0m
+[0;32mI (564) wifi_init: tcp rx win: 5760[0m
+[0;32mI (564) wifi_init: tcp mss: 1440[0m
+[0;32mI (564) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (574) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (584) phy_init: phy_version 620,ec7ec30,Sep  5 2023,13:49:13[0m
+[0;32mI (624) wifi:mode : sta (44:1b:f6:8c:10:a0)[0m
+[0;32mI (624) wifi:enable tsf[0m
+[0;32mI (624) main: WiFi STA initialized, connecting to SSID: CSI_NET_V2[0m
+[0;32mI (3034) main: Retrying WiFi connection (1/10)[0m
+[0;32mI (5534) main: Retrying WiFi connection (2/10)[0m
+[0;32mI (8034) main: Retrying WiFi connection (3/10)[0m
+[0;32mI (10534) main: Retrying WiFi connection (4/10)[0m
+[0;32mI (10634) wifi:new:<1,1>, old:<1,0>, ap:<255,255>, sta:<1,1>, prof:1[0m
+[0;32mI (10634) wifi:state: init -> auth (b0)[0m
+[0;32mI (10634) wifi:state: auth -> assoc (0)[0m
+[0;32mI (10644) wifi:state: assoc -> run (10)[0m
+[0;32mI (10664) wifi:connected with CSI_NET_V2, aid = 1, channel 1, 40U, bssid = e0:72:a1:d6:f7:59[0m
+[0;32mI (10664) wifi:security: WPA2-PSK, phy: bgn, rssi: -45[0m
+[0;32mI (10664) wifi:pm start, type: 1[0m
+
+[0;32mI (10664) wifi:dp: 1, bi: 102400, li: 3, scale listen interval from 307200 us to 307200 us[0m
+[0;32mI (10674) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 25000, mt_pti: 0, mt_time: 10000[0m
+[0;32mI (10694) wifi:<ba-add>idx:0 (ifx:0, e0:72:a1:d6:f7:59), tid:0, ssn:0, winSize:64[0m
+[0;32mI (10754) wifi:dp: 2, bi: 102400, li: 4, scale listen interval from 307200 us to 409600 us[0m
+[0;32mI (10754) wifi:AP's beacon interval = 102400 us, DTIM period = 2[0m
+[0;32mI (11684) esp_netif_handlers: sta ip: 192.168.4.2, mask: 255.255.255.0, gw: 192.168.4.1[0m
+[0;32mI (11684) main: Got IP: 192.168.4.2[0m
+[0;32mI (11684) main: Connected to WiFi[0m
+[0;32mI (11684) stream_sender: UDP sender initialized: 192.168.4.1:4210[0m
+[0;32mI (11694) csi_collector: Added peer[0]: node_id=1 mac=e0:72:a1:d6:f8:00[0m
+[0;32mI (11704) csi_collector: Added peer[1]: node_id=2 mac=e0:72:a1:d6:ed:24[0m
+[0;32mI (11704) csi_collector: Added peer[2]: node_id=3 mac=e0:72:a1:d6:48:7c[0m
+[0;32mI (11714) main: Registered 3 peer(s) for pairwise CSI sensing[0m
+[0;32mI (11724) csi_collector: Auto-detected AP channel: 1[0m
+[0;32mI (11724) wifi:ic_enable_sniffer[0m
+[0;32mI (11734) csi_collector: Promiscuous mode enabled for CSI capture[0m
+[0;32mI (11734) csi_collector: CSI collection initialized (node_id=4, channel=1)[0m
+[0;32mI (11744) csi_collector: NDP probe started at 50 Hz (period=20000 us)[0m
+[0;32mI (11754) heartbeat: Heartbeat started: 192.168.4.1:4210 every 50 ms[0m
+[0;32mI (11754) main: link_reporter interval: 50 ms (SAR_MODE=1)[0m
+[0;32mI (11764) link_reporter: Link reporter started: node 4, 192.168.4.1:4210, every 50 ms[0m
+[0;32mI (11774) sar_amp: sar_amp timeout sweep: 500 ms[0m
+[0;32mI (11774) edge_proc: Initializing edge processing (tier=2, top_k=8, vital_interval=1000ms, presence_thresh=0.000)[0m
+[0;32mI (11794) edge_proc: Vitals timer started (1000 ms period)[0m
+[0;32mI (11794) edge_proc: Edge DSP task created on Core 1 (stack=8192, priority=5)[0m
+[0;32mI (11794) edge_proc: Edge DSP task started on core 1 (tier=2)[0m
+[0;32mI (11804) ota_update: OTA HTTP server started on port 8032[0m
+[0;32mI (11814) ota_update:   GET  /ota/status — firmware version info[0m
+[0;32mI (11824) ota_update:   POST /ota        — upload new firmware binary[0m
+[0;33mW (11834) wasm_rt: WASM Tier 3 disabled (WASM3 not available)[0m
+[0;32mI (11834) wasm_upload: WASM upload endpoints registered:[0m
+[0;32mI (11844) wasm_upload:   POST   /wasm/upload    — upload .wasm binary[0m
+[0;32mI (11854) wasm_upload:   GET    /wasm/list      — list modules[0m
+[0;32mI (11854) wasm_upload:   POST   /wasm/start/:id — start module[0m
+[0;32mI (11864) wasm_upload:   POST   /wasm/stop/:id  — stop module[0m
+[0;32mI (11874) wasm_upload:   DELETE /wasm/:id       — unload module[0m
+[0;32mI (11874) main: WASM on_timer() periodic: 1000 ms[0m
+[0;32mI (11884) mmwave: Probing UART1 (TX=17, RX=18) for mmWave sensor...[0m
+[0;32mI (11884) mmwave: Probing at 115200 baud (MR60BHA2)...[0m
+[0;32mI (12994) mmwave: Probing at 256000 baud (LD2410)...[0m
+[0;32mI (14094) mmwave: No mmWave sensor detected on UART1[0m
+[0;32mI (14094) main: No mmWave sensor detected (CSI-only mode)[0m
+[0;32mI (14094) main: Swarm bridge disabled (no seed_url configured)[0m
+[0;32mI (14094) power_mgmt: WiFi power save policy: SAR mode — WIFI_PS_NONE (radio always on, +30-50% power draw)[0m
+[0;32mI (14104) wifi:Set ps type: 0, coexist: 0[0m
+
+[0;32mI (14114) power_mgmt: Duty cycle 100% — no light-sleep scheduling[0m
+[0;32mI (14114) disp_task: Initializing display subsystem...[0m
+[0;33mW (14124) disp_task: SPIRAM not enabled — using internal DMA memory (smaller buffers)[0m
+[0;32mI (14134) disp_hal: Initializing Waveshare AMOLED 1.8" (SH8601 368x448)...[0m
+[0;32mI (14144) disp_hal: I2C bus init OK (SDA=15, SCL=14)[0m
+[0;33mW (14144) disp_hal: TCA9554 not found at 0x20: ESP_FAIL[0m
+[0;33mW (14154) disp_hal: TCA9554 not found — assuming display power is always-on (direct wiring)[0m
+[0;32mI (14164) disp_hal: QSPI panel IO created (40MHz, quad mode)[0m
+[0;32mI (14314) disp_hal: Drawing test pattern...[0m
+[0;32mI (14354) disp_hal: Test pattern drawn[0m
+[0;32mI (14364) disp_hal: SH8601 panel init OK (368x448)[0m
+[0;32mI (14364) disp_hal: Probing FT3168 touch controller...[0m
+[0;32mI (14364) gpio: GPIO[21]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 [0m
+[0;33mW (14374) disp_hal: FT3168 not found (ret=ESP_FAIL, id=0x00)[0m
+[0;32mI (14384) disp_task: LVGL buffers: 2x 7360 bytes (10 lines, internal DMA)[0m
+[0;32mI (14394) disp_task: Display task started (Core 0, priority 1, 30 fps)[0m
+[0;32mI (14394) main: CSI streaming active → 192.168.4.1:4210 (edge_tier=2, OTA=ready, WASM=ready, mmWave=off, swarm=off)[0m
+[0;32mI (14394) disp_task: Display task running on Core 0, 30 fps limit[0m
+[0;32mI (14454) disp_ui: UI created: 4 views (Dashboard|Vitals|Presence|System)[0m
+[0;32mI (21794) edge_proc: Vitals: br=0.0 hr=0.0 motion=0.0000 pres=no[0m
+[0;32mI (31794) edge_proc: Vitals: br=0.0 hr=0.0 motion=0.0000 pres=no[0m
+[0;32mI (41794) edge_proc: Vitals: br=0.0 hr=0.0 motion=0.0000 pres=no[0m
+[0;32mI (51794) edge_proc: Vitals: br=0.0 hr=0.0 motion=0.0000 pres=no[0m
+[0;32mI (61794) edge_proc: Vitals: br=0.0 hr=0.0 motion=0.0000 pres=no[0m

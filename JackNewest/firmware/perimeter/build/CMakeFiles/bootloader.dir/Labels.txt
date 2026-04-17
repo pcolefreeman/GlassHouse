@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/CMakeFiles/bootloader
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/CMakeFiles/bootloader.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/CMakeFiles/bootloader-complete.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule

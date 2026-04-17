@@ -1,0 +1,89 @@
+[1/5] cmd.exe /C "cd /D C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter\build\esp-idf\esptool_py && C:\Users\incre\.espressif\python_env\idf5.2_py3.14_env\Scripts\python.exe C:/Users/incre/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/partition_table/partition-table.bin C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/esp32-csi-node.bin"
+esp32-csi-node.bin binary size 0x10f5c0 bytes. Smallest app partition is 0x200000 bytes. 0xf0a40 bytes (47%) free.
+[2/5] Performing build step for 'bootloader'
+[1/1] cmd.exe /C "cd /D C:\Users\incre\Class\Capstone\Claude\GSDprojects\glasshouse-v2\firmware\perimeter\build\bootloader\esp-idf\esptool_py && C:\Users\incre\.espressif\python_env\idf5.2_py3.14_env\Scripts\python.exe C:/Users/incre/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build/bootloader/bootloader.bin"
+Bootloader binary size 0x49f0 bytes. 0x3610 bytes (42%) free.
+[2/3] cmd.exe /C "cd /D C:\Users\incre\esp\esp-idf\components\esptool_py && C:\Users\incre\.espressif\tools\cmake\3.24.0\bin\cmake.exe -D IDF_PATH=C:/Users/incre/esp/esp-idf -D SERIAL_TOOL=C:/Users/incre/.espressif/python_env/idf5.2_py3.14_env/Scripts/python.exe;;C:/Users/incre/esp/esp-idf/components/esptool_py/esptool/esptool.pesptool.py --chip esp32s3 -p COM14 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 8MB 0x0 bootloader/bootloader.bin 0x20000 esp32-csi-node.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin
+esptool.py v4.11.0
+Serial port COM14
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: e0:72:a1:d6:ed:24
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00000000 to 0x00004fff...
+Flash will be erased from 0x00020000 to 0x0012ffff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+Flash will be erased from 0x0000f000 to 0x00010fff...
+SHA digest in image updated
+Compressed 18928 bytes to 11910...
+Writing at 0x00000000... (100 %)
+Wrote 18928 bytes (11910 compressed) at 0x00000000 in 0.3 seconds (effective 563.3 kbit/s)...
+Hash of data verified.
+Compressed 1111488 bytes to 724569...
+Writing at 0x00020000... (2 %)
+Writing at 0x0002d62b... (4 %)
+Writing at 0x0003a914... (6 %)
+Writing at 0x000427a0... (8 %)
+Writing at 0x000483d9... (11 %)
+Writing at 0x0004e89a... (13 %)
+Writing at 0x0005a03e... (15 %)
+Writing at 0x0005fab9... (17 %)
+Writing at 0x000655dd... (20 %)
+Writing at 0x0006ae37... (22 %)
+Writing at 0x000705f8... (24 %)
+Writing at 0x000760c3... (26 %)
+Writing at 0x0007b2ec... (28 %)
+Writing at 0x00080769... (31 %)
+Writing at 0x00085e8e... (33 %)
+Writing at 0x0008ba6b... (35 %)
+Writing at 0x00090fd0... (37 %)
+Writing at 0x00096b3a... (40 %)
+Writing at 0x0009c9ca... (42 %)
+Writing at 0x000a2015... (44 %)
+Writing at 0x000a7237... (46 %)
+Writing at 0x000ac6dd... (48 %)
+Writing at 0x000b1af8... (51 %)
+Writing at 0x000b7074... (53 %)
+Writing at 0x000bc6bb... (55 %)
+Writing at 0x000c1a5e... (57 %)
+Writing at 0x000c69e8... (60 %)
+Writing at 0x000cbb41... (62 %)
+Writing at 0x000d0bf7... (64 %)
+Writing at 0x000d5fcf... (66 %)
+Writing at 0x000db488... (68 %)
+Writing at 0x000e0fc0... (71 %)
+Writing at 0x000e61c7... (73 %)
+Writing at 0x000eb249... (75 %)
+Writing at 0x000f06d2... (77 %)
+Writing at 0x000f587c... (80 %)
+Writing at 0x000fb315... (82 %)
+Writing at 0x001006ad... (84 %)
+Writing at 0x00105fbd... (86 %)
+Writing at 0x0010b71a... (88 %)
+Writing at 0x00115691... (91 %)
+Writing at 0x0011d09c... (93 %)
+Writing at 0x001229da... (95 %)
+Writing at 0x00128a22... (97 %)
+Writing at 0x0012dca8... (100 %)
+Wrote 1111488 bytes (724569 compressed) at 0x00020000 in 7.2 seconds (effective 1235.0 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 143...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (143 compressed) at 0x00008000 in 0.0 seconds (effective 585.8 kbit/s)...
+Hash of data verified.
+Compressed 8192 bytes to 31...
+Writing at 0x0000f000... (100 %)
+Wrote 8192 bytes (31 compressed) at 0x0000f000 in 0.1 seconds (effective 1223.1 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+y;--chip;esp32s3 -D SERIAL_TOOL_ARGS=--before=default_reset;--after=hard_reset;write_flash;@flash_args -D WORKING_DIRECTORY=C:/Users/incre/Class/Capstone/Claude/GSDprojects/glasshouse-v2/firmware/perimeter/build -P C:/Users/incre/esp/esp-idf/components/esptool_py/run_serial_tool.cmake"
